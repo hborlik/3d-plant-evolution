@@ -1,0 +1,2 @@
+mesa-common-dev
+libglfw3-dev
