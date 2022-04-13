@@ -19,6 +19,8 @@
 
 #include <iostream>
 #include <chrono>
+#include <list>
+
 #include <glad/glad.h>
 #include "GLSL.h"
 #include "Program.h"
@@ -37,6 +39,8 @@
 // value_ptr for glm
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 #define PI 3.1415927
 #define numO 80
@@ -45,12 +49,69 @@ enum Mat {ruby=0, brass, copper, gold, tone1, tone2, tone3, tone4, shadow};
 using namespace std;
 using namespace glm;
 
+class GameObject {
+	GameObject* parent = nullptr;
+
+	glm::quat rotation = glm::identity<glm::quat>();
+	glm::vec3 position = {0, 0, 0};
+	glm::vec3 scale = {1, 1, 1};
+public:
+
+	virtual ~GameObject(){}
+
+	virtual void update(double delta) {}
+
+	void setPosition(glm::vec3 p) noexcept {
+		position = p;
+	}
+
+	void setRotation(glm::quat q) noexcept {
+		rotation = q;
+	}
+
+	void setScale(glm::vec3 s) noexcept {
+		scale = s;
+	}
+
+	glm::mat4 getLinearTransform() const noexcept {
+		glm::mat4 tr = glm::translate(glm::mat4{1.0f}, position) * glm::toMat4(rotation);
+		if (parent != nullptr) {
+			tr = parent->getLinearTransform() * tr;
+		}
+		return tr;
+	}
+
+	glm::mat4 getModelTransform() const noexcept {
+		return getLinearTransform() * glm::scale(glm::mat4{1.0f}, scale);
+	}
+};
+
+class IGOT : public GameObject {
+public:
+	float sphere_radius = 1.0f;
+	glm::vec3 velocity;
+
+	void update(double delta) override {
+
+	}
+
+};
+
+class SphereCollider {
+public:
+	void check_all() {
+
+	}
+};
+
 class Application : public EventCallbacks
 {
 
 public:
 
 	WindowManager * windowManager = nullptr;
+
+	std::list<std::shared_ptr<GameObject>> objs;
 
 	// Our shader program - use this one for Blinn-Phong has diffuse TODO add specular
 	std::shared_ptr<Program> prog;
@@ -540,16 +601,16 @@ public:
     	texProg->unbind();
 
   		/* draw the complete scene from a top down camera */
-  		mat4 OrthoProj = GetOrthoMatrix();
-    	mat4 TopView = GetTopView();
-    	glClear( GL_DEPTH_BUFFER_BIT);
-    	glViewport(0, 0, 300, 300);
-    	drawScene(OrthoProj, TopView, false);
+  		// mat4 OrthoProj = GetOrthoMatrix();
+    	// mat4 TopView = GetTopView();
+    	// glClear( GL_DEPTH_BUFFER_BIT);
+    	// glViewport(0, 0, 300, 300);
+    	// drawScene(OrthoProj, TopView, false);
 
-  		/* draw the culled scene from a top down camera - nothing culled yet - fix that */
-    	glClear( GL_DEPTH_BUFFER_BIT);
-    	glViewport(0, height-300, 300, 300);
-    	drawScene(OrthoProj, TopView, CULL);
+  		// /* draw the culled scene from a top down camera - nothing culled yet - fix that */
+    	// glClear( GL_DEPTH_BUFFER_BIT);
+    	// glViewport(0, height-300, 300, 300);
+    	// drawScene(OrthoProj, TopView, CULL);
 
     }
 
