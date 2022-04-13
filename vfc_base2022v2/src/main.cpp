@@ -80,12 +80,23 @@ public:
 	//light animation data
 	float lightTrans = 0;
 
+	float frameTime = 0.001f;
+
 	//camera - likely better to put into its own class
 	double g_phi, g_theta;
 	vec3 view = vec3(0, 0, 1);
 	vec3 strafe = vec3(1, 0, 0);
 	vec3 g_eye = vec3(0, 1, 0);
 	vec3 g_lookAt = vec3(0, 1, -4);
+	quat g_rot = identity<quat>();
+	double g_up = 0.0f, g_right = 0.0f;
+
+	// input state
+	bool left_button_down = false;
+
+	struct WASD {
+		bool w = false,a = false,s = false,d = false;
+	} input_keys;
 
 	//spline for camera and anim toggle
 	Spline splinepath[2];
@@ -335,10 +346,18 @@ public:
     	glUniformMatrix4fv(curS->getUniform("M"), 1, GL_FALSE, value_ptr(m));
     }
 
+	mat4 GetCamTr() {
+		glm::mat4 cam_t = glm::rotate(glm::mat4{1.0f}, (float)g_up, glm::vec3{1, 0, 0});
+		cam_t = glm::rotate(glm::mat4{1.0f}, (float)g_right, {0, 1, 0}) * cam_t;
+		cam_t[3] = glm::vec4{g_eye, 1.0f};
+		return cam_t;
+	}
+
 	/* helper functions for transforms */
     mat4 GetView(shared_ptr<Program>  shader) {
-    	glm::mat4 Cam = glm::lookAt(g_eye, g_lookAt, vec3(0, 1, 0));
-    	return Cam;
+		glm::mat4 cam_t = GetCamTr();
+		cam_t = glm::inverse(cam_t);
+    	return cam_t;
     }
 
     mat4 GetProjectionMatrix() {
@@ -455,8 +474,37 @@ public:
 /* Render including two subwindows with top down views that will help us 'visualize' that our view frustum culling
   is working */
     void render(float frametime) {
+		static double posX = 0.0, posY = 0.0;
 
- 
+		this->frameTime = frametime;
+
+		double lastX = posX, lastY = posY;
+		glfwGetCursorPos(windowManager->getHandle(), &posX, &posY);
+		if (left_button_down)
+		{
+			g_right -= (posX - lastX) * frameTime * 0.05;
+			g_up -= (posY - lastY) * frameTime * 0.04;
+			if (g_up > M_PI_2)
+				g_up = M_PI_2;
+			else if (g_up < -M_PI_2)
+				g_up = -M_PI_2;
+		}
+
+		const mat4 cam_t = GetCamTr();
+
+		if (input_keys.w) {
+			g_eye += vec3(-cam_t[2]) * frameTime * 1.2f;
+		}
+		if (input_keys.a) {
+			g_eye += vec3(-cam_t[0]) * frameTime * 1.2f;
+		}
+		if (input_keys.s) {
+			g_eye += vec3(cam_t[2]) * frameTime * 1.2f;
+		}
+		if (input_keys.d) {
+			g_eye += vec3(cam_t[0]) * frameTime * 1.2f;
+		}
+
   		// Get current frame buffer size.
     	int width, height;
     	glfwGetFramebufferSize(windowManager->getHandle(), &width, &height);
@@ -478,7 +526,7 @@ public:
     	cullCount = 0;
     	//draw scene from 'game camera' perspective
     	drawScene(PerProj, GameCamView, CULL);
-    	cout << "cull count: " << cullCount << endl;
+    	// cout << "cull count: " << cullCount << endl;
 
     	//draw big background sphere (always)
     	texProg->bind();
@@ -524,42 +572,42 @@ void ExtractVFPlanes(mat4 P, mat4 V) {
   Left.z = comp[2][3] + comp[2][0]; 
   Left.w = comp[3][3] + comp[3][0];
   planes[0] = Left;
-  cout << "Left' " << Left.x << " " << Left.y << " " <<Left.z << " " << Left.w << endl;
+//   cout << "Left' " << Left.x << " " << Left.y << " " <<Left.z << " " << Left.w << endl;
   
   Right.x = 0; // see handout to fill in with values from comp
   Right.y = 0; // see handout to fill in with values from comp
   Right.z = 0; // see handout to fill in with values from comp
   Right.w = 0; // see handout to fill in with values from comp
   planes[1] = Right;
-  cout << "Right " << Right.x << " " << Right.y << " " <<Right.z << " " << Right.w << endl;
+//   cout << "Right " << Right.x << " " << Right.y << " " <<Right.z << " " << Right.w << endl;
 
   Bottom.x = 0; // see handout to fill in with values from comp
   Bottom.y = 0; // see handout to fill in with values from comp
   Bottom.z = 0; // see handout to fill in with values from comp
   Bottom.w = 0; // see handout to fill in with values from comp
   planes[2] = Bottom;
-  cout << "Bottom " << Bottom.x << " " << Bottom.y << " " <<Bottom.z << " " << Bottom.w << endl;
+//   cout << "Bottom " << Bottom.x << " " << Bottom.y << " " <<Bottom.z << " " << Bottom.w << endl;
   
   Top.x = 0; // see handout to fill in with values from comp
   Top.y = 0; // see handout to fill in with values from comp
   Top.z = 0; // see handout to fill in with values from comp
   Top.w = 0; // see handout to fill in with values from comp
   planes[3] = Top;
-  cout << "Top " << Top.x << " " << Top.y << " " <<Top.z << " " << Top.w << endl;
+//   cout << "Top " << Top.x << " " << Top.y << " " <<Top.z << " " << Top.w << endl;
 
   Near.x = 0; // see handout to fill in with values from comp
   Near.y = 0; // see handout to fill in with values from comp
   Near.z = 0; // see handout to fill in with values from comp
   Near.w = 0; // see handout to fill in with values from comp
   planes[4] = Near;
-  cout << "Near " << Near.x << " " << Near.y << " " <<Near.z << " " << Near.w << endl;
+//   cout << "Near " << Near.x << " " << Near.y << " " <<Near.z << " " << Near.w << endl;
 
   Far.x = 0; // see handout to fill in with values from comp
   Far.y = 0; // see handout to fill in with values from comp
   Far.z = 0; // see handout to fill in with values from comp
   Far.w = 0; // see handout to fill in with values from comp
   planes[5] = Far;
-  cout << "Far " << Far.x << " " << Far.y << " " <<Far.z << " " << Far.w << endl;
+//   cout << "Far " << Far.x << " " << Far.y << " " <<Far.z << " " << Far.w << endl;
 }
 
 
@@ -801,17 +849,16 @@ int ViewFrustCull(vec3 center, float radius) {
 		if (key == GLFW_KEY_E && action == GLFW_PRESS){
 			lightTrans -= 0.5;
 		}
-		if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-    		cout << "Early release does not include camera" << endl;
+		if (key == GLFW_KEY_A) {
+    		input_keys.a = action == GLFW_PRESS || action == GLFW_REPEAT;
     	}
-  		if (key == GLFW_KEY_D && action == GLFW_PRESS) {
-    		cout << "Early release does not include camera" << endl;
+  		if (key == GLFW_KEY_D)
+    		input_keys.d = action == GLFW_PRESS || action == GLFW_REPEAT;
+  		if (key == GLFW_KEY_W) {
+    		input_keys.w = action == GLFW_PRESS || action == GLFW_REPEAT;
   		}
-  		if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-    		cout << "Early release does not include camera" << endl;
-  		}
-  		if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-    		cout << "Early release does not include camera" << endl;
+  		if (key == GLFW_KEY_S) {
+    		input_keys.s = action == GLFW_PRESS || action == GLFW_REPEAT;
  		 }
 		if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
 			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
@@ -831,13 +878,11 @@ int ViewFrustCull(vec3 center, float radius) {
 
 	void mouseCallback(GLFWwindow *window, int button, int action, int mods)
 	{
-		double posX, posY;
-
-		if (action == GLFW_PRESS)
-		{
-			glfwGetCursorPos(window, &posX, &posY);
-			cout << "Pos X " << posX <<  " Pos Y " << posY << endl;
-		}
+		if (button == GLFW_MOUSE_BUTTON_LEFT)
+			if(GLFW_PRESS == action)
+				left_button_down = true;
+			else if(GLFW_RELEASE == action)
+				left_button_down = false;
 	}
 
 	void resizeCallback(GLFWwindow *window, int width, int height)
