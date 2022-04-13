@@ -13,7 +13,7 @@
 #include <string>
 #include <exception>
 
-#define EV_CHECK_THROW(expr, message) if(!(expr)) throw ssre::ssre_exception{"[" + std::string{__FILE__} + ":" + std::to_string(__LINE__) + "]:" + message}
+#define EV_CHECK_THROW(expr, message) if(!(expr)) throw ev2::engine_exception{"[" + std::string{__FILE__} + ":" + std::to_string(__LINE__) + "]:" + message}
 
 namespace ev2 {
 

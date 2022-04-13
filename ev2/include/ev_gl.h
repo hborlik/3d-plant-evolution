@@ -1,15 +1,13 @@
 /**
  * @file ssre_gl.h
- * @author Hunter Borlik 
  * @brief gl includes for ssre
- * @version 0.1
+ * @version 0.2
  * @date 2019-09-09
  * 
- * @copyright Copyright (c) 2019
  * 
  */
-#ifndef SSRE_SSRE_GL_H
-#define SSRE_SSRE_GL_H
+#ifndef EV_GL_H
+#define EV_GL_H
 
 #include <iostream>
 
@@ -18,8 +16,7 @@
 
 #include <glm/glm.hpp>
 
-// todo custom logger
-#define GL_CHECKED_CALL(call) {isGLError(); (call); if(isGLError()) std::cerr << __FILE__ << ":" << __LINE__ << " GL_CHECKED_CALL got error" << std::endl;}
+#define GL_CHECKED_CALL(call) {isGLError(); (call); if(isGLError()) std::cerr << __FILE__ << ":" << __LINE__ << " GL_CHECKED_CALL error" << std::endl;}
 
 #ifndef NDEBUG
 #define GL_ERROR_CHECK(call, var) {isGLError(); (call); var = isGLError();}
@@ -253,4 +250,4 @@ namespace ev2 {
     }
 }
 
-#endif // SSRE_SSRE_GL_H
+#endif // EV_GL_H

@@ -95,7 +95,8 @@
 			"compare": "cpp",
 			"concepts": "cpp",
 			"numbers": "cpp",
-			"bit": "cpp"
+			"bit": "cpp",
+			"variant": "cpp"
 		},
 		"cmake.buildDirectory": "${workspaceRoot}/build",
 		"glsllint.glslangValidatorPath": "../glslang-master-windows-x64-Release/bin/glslangValidator.exe"
