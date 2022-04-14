@@ -20,6 +20,8 @@
 #include <iostream>
 #include <chrono>
 #include <list>
+#include <optional>
+#include <filesystem>
 
 #include <glad/glad.h>
 #include "GLSL.h"
@@ -49,6 +51,18 @@ enum Mat {ruby=0, brass, copper, gold, tone1, tone2, tone3, tone4, shadow};
 using namespace std;
 using namespace glm;
 
+struct Sphere {
+	float r;
+	glm::vec3 p;
+
+	std::optional<glm::vec3> intersects(const Sphere& o) const {
+		if (glm::length(o.p - p) < o.r + r) {
+			return {(o.p * o.r + p * r) / (o.r + r)};
+		}
+		return {};
+	}
+};
+
 class GameObject {
 	GameObject* parent = nullptr;
 
@@ -73,6 +87,18 @@ public:
 		scale = s;
 	}
 
+	glm::vec3 getPosition() const noexcept {
+		return position;
+	}
+
+	glm::quat getRotation() const noexcept {
+		return rotation;
+	}
+
+	glm::vec3 getScale() const noexcept {
+		return scale;
+	}
+
 	glm::mat4 getLinearTransform() const noexcept {
 		glm::mat4 tr = glm::translate(glm::mat4{1.0f}, position) * glm::toMat4(rotation);
 		if (parent != nullptr) {
@@ -91,16 +117,42 @@ public:
 	float sphere_radius = 1.0f;
 	glm::vec3 velocity;
 
+	Sphere getCollider() const {
+		return {
+			sphere_radius,
+			getPosition()
+		};
+	}
+
+	void onColission(std::shared_ptr<IGOT> other, glm::vec3 p) {}
+
 	void update(double delta) override {
 
 	}
 
 };
 
-class SphereCollider {
+class SphereColliders {
 public:
-	void check_all() {
-
+	/**
+	 * @brief check all colliders for intersections
+	 * 
+	 * @param objs 
+	 */
+	void checkAll(std::list<std::shared_ptr<IGOT>>& objs) {
+		auto itr = objs.begin();
+		while (itr != objs.end()) {
+			auto itrb = itr;
+			itrb++;
+			while (itrb != objs.end()) {
+				auto cp = itr->get()->getCollider().intersects(itrb->get()->getCollider());
+				if (cp) {
+					itr->get()->onColission(*itrb, cp.value());
+					itrb->get()->onColission(*itr, cp.value());
+				}
+			}
+			itr++;
+		}
 	}
 };
 
@@ -320,6 +372,8 @@ public:
 
 		//code to load in the ground plane (CPU defined data passed to GPU)
 		initGround();
+
+		objs.push_back(std::make_shared<IGOT>());
 	}
 
 	//directly pass quad for the ground to the GPU
@@ -484,6 +538,14 @@ public:
     			}
     		}
     	}
+
+		auto itr_go = objs.begin();
+		while (itr_go != objs.end()) {
+			glm::mat4 tr = itr_go->get()->getModelTransform();
+			glUniformMatrix4fv(texProg->getUniform("M"), 1, GL_FALSE, value_ptr(tr));
+			theDog->draw(texProg);
+			itr_go++;
+		}
     	
     	//the ground plane is also textured so draw it
     	drawGround(texProg);
@@ -963,6 +1025,8 @@ int main(int argc, char *argv[])
 {
 	// Where the resources are loaded from
 	std::string resourceDir = "../resources";
+
+	std::cout << std::filesystem::current_path() << std::endl;
 
 	if (argc >= 2)
 	{

@@ -96,7 +96,19 @@
 			"concepts": "cpp",
 			"numbers": "cpp",
 			"bit": "cpp",
-			"variant": "cpp"
+			"variant": "cpp",
+			"hash_map": "cpp",
+			"complex": "cpp",
+			"condition_variable": "cpp",
+			"set": "cpp",
+			"unordered_set": "cpp",
+			"mutex": "cpp",
+			"semaphore": "cpp",
+			"shared_mutex": "cpp",
+			"stop_token": "cpp",
+			"thread": "cpp",
+			"cfenv": "cpp",
+			"valarray": "cpp"
 		},
 		"cmake.buildDirectory": "${workspaceRoot}/build",
 		"glsllint.glslangValidatorPath": "../glslang-master-windows-x64-Release/bin/glslangValidator.exe"
