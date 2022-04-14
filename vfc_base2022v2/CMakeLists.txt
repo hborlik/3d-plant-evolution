@@ -55,6 +55,7 @@ if(NOT WIN32)
 else()
 
   # Link OpenGL on Windows
-  target_link_libraries(VFC opengl32.lib)
+  #target_link_libraries(VFC opengl32.lib)
+  target_compile_definitions(VFC PUBLIC _USE_MATH_DEFINES)
 
 endif()
