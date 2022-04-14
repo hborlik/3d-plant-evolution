@@ -543,7 +543,7 @@ public:
 		while (itr_go != objs.end()) {
 			glm::mat4 tr = itr_go->get()->getModelTransform();
 			glUniformMatrix4fv(texProg->getUniform("M"), 1, GL_FALSE, value_ptr(tr));
-			theDog->draw(texProg);
+			//theDog->draw(texProg);
 			itr_go++;
 		}
     	
