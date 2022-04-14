@@ -117,6 +117,7 @@ class IGOT : public GameObject {
 public:
     float sphere_radius = 1.0f;
     glm::vec3 velocity;
+    bool dead = false;
 
     Sphere getCollider() const {
         return {
@@ -125,34 +126,44 @@ public:
         };
     }
 
-    void onColission(std::shared_ptr<IGOT> other, glm::vec3 p) {
-        vec3 pushDir = getPosition() - p;
-        float pushLength = sphere_radius - length(pushDir);
-        setPosition(getPosition() + normalize(pushDir) * pushLength);
-        velocity = -velocity; 
+    void onCollision(std::shared_ptr<IGOT> other, glm::vec3 p) {
+        if (other != nullptr) {
+            vec3 pushDir = getPosition() - p;
+            float pushLength = sphere_radius - length(pushDir);
+            setPosition(getPosition() + normalize(pushDir) * pushLength);
+            velocity = -velocity;
+        } else {
+            // cam col
+            dead = true;
+            velocity = vec3{0, -1, 0};
+        }
     }
 
     void update(float delta) override {
-        if (getPosition().y + sphere_radius >= 4) {
-            velocity.y *= -1.0;
-            setPosition(getPosition() + vec3{0, -1, 0} * abs(abs(getPosition().y) + sphere_radius - 4));
-        } else if (getPosition().y - sphere_radius <= -4) {
-            velocity.y *= -1.0;
-            setPosition(getPosition() + vec3{0, 1, 0} * abs(abs(getPosition().y) + sphere_radius - 4));
-        }
-        if (getPosition().x + sphere_radius >= 4) {
-            velocity.x *= -1.0;
-            setPosition(getPosition() + vec3{-1, 0, 0} * abs(abs(getPosition().x) + sphere_radius - 4));
-        } else if (getPosition().x - sphere_radius <= -4) {
-            velocity.x *= -1.0;
-            setPosition(getPosition() + vec3{1, 0, 0} * abs(abs(getPosition().x) + sphere_radius - 4));
-        }
-        if (getPosition().z + sphere_radius >= 4) {
-            velocity.z *= -1.0;
-            setPosition(getPosition() + vec3{0, 0, -1} * abs(abs(getPosition().z) + sphere_radius - 4));
-        } else if (getPosition().z - sphere_radius <= -4) {
-            velocity.z *= -1.0;
-            setPosition(getPosition() + vec3{0, 0, 1} * abs(abs(getPosition().z) + sphere_radius - 4));
+        if (!dead) {
+            if (getPosition().y + sphere_radius >= 4) {
+                velocity.y *= -1.0;
+                setPosition(getPosition() + vec3{0, -1, 0} * abs(abs(getPosition().y) + sphere_radius - 4));
+            } else if (getPosition().y - sphere_radius <= -4) {
+                velocity.y *= -1.0;
+                setPosition(getPosition() + vec3{0, 1, 0} * abs(abs(getPosition().y) + sphere_radius - 4));
+            }
+            if (getPosition().x + sphere_radius >= 4) {
+                velocity.x *= -1.0;
+                setPosition(getPosition() + vec3{-1, 0, 0} * abs(abs(getPosition().x) + sphere_radius - 4));
+            } else if (getPosition().x - sphere_radius <= -4) {
+                velocity.x *= -1.0;
+                setPosition(getPosition() + vec3{1, 0, 0} * abs(abs(getPosition().x) + sphere_radius - 4));
+            }
+            if (getPosition().z + sphere_radius >= 4) {
+                velocity.z *= -1.0;
+                setPosition(getPosition() + vec3{0, 0, -1} * abs(abs(getPosition().z) + sphere_radius - 4));
+            } else if (getPosition().z - sphere_radius <= -4) {
+                velocity.z *= -1.0;
+                setPosition(getPosition() + vec3{0, 0, 1} * abs(abs(getPosition().z) + sphere_radius - 4));
+            }
+        } else {
+            setScale(getScale() * vec3{0.85} * delta);
         }
 
         this->setPosition((this->getPosition() + (velocity * (float)delta)));
@@ -167,16 +178,20 @@ public:
      * 
      * @param objs 
      */
-    static void checkAll(std::list<std::shared_ptr<IGOT>>& objs) {
+    static void checkAll(std::list<std::shared_ptr<IGOT>>& objs, vec3 cam_p) {
         auto itr = objs.begin();
         while (itr != objs.end()) {
+            auto camc_p = itr->get()->getCollider().intersects(Sphere{0.25f, cam_p});
+            if (camc_p) {
+                itr->get()->onCollision(nullptr, {});
+            }
             auto itrb = itr;
             itrb++;
             while (itrb != objs.end()) {
                 auto cp = itr->get()->getCollider().intersects(itrb->get()->getCollider());
                 if (cp) {
-                    itr->get()->onColission(*itrb, cp.value());
-                    itrb->get()->onColission(*itr, cp.value());
+                    itr->get()->onCollision(*itrb, cp.value());
+                    itrb->get()->onCollision(*itr, cp.value());
                 }
                 itrb++;
             }
@@ -686,7 +701,7 @@ public:
         ExtractVFPlanes(PerProj, GameCamView);
 
         //Check sphere colliders.
-        SphereColliders::checkAll(objs);
+        SphereColliders::checkAll(objs, g_eye);
 
         cullCount = 0;
         //draw scene from 'game camera' perspective
