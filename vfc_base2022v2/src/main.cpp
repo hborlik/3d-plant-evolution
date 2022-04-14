@@ -7,7 +7,7 @@
  'g' : camera runs on spline (not great points - you can fix them)
  'z': wireframe
  'p' : evetually to CULL (you need to fix TODOs)
- **EARLY RELEASE NO GAME CAMERA scroll for pitch and yaw camera
+ scroll for pitch and yaw camera
 
  // View Frustum Culling base code for CPE 476 VFC workshop
 // Note data-structure NOT recommended for CPE 476 - 
@@ -18,7 +18,6 @@
 */
 
 #include <iostream>
-#include <chrono>
 #include <glad/glad.h>
 #include "GLSL.h"
 #include "Program.h"
@@ -31,6 +30,8 @@
 #include "Spline.h"
 #include "util.h"
 #include "transForms.h"
+#include <chrono>
+
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader/tiny_obj_loader.h>
@@ -802,16 +803,20 @@ int ViewFrustCull(vec3 center, float radius) {
 			lightTrans -= 0.5;
 		}
 		if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-    		cout << "Early release does not include camera" << endl;
-    	}
+    		g_eye -= speed*strafe;
+    		g_lookAt -= speed*strafe;
+  		}
   		if (key == GLFW_KEY_D && action == GLFW_PRESS) {
-    		cout << "Early release does not include camera" << endl;
+    		g_eye += speed*strafe;
+    		g_lookAt += speed*strafe;
   		}
   		if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-    		cout << "Early release does not include camera" << endl;
+    		g_eye -= speed*view;
+    		g_lookAt -= speed*view;
   		}
   		if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-    		cout << "Early release does not include camera" << endl;
+    		g_eye += speed*view;
+    		g_lookAt += speed*view;
  		 }
 		if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
 			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
@@ -847,7 +852,21 @@ int ViewFrustCull(vec3 center, float radius) {
 
 	/* much of the camera is here */
 	void scrollCallback(GLFWwindow* window, double deltaX, double deltaY) {
-		cout << "Early release does not include camera" << endl;
+		vec3 diff, newV;
+
+		g_theta += deltaX*0.25;
+		g_phi += deltaY*0.25;
+		newV.x = cosf(g_phi)*cosf(g_theta);
+		newV.y = -1.0*sinf(g_phi);
+		newV.z = 1.0*cosf(g_phi)*cosf((3.14/2.0-g_theta));
+		diff.x = (g_lookAt.x - g_eye.x) - newV.x;
+		diff.y = (g_lookAt.y - g_eye.y) - newV.y;
+		diff.z = (g_lookAt.z - g_eye.z) - newV.z;
+		g_lookAt.x = g_lookAt.x - diff.x;
+		g_lookAt.y = g_lookAt.y - diff.y;
+		g_lookAt.z = g_lookAt.z - diff.z;
+		view = g_eye - g_lookAt;
+		strafe = cross(vec3(0, 1,0), view);
 	}
 
 
