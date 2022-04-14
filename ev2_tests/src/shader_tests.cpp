@@ -2,5 +2,6 @@
 
 
 int shader_tests() {
-    ev2::Shader
+    ev2::Program prog{};
+    
 }

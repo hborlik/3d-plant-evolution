@@ -27,7 +27,7 @@ namespace ev2 {
 std::ostream& operator<<(std::ostream& os, const Program& input) {
     os << "ShaderProgram: " << input.ProgramName << std::endl;
     for(auto& v : input.attachedShaders) {
-        os << v.second << std::endl;
+        os << v.second.shaderPath() << std::endl;
     }
     os << "Program inputs:" << std::endl;
     for(auto& v : input.inputs) {
@@ -48,7 +48,7 @@ std::ostream& operator<<(std::ostream& os, const Program& input) {
 
 } // ev2
 
-Shader::Shader(std::string name, gl::GLSLShaderType type) : Name{std::move(name)}, type{type} {
+Shader::Shader(gl::GLSLShaderType type) : type{type} {
     gl_reference = glCreateShader((GLenum)type);
     EV_CHECK_THROW(gl_reference != 0, "Failed to create shader");
 }
@@ -75,6 +75,7 @@ void Shader::LoadFrom(const std::string& path) {
     glGetShaderiv(gl_reference, GL_COMPILE_STATUS, &result);
     if(result == GL_TRUE) {
         compiled = true;
+        this->path = path;
     } else { // ask for more info on failure
         std::cout << "Failed to compile shader " << path << std::endl;
 
@@ -89,7 +90,7 @@ void Shader::LoadFrom(const std::string& path) {
 
             std::cout << "Shader Log for " << path << ":\n" << std::string{log.begin(), log.end()} << std::endl;
         }
-        throw shader_error{Name, "Failed to compile shader"};
+        throw shader_error{path, "Failed to compile shader"};
     }
 }
 
@@ -110,21 +111,21 @@ Program::~Program() {
         glDeleteProgram(gl_reference);
 }
 
-void Program::SetShaderPath(gl::GLSLShaderType type, const std::string& path) {
-    attachedShaders[type] = path;
+void Program::loadShader(gl::GLSLShaderType type, const std::string& path) {
+    Shader s{type};
+    s.LoadFrom(path);
+    attachedShaders.emplace(std::pair(type, std::move(s)));
 }
 
 void Program::loadAndBuild() {
     modifiedCount++;
     built = false;
     for(auto& stage : attachedShaders) {
-        std::unique_ptr<Shader> shader = std::make_unique<Shader>(ProgramName, stage.first);
-        shader->LoadFrom(stage.second);
-        if(shader->IsCompiled()) {
+        if(stage.second.IsCompiled()) {
             bool error = false;
-            GL_ERROR_CHECK(glAttachShader(gl_reference, shader->getHandle()), error);
+            GL_ERROR_CHECK(glAttachShader(gl_reference, stage.second.getHandle()), error);
             if(error) {
-                std::cerr << "Failed to attach shader " << shader->Name << " to " << ProgramName << std::endl;
+                std::cerr << "Failed to attach shader " << stage.second.shaderPath() << " to " << ProgramName << std::endl;
                 throw shader_error{ProgramName, "Failed to attach shader"};
             }
         }
@@ -169,20 +170,20 @@ void Program::use() const {
 }
 
 void Program::applyMaterial(const Material& material) const {
-    const auto& textureInputs = material->getTextureInputs();
-    for(uint32_t i = 0; i < textureInputs.size(); i++) { 
-        if(textureInputs[i].texture) {
-            // set and activate texture unit for editing
-            glActiveTexture(gl::TextureUnit[i]);
-            textureInputs[i].texture->bind();
-            // update sampler uniform for texture
-            glUniform1i(textureInputs[i].location, i);
-        }
-    }
-    // update the other uniforms
-    for(const auto& param : material->getParameters()) {
-        param.second->apply();
-    }
+    // const auto& textureInputs = material->getTextureInputs();
+    // for(uint32_t i = 0; i < textureInputs.size(); i++) { 
+    //     if(textureInputs[i].texture) {
+    //         // set and activate texture unit for editing
+    //         glActiveTexture(gl::TextureUnit[i]);
+    //         textureInputs[i].texture->bind();
+    //         // update sampler uniform for texture
+    //         glUniform1i(textureInputs[i].location, i);
+    //     }
+    // }
+    // // update the other uniforms
+    // for(const auto& param : material->getParameters()) {
+    //     param.second->apply();
+    // }
 }
 
 bool Program::isLinked() const {

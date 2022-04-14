@@ -61,24 +61,31 @@ constexpr const char* ShaderUniformBlockName = "ShaderData";
 
 } // mat_spec
 
+struct Material {
+
+};
+
 /**
  * @brief Container for GPU Shader
  */
 class Shader {
 public:
 
-    Shader(std::string name, gl::GLSLShaderType type);
+    Shader(gl::GLSLShaderType type);
     ~Shader();
 
-    Shader(Shader&&) = delete;
     Shader(const Shader&) = delete;
+    Shader& operator=(const Shader&) = delete;
     
-    Shader& operator=(Shader) = delete;
+    Shader(Shader&& o) {
+        *this = std::move(o);
+    }
 
-    /**
-     * @brief Shader Name
-     */
-    const std::string Name;
+    Shader& operator=(Shader&& o) {
+        gl_reference = o.gl_reference;
+        o.gl_reference = 0;
+        return *this;
+    }
 
     /**
      * @brief Read compile and load a shader. Will throw ssre_exception if shader cannot be found, or cannot be compiled.
@@ -96,6 +103,8 @@ public:
 
     bool IsCompiled() const noexcept {return compiled;}
 
+    std::string shaderPath() const noexcept {return path;}
+
     /**
      * @brief return opengl reference, for this shader program
      * 
@@ -107,6 +116,7 @@ private:
     GLuint gl_reference;
     gl::GLSLShaderType type;
     bool compiled = false;
+    std::string path;
 };
 
 class Buffer;
@@ -169,7 +179,7 @@ public:
      * 
      * @param program 
      */
-    void SetShaderPath(gl::GLSLShaderType type, const std::string& path);
+    void loadShader(gl::GLSLShaderType type, const std::string& path);
 
     /**
      * @brief Load, Compile, and Link shader programs
@@ -246,7 +256,7 @@ public:
     GLuint getHandle() const noexcept {return gl_reference;}
 
     /**
-     * @brief Apply a material created by this Program. The program must be set active with use()
+     * @brief Apply a material. The program must be set active with use()
      * before calling this
      * 
      * @param material 
@@ -275,7 +285,7 @@ public:
 
 protected:
 
-    std::unordered_map<gl::GLSLShaderType, std::string> attachedShaders;
+    std::unordered_map<gl::GLSLShaderType, Shader> attachedShaders;
     std::unordered_map<std::string, ProgramUniformDescription> uniforms;
     std::unordered_map<std::string, ProgramInputDescription> inputs;
     std::unordered_map<std::string, ProgramUniformBlockDescription> uniformBlocks;

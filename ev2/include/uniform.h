@@ -50,7 +50,7 @@ public:
     Uniform(std::string name, T value, ProgramUniformDescription location) :
         UniformBase{std::move(name), location}, value{std::move(value)}
     {
-        SSRE_CHECK_THROW((GLenum)gl::getGlEnumForType<T>() == location.Type, "Uniform type is invalid for " + name + " at " + std::to_string(location.Location));
+        EV_CHECK_THROW((GLenum)gl::getGlEnumForType<T>() == location.Type, "Uniform type is invalid for " + name + " at " + std::to_string(location.Location));
     }
 
     Uniform(std::string name, ProgramUniformDescription location) :
