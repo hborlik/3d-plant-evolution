@@ -113,6 +113,8 @@ public:
     }
 };
 
+static int counter = 0; 
+
 class IGOT : public GameObject {
 public:
     float sphere_radius = 1.0f;
@@ -126,20 +128,25 @@ public:
         };
     }
 
+    
+
     void onCollision(std::shared_ptr<IGOT> other, glm::vec3 p) {
-        if (other != nullptr) {
+        if (other != nullptr && !dead) {
             vec3 pushDir = getPosition() - p;
             float pushLength = sphere_radius - length(pushDir);
             setPosition(getPosition() + normalize(pushDir) * pushLength);
             velocity = -velocity;
         } else {
             // cam col
+            if (!dead)
+                cout << "Falling " << counter++ << endl;
             dead = true;
-            velocity = vec3{0, -1, 0};
+            velocity = vec3{0, -.5, 0};
         }
     }
 
     void update(float delta) override {
+        setRotation(glm::slerp(getRotation(), glm::quatLookAt(normalize(velocity), glm::normalize(vec3{0, 1, 0.05})), 2.0f * delta));
         if (!dead) {
             if (getPosition().y + sphere_radius >= 4) {
                 velocity.y *= -1.0;
@@ -163,7 +170,7 @@ public:
                 setPosition(getPosition() + vec3{0, 0, 1} * abs(abs(getPosition().z) + sphere_radius - 4));
             }
         } else {
-            setScale(getScale() * vec3{0.85} * delta);
+            // setScale(getScale() + (vec3{0.01f, 0.01f, 0.01f} - getScale()) * 1.0f * delta);
         }
 
         this->setPosition((this->getPosition() + (velocity * (float)delta)));
