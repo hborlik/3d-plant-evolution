@@ -567,7 +567,7 @@ void ExtractVFPlanes(mat4 P, mat4 V) {
   Far.z = comp[2][3] - comp[2][2]; // see handout to fill in with values from comp
   Far.w = comp[3][3] - comp[3][2]; // see handout to fill in with values from comp
   planes[5] = Far;
-  cout << "Far " << Far.x << " " << Far.y << " " <<Far.z << " " << Far.w << endl;
+  //cout << "Far " << Far.x << " " << Far.y << " " <<Far.z << " " << Far.w << endl;
 }
 
 
