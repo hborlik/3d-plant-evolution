@@ -31,6 +31,7 @@
 #include "util.h"
 #include "transForms.h"
 #include <chrono>
+#include <cmath>
 
 
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -375,6 +376,8 @@ public:
     	}
     }
 
+
+
 /* code to draw the scene - it will be helpful to be able to draw your geometry more than once*/
 //may use different shaders
     void drawScene(mat4 P, mat4 V, bool cullFlag) {
@@ -512,6 +515,7 @@ public:
 	vec4 Left, Right, Bottom, Top, Near, Far;
 	vec4 planes[6];
 
+
 /*TODO fill in */
 void ExtractVFPlanes(mat4 P, mat4 V) {
 
@@ -524,50 +528,53 @@ void ExtractVFPlanes(mat4 P, mat4 V) {
   Left.y = comp[1][3] + comp[1][0]; 
   Left.z = comp[2][3] + comp[2][0]; 
   Left.w = comp[3][3] + comp[3][0];
-  planes[0] = Left;
-  cout << "Left' " << Left.x << " " << Left.y << " " <<Left.z << " " << Left.w << endl;
+  n = vec3(Left.x, Left.y, Left.z);
+  l = length(n);  
+  planes[0] = Left = Left/l;
+  //Normalize PLANE EQUATION
+  //cout << "Left' " << Left.x << " " << Left.y << " " <<Left.z << " " << Left.w << endl;
   
-  Right.x = 0; // see handout to fill in with values from comp
-  Right.y = 0; // see handout to fill in with values from comp
-  Right.z = 0; // see handout to fill in with values from comp
-  Right.w = 0; // see handout to fill in with values from comp
+  Right.x = comp[0][3] - comp[0][0]; // see handout to fill in with values from comp
+  Right.y = comp[1][3] - comp[1][0]; // see handout to fill in with values from comp
+  Right.z = comp[2][3] - comp[2][0]; // see handout to fill in with values from comp
+  Right.w = comp[3][3] - comp[3][0]; // see handout to fill in with values from comp
   planes[1] = Right;
-  cout << "Right " << Right.x << " " << Right.y << " " <<Right.z << " " << Right.w << endl;
+  //cout << "Right " << Right.x << " " << Right.y << " " <<Right.z << " " << Right.w << endl;
 
-  Bottom.x = 0; // see handout to fill in with values from comp
-  Bottom.y = 0; // see handout to fill in with values from comp
-  Bottom.z = 0; // see handout to fill in with values from comp
-  Bottom.w = 0; // see handout to fill in with values from comp
+  Bottom.x = comp[0][3] + comp[0][1]; // see handout to fill in with values from comp
+  Bottom.y = comp[1][3] + comp[1][1]; // see handout to fill in with values from comp
+  Bottom.z = comp[2][3] + comp[2][1]; // see handout to fill in with values from comp
+  Bottom.w = comp[3][3] + comp[3][1]; // see handout to fill in with values from comp
   planes[2] = Bottom;
-  cout << "Bottom " << Bottom.x << " " << Bottom.y << " " <<Bottom.z << " " << Bottom.w << endl;
+  //cout << "Bottom " << Bottom.x << " " << Bottom.y << " " <<Bottom.z << " " << Bottom.w << endl;
   
-  Top.x = 0; // see handout to fill in with values from comp
-  Top.y = 0; // see handout to fill in with values from comp
-  Top.z = 0; // see handout to fill in with values from comp
-  Top.w = 0; // see handout to fill in with values from comp
+  Top.x = comp[0][3] - comp[0][1]; // see handout to fill in with values from comp
+  Top.y = comp[1][3] - comp[1][1]; // see handout to fill in with values from comp
+  Top.z = comp[2][3] - comp[2][1]; // see handout to fill in with values from comp
+  Top.w = comp[3][3] - comp[3][1]; // see handout to fill in with values from comp
   planes[3] = Top;
-  cout << "Top " << Top.x << " " << Top.y << " " <<Top.z << " " << Top.w << endl;
+  //cout << "Top " << Top.x << " " << Top.y << " " <<Top.z << " " << Top.w << endl;
 
-  Near.x = 0; // see handout to fill in with values from comp
-  Near.y = 0; // see handout to fill in with values from comp
-  Near.z = 0; // see handout to fill in with values from comp
-  Near.w = 0; // see handout to fill in with values from comp
+  Near.x = comp[0][2]; // see handout to fill in with values from comp
+  Near.y = comp[1][2]; // see handout to fill in with values from comp
+  Near.z = comp[2][2]; // see handout to fill in with values from comp
+  Near.w = comp[3][2]; // see handout to fill in with values from comp
   planes[4] = Near;
-  cout << "Near " << Near.x << " " << Near.y << " " <<Near.z << " " << Near.w << endl;
+  //cout << "Near " << Near.x << " " << Near.y << " " <<Near.z << " " << Near.w << endl;
 
-  Far.x = 0; // see handout to fill in with values from comp
-  Far.y = 0; // see handout to fill in with values from comp
-  Far.z = 0; // see handout to fill in with values from comp
-  Far.w = 0; // see handout to fill in with values from comp
+  Far.x = comp[0][3] - comp[0][2]; // see handout to fill in with values from comp
+  Far.y = comp[1][3] - comp[1][2]; // see handout to fill in with values from comp
+  Far.z = comp[2][3] - comp[2][2]; // see handout to fill in with values from comp
+  Far.w = comp[3][3] - comp[3][2]; // see handout to fill in with values from comp
   planes[5] = Far;
   cout << "Far " << Far.x << " " << Far.y << " " <<Far.z << " " << Far.w << endl;
 }
 
 
 /* helper function to compute distance to the plane */
-/* TODO: fill in */
+/* Assumption: input is normalized*/
 float DistToPlane(float A, float B, float C, float D, vec3 point) {
-  return 0;
+  return A * point.x + B * point.y + C * point.z + D;
 }
 
 /* Actual cull on planes */
@@ -578,10 +585,14 @@ int ViewFrustCull(vec3 center, float radius) {
   float dist;
 
   if (CULL) {
-    cout << "testing against all planes" << endl;
+    //cout << "testing against all planes" << endl;
     for (int i=0; i < 6; i++) {
       dist = DistToPlane(planes[i].x, planes[i].y, planes[i].z, planes[i].w, center);
       //test against each plane
+      if (dist < 0 && abs(dist)>radius) {
+          return 1;
+      }
+
     }
     return 0; 
   } else {
