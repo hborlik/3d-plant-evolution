@@ -17,7 +17,7 @@
 #include <ev_gl.h>
 #include <glad/glad.h>
 
-#include <glfw_context.h>
+#include <window.h>
 
 using namespace ev2;
 
@@ -34,9 +34,8 @@ shader_error::shader_error(std::string shaderName, std::string errorString) noex
 
 }
 
-
-void ev2::EV_init() {
-    static internal::GLFWContext _context{};
+void ev2::EV_init(const Args& args) {
+    window::init(args);
 }
 
 bool ev2::isGLError() {

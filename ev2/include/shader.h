@@ -84,6 +84,10 @@ public:
     Shader& operator=(Shader&& o) {
         gl_reference = o.gl_reference;
         o.gl_reference = 0;
+
+        type = o.type;
+        compiled = o.compiled;
+        path = o.path;
         return *this;
     }
 
@@ -184,7 +188,7 @@ public:
     /**
      * @brief Load, Compile, and Link shader programs
      */
-    void loadAndBuild();
+    void link();
 
     /**
      * @brief Set this program to active
@@ -311,7 +315,7 @@ protected:
      * @brief Allows base classes to configure additional shader options after program builds
      * 
      */
-    virtual void onBuilt() = 0;
+    virtual void onBuilt() {};
 
 private:
     // helper function to print program information

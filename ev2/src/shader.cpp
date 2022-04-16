@@ -25,17 +25,19 @@ namespace ev2 {
 
 // overload stream operator
 std::ostream& operator<<(std::ostream& os, const Program& input) {
-    os << "ShaderProgram: " << input.ProgramName << std::endl;
+    os << "=== ShaderProgram: " << input.ProgramName << " ===" << std::endl;
     for(auto& v : input.attachedShaders) {
         os << v.second.shaderPath() << std::endl;
     }
-    os << "Program inputs:" << std::endl;
+    os << "Program inputs: (name, location)" << std::endl;
     for(auto& v : input.inputs) {
-        os << "    I: " << v.first << " at " << v.second.Location << std::endl;
+        os << "    - " << v.first << ", " << v.second.Location << std::endl;
     }
+    os << "Program uniforms: (name, location)" << std::endl;
     for(auto& v : input.uniforms) {
-        os << "    U: " << v.first << " at " << v.second.Location << std::endl;
+        os << "    - " << v.first << ", " << v.second.Location << std::endl;
     }
+    os << "Program uniform blocks:" << std::endl;
     for(auto& v : input.uniformBlocks) {
         os << "    UB: " << v.first << " at " << v.second.Location << " size: " << v.second.BlockSize << " bytes" << std::endl;
         for(auto& l : v.second.layouts) {
@@ -43,6 +45,7 @@ std::ostream& operator<<(std::ostream& os, const Program& input) {
         }
     }
     os << "    shader " << (input.built ? "built" : "not built") << std::endl;
+    os << "=== ShaderProgram ===" << std::endl;
     return os;
 }
 
@@ -117,7 +120,7 @@ void Program::loadShader(gl::GLSLShaderType type, const std::string& path) {
     attachedShaders.emplace(std::pair(type, std::move(s)));
 }
 
-void Program::loadAndBuild() {
+void Program::link() {
     modifiedCount++;
     built = false;
     for(auto& stage : attachedShaders) {
@@ -304,9 +307,9 @@ void Program::updateProgramUniformBlockInfo() {
 
         std::vector<GLint> strides(numActiveVars); // stride between consecutive elements in array
         glGetActiveUniformsiv(gl_reference, numActiveVars, unifIndices.data(), GL_UNIFORM_ARRAY_STRIDE, strides.data());
-        for(int i = 0; i < numActiveVars; ++i) {
-            std::cout << strides[i] << std::endl;
-        }
+        // for(int i = 0; i < numActiveVars; ++i) {
+        //     std::cout << strides[i] << std::endl;
+        // }
 
         std::vector<GLint> sizes(numActiveVars); // number of items in uniform, greater than 1 for arrays
         glGetActiveUniformsiv(gl_reference, numActiveVars, unifIndices.data(), GL_UNIFORM_SIZE, sizes.data());

@@ -108,7 +108,8 @@
 			"stop_token": "cpp",
 			"thread": "cpp",
 			"cfenv": "cpp",
-			"valarray": "cpp"
+			"valarray": "cpp",
+			"*.inc": "cpp"
 		},
 		"cmake.buildDirectory": "${workspaceRoot}/build",
 		"glsllint.glslangValidatorPath": "../glslang-master-windows-x64-Release/bin/glslangValidator.exe"

@@ -34,7 +34,13 @@ public:
     virtual ~shader_error() = default;
 };
 
-void EV_init();
+struct Args {
+    Args(int argc, char* argv[]) {}
+
+    int height = -1, width = -1;
+};
+
+void EV_init(const Args& args);
 
 } // ev2
 
