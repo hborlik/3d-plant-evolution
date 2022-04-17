@@ -191,10 +191,6 @@ void Program::applyMaterial(const Material& material) const {
     //         glUniform1i(textureInputs[i].location, i);
     //     }
     // }
-    // // update the other uniforms
-    // for(const auto& param : material->getParameters()) {
-    //     param.second->apply();
-    // }
 }
 
 bool Program::isLinked() const {
