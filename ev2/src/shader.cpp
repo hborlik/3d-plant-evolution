@@ -39,7 +39,7 @@ std::ostream& operator<<(std::ostream& os, const Program& input) {
     }
     os << "Program uniform blocks:" << std::endl;
     for(auto& v : input.uniformBlocks) {
-        os << "    UB: " << v.first << " at " << v.second.Location << " size: " << v.second.BlockSize << " bytes" << std::endl;
+        os << "    UB: " << v.first << " at " << v.second.location << " size: " << v.second.block_size << " bytes" << std::endl;
         for(auto& l : v.second.layouts) {
             os << "       U: " << l.first << " offset " << l.second.Offset << " len " <<l.second.ArraySize << " stride " << l.second.ArrayStride << std::endl;
         }
@@ -102,7 +102,7 @@ void Shader::LoadFrom(const std::string& path) {
 Program::Program(std::string name) : 
     ProgramName{std::move(name)}, 
     attachedShaders{},
-    shaderUBO{std::make_unique<Buffer>(gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW)} {
+    shaderParameters{} {
 
     gl_reference = glCreateProgram();
     if(gl_reference == 0)
@@ -142,6 +142,14 @@ void Program::link() {
         updateProgramUniformBlockInfo();
         updateProgramUniformInfo();
         built = true;
+
+        // if we have a shader parameter ubo, save it
+        shaderDataDescription = getUniformBlockInfo(mat_spec::ShaderUniformBlockName);
+        if (shaderDataDescription.isValid()) {
+            shaderParameters = std::make_unique<Buffer>(gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW);
+            shaderParameters->Allocate(shaderDataDescription.block_size);
+        }
+
         // additional configuration
         onBuilt();
     } else {
@@ -166,9 +174,9 @@ void Program::use() const {
     // set program to active
     glUseProgram(gl_reference);
     // bind shader UBO to shader data location if available
-    if(shaderDataDescription.Location != -1)
+    if(shaderDataDescription.isValid())
         GL_CHECKED_CALL(
-            glBindBufferRange(GL_UNIFORM_BUFFER, mat_spec::ShaderUniformBlockBindingLocation, shaderUBO->Handle(), 0, shaderUBO->size())
+            glBindBufferRange(GL_UNIFORM_BUFFER, shaderDataDescription.location, shaderParameters->Handle(), 0, shaderParameters->size())
         );
 }
 
@@ -196,7 +204,7 @@ bool Program::isLinked() const {
 }
 
 bool Program::setUniformBlockBinding(const std::string& uniformName, uint32_t location) {
-    int loc = getUniformBlockInfo(uniformName).Location;
+    int loc = getUniformBlockInfo(uniformName).location;
     if(loc != -1) {
         glUniformBlockBinding(gl_reference, loc, location);
         return true;
@@ -246,9 +254,9 @@ void Program::updateProgramUniformInfo() {
 
 
         // get Length of uniform array
-        GLuint props[] = {GL_UNIFORM_SIZE};
-        GLuint unifs[] = {unif};
-        GLint rets[] = {0};
+        GLuint props[]  = {GL_UNIFORM_SIZE};
+        GLuint unifs[]  = {unif};
+        GLint rets[]    = {0};
         glGetActiveUniformsiv(gl_reference, 1, unifs, GL_UNIFORM_SIZE, rets);
 
         // Get the name
@@ -262,7 +270,7 @@ void Program::updateProgramUniformInfo() {
         ProgramUniformDescription& pud = uniforms[uname]; // reference uniform description
         pud.Type        = values[1];
         pud.Location    = values[3];
-        pud.Length = rets[0];
+        pud.Length      = rets[0];
     }
 }
 
@@ -296,8 +304,8 @@ void Program::updateProgramUniformBlockInfo() {
         blockName.erase(std::find(blockName.begin(), blockName.end(), '\0'), blockName.end());
 
         ProgramUniformBlockDescription& pubd = uniformBlocks[blockName];
-        pubd.Location = blockIx;
-        pubd.BlockSize = blockSize;
+        pubd.location = blockIx;
+        pubd.block_size = blockSize;
 
         std::vector<GLuint> unifIndices(numActiveVars); // array of active variable indices associated with an active uniform block
         glGetProgramResourceiv(gl_reference, GL_UNIFORM_BLOCK, blockIx, 1, activeUnifProp, numActiveVars, NULL, (GLint*)unifIndices.data());
@@ -332,13 +340,5 @@ void Program::updateProgramUniformBlockInfo() {
 
         }
 
-    }
-
-    // update shaderUBO binding if available
-    if(setUniformBlockBinding(mat_spec::ShaderUniformBlockName, mat_spec::ShaderUniformBlockBindingLocation)) {
-        shaderDataDescription = getUniformBlockInfo(mat_spec::ShaderUniformBlockName);
-        shaderUBO->Allocate(shaderDataDescription.BlockSize);
-    } else {
-        shaderDataDescription = {}; // clear shader data description
     }
 }
