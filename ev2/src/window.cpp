@@ -13,6 +13,7 @@
 
 #include <ev.h>
 #include <input.h>
+#include <application.h>
 
 using namespace ev2;
 
@@ -107,7 +108,7 @@ void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
 }
 
 
-uint8_t translateKeyModifiers(int glfw_modifier)
+input::Modifier translateKeyModifiers(int glfw_modifier)
 {
     uint8_t modifiers = 0;
     if (glfw_modifier & GLFW_MOD_ALT)
@@ -122,7 +123,7 @@ uint8_t translateKeyModifiers(int glfw_modifier)
     if (glfw_modifier & GLFW_MOD_SHIFT)
         modifiers |= input::Modifier::LeftShift;
     
-    return modifiers;
+    return {modifiers};
 }
 
 // key translations map
@@ -352,6 +353,9 @@ public:
         return 0;
     }
 
+    double scroll_pos = 0;
+    Application* application = nullptr;
+
 private:
     static void keyCb(GLFWwindow* _window, int32_t _key, int32_t _scancode, int32_t _action, int32_t _mods);
     static void charCb(GLFWwindow* _window, uint32_t _scancode);
@@ -372,36 +376,40 @@ void Context::keyCb(GLFWwindow* _window, int32_t _key, int32_t _scancode, int32_
     {
         return;
     }
-    int mods = translateKeyModifiers(_mods);
+    input::Modifier mods = translateKeyModifiers(_mods);
     input::Key::Enum key = translateKey(_key);
     bool down = (_action == GLFW_PRESS || _action == GLFW_REPEAT);
-    // s_ctx->m_eventQueue.postKeyEvent(key, mods, down);
+    if (static_context->application)
+        static_context->application->onKey(key, mods, down);
 }
 
 void Context::charCb(GLFWwindow* _window, uint32_t _scancode)
 {
-    // s_ctx->m_eventQueue.postCharEvent(_scancode);
+    if (static_context->application)
+        static_context->application->onChar(_scancode);
 }
 
 void Context::scrollCb(GLFWwindow* _window, double _dx, double _dy)
 {
     double mx, my;
     glfwGetCursorPos(_window, &mx, &my);
-    // s_ctx->m_scrollPos += _dy;
-    // s_ctx->m_eventQueue.postMouseEvent(
-    //     (int32_t) mx,
-    //     (int32_t) my,
-    //     (int32_t) s_ctx->m_scrollPos
-    //     );
+    static_context->scroll_pos += _dy;
+    if (static_context->application)
+        static_context->application->onScroll(
+            (int32_t) mx,
+            (int32_t) my,
+            (int32_t) static_context->scroll_pos
+            );
 }
 
 void Context::cursorPosCb(GLFWwindow* _window, double _mx, double _my)
 {
-    // s_ctx->m_eventQueue.postMouseEvent(
-    //     (int32_t) _mx,
-    //     (int32_t) _my,
-    //     (int32_t) s_ctx->m_scrollPos
-    //     );
+    if (static_context->application)
+        static_context->application->cursorPos(
+            (int32_t) _mx,
+            (int32_t) _my,
+            (int32_t) static_context->scroll_pos
+            );
 }
 
 void Context::mouseButtonCb(GLFWwindow* _window, int32_t _button, int32_t _action, int32_t _mods)
@@ -409,26 +417,28 @@ void Context::mouseButtonCb(GLFWwindow* _window, int32_t _button, int32_t _actio
     bool down = _action == GLFW_PRESS;
     double mx, my;
     glfwGetCursorPos(_window, &mx, &my);
-    // s_ctx->m_eventQueue.postMouseEvent(
-    //     (int32_t) mx,
-    //     (int32_t) my,
-    //     (int32_t) s_ctx->m_scrollPos,
-    //     translateMouseButton(_button),
-    //     down
-    //     );
+    if (static_context->application)
+        static_context->application->onMouseButton(
+            (int32_t)mx,
+            (int32_t)my,
+            (int32_t)static_context->scroll_pos,
+            translateMouseButton(_button),
+            down);
 }
 
 void Context::windowSizeCb(GLFWwindow* _window, int32_t _width, int32_t _height)
 {
-    // s_ctx->m_eventQueue.postSizeEvent(_width, _height);
+    if (static_context->application)
+        static_context->application->onWindowSizeChange(_width, _height);
 }
 
 void Context::dropFileCb(GLFWwindow* _window, int32_t _count, const char** _filePaths)
 {
-    for (int32_t ii = 0; ii < _count; ++ii)
-    {
-        // s_ctx->m_eventQueue.postDropFileEvent(_filePaths[ii]);
-    }
+    if (static_context->application)
+        for (int32_t ii = 0; ii < _count; ++ii)
+        {
+            static_context->application->onDropFile(_filePaths[ii]);
+        }
 }
 
 
