@@ -8,7 +8,11 @@
 #define EV2_MESH_H
 
 namespace ev2 {
-    
+
+class Mesh {
+
+};
+
 }
 
 #endif // EV2_MESH_H
