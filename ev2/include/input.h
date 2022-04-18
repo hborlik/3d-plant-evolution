@@ -34,6 +34,7 @@ struct Modifier {
         LeftMeta = 0x40,
         RightMeta = 0x80,
     };
+    uint8_t mods;
 };
 
 struct Key {
