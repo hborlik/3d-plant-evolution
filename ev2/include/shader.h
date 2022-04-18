@@ -28,37 +28,25 @@ namespace ev2
         /**
          * @brief standard shader inputs
          */
-        constexpr const char *VertexAttributeName = "VertPos";
-        constexpr GLenum VertexAttributeType = GL_FLOAT_VEC3;
-        constexpr const char *TextureAttributeName = "TexPos";
-        constexpr GLenum TextureAttributeType = GL_FLOAT_VEC2;
-        constexpr const char *NormalAttributeName = "Normal";
-        constexpr GLenum NormalAttributeType = GL_FLOAT_VEC3;
-        constexpr const char *BiTangentAttributeName = "BiTangent";
-        constexpr GLenum BiNormalAttributeType = GL_FLOAT_VEC3;
-        constexpr const char *TangentAttributeName = "Tangent";
-        constexpr GLenum TangentAttributeType = GL_FLOAT_VEC3;
+        const std::string VertexAttributeName = "VertPos";
+        constexpr gl::DataType VertexAttributeType = gl::DataType::VEC3F;
+        const std::string TextureAttributeName = "TexPos";
+        constexpr gl::DataType TextureAttributeType = gl::DataType::VEC2F;
+        const std::string NormalAttributeName = "Normal";
+        constexpr gl::DataType NormalAttributeType = gl::DataType::VEC3F;
+        const std::string BiTangentAttributeName = "BiTangent";
+        constexpr gl::DataType BiNormalAttributeType = gl::DataType::VEC3F;
+        const std::string TangentAttributeName = "Tangent";
+        constexpr gl::DataType TangentAttributeType = gl::DataType::VEC3F;
 
-        constexpr const char *ModelMatrixUniformName = "M";
-        constexpr const char *NormalMatrixUniformName = "G";
+        const std::string ModelMatrixUniformName = "M";
+        const std::string NormalMatrixUniformName = "G";
 
         constexpr uint32_t GUBBindingLocation = 0; // Binding location for global block
-        constexpr const char *GUBName = "Globals";
-        constexpr size_t GUBViewMatOffset = 0;
-        constexpr uint32_t GUBProjectionMatOffset = 64;
-        constexpr uint32_t GUBCameraPosOffset = 128;
-        constexpr uint32_t GUBNumLightsOffset = 140;
-        constexpr uint32_t GUBMaxNumLights = 10;
-        constexpr uint32_t GUBLightPositionsArrayOffset = 144;
-        constexpr uint32_t GUBLightPositionsArrayStride = 16;
-        constexpr uint32_t GUBLightPositionElementSize = 3 * sizeof(GLfloat);
-        constexpr uint32_t GUBLightColorsOffset = 304;
-        constexpr uint32_t GUBLightColorsArrayStride = 16;
-        constexpr uint32_t GUBLightColorElementSize = 3 * sizeof(GLfloat);
-        constexpr uint32_t GUBSize = 464;
+        const std::string GUBName = "Globals";
 
         // shader specific inputs
-        constexpr const char *ShaderUniformBlockName = "ShaderData";
+        const std::string ShaderUniformBlockName = "ShaderData";
 
     } // mat_spec
 

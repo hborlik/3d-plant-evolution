@@ -4,8 +4,8 @@
  * @date 2022-04-11
  * 
  */
-#ifndef EV_UTIL_H
-#define EV_UTIL_H
+#ifndef EV2_UTIL_H
+#define EV2_UTIL_H
 
 #include <string>
 #include <type_traits>
@@ -28,4 +28,4 @@ inline std::string type_name() noexcept {
 
 }
 
-#endif // EV_UTIL_H
+#endif // EV2_UTIL_H

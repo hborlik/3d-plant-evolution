@@ -53,7 +53,7 @@ std::ostream& operator<<(std::ostream& os, const Program& input) {
 
 Shader::Shader(gl::GLSLShaderType type) : type{type} {
     gl_reference = glCreateShader((GLenum)type);
-    EV_CHECK_THROW(gl_reference != 0, "Failed to create shader");
+    EV2_CHECK_THROW(gl_reference != 0, "Failed to create shader");
 }
 
 Shader::~Shader() {
@@ -64,7 +64,7 @@ Shader::~Shader() {
 void Shader::LoadFrom(const std::string& path) {
     std::ifstream in{path};
     // make sure the file exists
-    EV_CHECK_THROW(in.is_open(), "Shader File not found at " + path);
+    EV2_CHECK_THROW(in.is_open(), "Shader File not found at " + path);
     // copy out file contents
     std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
     in.close();

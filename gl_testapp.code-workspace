@@ -109,7 +109,9 @@
 			"thread": "cpp",
 			"cfenv": "cpp",
 			"valarray": "cpp",
-			"*.inc": "cpp"
+			"*.inc": "cpp",
+			"bitset": "cpp",
+			"regex": "cpp"
 		},
 		"cmake.buildDirectory": "${workspaceRoot}/build",
 		"glsllint.glslangValidatorPath": "../glslang-master-windows-x64-Release/bin/glslangValidator.exe"

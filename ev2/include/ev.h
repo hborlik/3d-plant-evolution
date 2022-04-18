@@ -7,13 +7,14 @@
  * 
  * 
  */
-#ifndef EV_ENGINE_H
-#define EV_ENGINE_H
+#ifndef EV2_ENGINE_H
+#define EV2_ENGINE_H
 
 #include <string>
 #include <exception>
+#include <map>
 
-#define EV_CHECK_THROW(expr, message) if(!(expr)) throw ev2::engine_exception{"[" + std::string{__FILE__} + ":" + std::to_string(__LINE__) + "]:" + message}
+#define EV2_CHECK_THROW(expr, message) if(!(expr)) throw ev2::engine_exception{"[" + std::string{__FILE__} + ":" + std::to_string(__LINE__) + "]:" + message}
 
 namespace ev2 {
 
@@ -35,13 +36,15 @@ public:
 };
 
 struct Args {
-    Args(int argc, char* argv[]) {}
+    Args(int argc, char* argv[]);
 
     int height = -1, width = -1;
+
+    std::map<std::string, std::string> args;
 };
 
-void EV_init(const Args& args);
+void EV2_init(const Args& args);
 
 } // ev2
 
-#endif // EV_ENGINE_H
+#endif // EV2_ENGINE_H

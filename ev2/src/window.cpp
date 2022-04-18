@@ -303,7 +303,7 @@ public:
 
         // load gl functions
         if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-            std::cout << "Failed to initialize GLAD" << std::endl;
+            std::clog << "Failed to initialize GLAD" << std::endl;
             throw engine_exception{"Failed to initialize GLAD"};
         }
 
@@ -317,7 +317,6 @@ public:
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(gl_debug_callback, nullptr);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, GL_TRUE);
-        glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_OTHER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, 25, "TEST DEBUG OUTPUT MESSAGE");
 
         const GLubyte *renderer = glGetString( GL_RENDERER );
         const GLubyte *vendor = glGetString( GL_VENDOR );
@@ -328,11 +327,12 @@ public:
         glGetIntegerv(GL_MAJOR_VERSION, &major);
         glGetIntegerv(GL_MINOR_VERSION, &minor);
         
-        printf("GL Vendor : %s\n", vendor);
-        printf("GL Renderer : %s\n", renderer);
-        printf("GL Version (string) : %s\n", version);
-        printf("GL Version (integer) : %d.%d\n", major, minor);
+        printf("GL: %s %s\n", vendor, renderer);
+        printf("GL Version: %s (%d.%d)\n", version, major, minor);
         printf("GLSL Version : %s\n", glslVersion);
+
+        // push a test message
+        glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_OTHER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, 25, "TEST DEBUG MESSAGE");
     }
 
     int run() {

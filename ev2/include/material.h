@@ -4,8 +4,8 @@
  * @date 2022-04-17
  * 
  */
-#ifndef EV_MATERIAL_H
-#define EV_MATERIAL_H
+#ifndef EV2_MATERIAL_H
+#define EV2_MATERIAL_H
 
 #include <glm/glm.hpp>
 
@@ -19,4 +19,4 @@ struct Material {
 
 }
 
-#endif // EV_MATERIAL_H
+#endif // EV2_MATERIAL_H

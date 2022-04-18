@@ -4,8 +4,8 @@
  * @date 2022-04-15
  * 
  */
-#ifndef EV_INPUT_H
-#define EV_INPUT_H
+#ifndef EV2_INPUT_H
+#define EV2_INPUT_H
 
 namespace ev2::input {
 
@@ -150,4 +150,4 @@ struct Key {
 
 }
 
-#endif // EV_INPUT_H
+#endif // EV2_INPUT_H

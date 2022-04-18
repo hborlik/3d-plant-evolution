@@ -6,6 +6,7 @@
 int main(int argc, char *argv[]) {
     ev2::Args args{argc, argv};
 
-    ev2::EV_init(args);
+    ev2::EV2_init(args);
+
     shader_tests();
 }

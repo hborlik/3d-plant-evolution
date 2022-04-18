@@ -34,11 +34,17 @@ shader_error::shader_error(std::string shaderName, std::string errorString) noex
 
 }
 
-void ev2::EV_init(const Args& args) {
+void ev2::EV2_init(const Args& args) {
     window::init(args);
 }
 
 bool ev2::isGLError() {
     GLenum status = glGetError();
     return status != GL_NO_ERROR;
+}
+
+Args::Args(int argc, char* argv[]) {
+    for (int i = 0; i < argc; ++i) {
+
+    }
 }

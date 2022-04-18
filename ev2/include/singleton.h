@@ -7,8 +7,8 @@
  * 
  * 
  */
-#ifndef EV_SINGLETON_H
-#define EV_SINGLETON_H
+#ifndef EV2_SINGLETON_H
+#define EV2_SINGLETON_H
 
 #include <memory>
 #include <ev.h>
@@ -48,4 +48,4 @@ std::shared_ptr<T> Singleton<T>::m_singleton;
 
 } // namespace ev2
 
-#endif // EV_SINGLETON_H
+#endif // EV2_SINGLETON_H

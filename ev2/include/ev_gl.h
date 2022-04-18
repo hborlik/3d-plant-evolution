@@ -6,8 +6,8 @@
  * 
  * 
  */
-#ifndef EV_GL_H
-#define EV_GL_H
+#ifndef EV2_GL_H
+#define EV2_GL_H
 
 #include <iostream>
 
@@ -46,7 +46,19 @@ namespace ev2 {
         FIXED               = GL_FIXED,
         HALF_FLOAT          = GL_HALF_FLOAT,
         FLOAT               = GL_FLOAT,
-        DOUBLE              = GL_DOUBLE
+        VEC2F               = GL_FLOAT_VEC2,
+        VEC3F               = GL_FLOAT_VEC3,
+        VEC4F               = GL_FLOAT_VEC4,
+        MAT2F               = GL_FLOAT_MAT2,
+        MAT3F               = GL_FLOAT_MAT3,
+        MAT4F               = GL_FLOAT_MAT4,
+        DOUBLE              = GL_DOUBLE,
+        VEC2D               = GL_DOUBLE_VEC2,
+        VEC3D               = GL_DOUBLE_VEC3,
+        VEC4D               = GL_DOUBLE_VEC4,
+        MAT2D               = GL_DOUBLE_MAT2,
+        MAT3D               = GL_DOUBLE_MAT3,
+        MAT4D               = GL_DOUBLE_MAT4
     };
 
     enum class BindingTarget : GLenum {
@@ -94,10 +106,10 @@ namespace ev2 {
     };
 
     enum class TextureWrapMode : GLenum {
-        REPEAT = GL_REPEAT,
-        MIRRORED_REPEAT = GL_MIRRORED_REPEAT,
-        CLAMP_TO_EDGE = GL_CLAMP_TO_EDGE,
-        CLAMP_TO_BORDER = GL_CLAMP_TO_BORDER
+        REPEAT              = GL_REPEAT,
+        MIRRORED_REPEAT     = GL_MIRRORED_REPEAT,
+        CLAMP_TO_EDGE       = GL_CLAMP_TO_EDGE,
+        CLAMP_TO_BORDER     = GL_CLAMP_TO_BORDER
     };
 
     enum class TextureParamFilter : GLenum {
@@ -106,12 +118,12 @@ namespace ev2 {
     };
 
     enum class TextureFilterMode : GLenum {
-        NEAREST = GL_NEAREST,
-        LINEAR = GL_LINEAR,
-        NEAREST_MIPMAP_NEAREST = GL_NEAREST_MIPMAP_NEAREST,
-        LINEAR_MIPMAP_NEAREST = GL_LINEAR_MIPMAP_NEAREST,
-        NEAREST_MIPMAP_LINEAR = GL_NEAREST_MIPMAP_LINEAR,
-        LINEAR_MIPMAP_LINEAR = GL_LINEAR_MIPMAP_LINEAR
+        NEAREST                     = GL_NEAREST,
+        LINEAR                      = GL_LINEAR,
+        NEAREST_MIPMAP_NEAREST      = GL_NEAREST_MIPMAP_NEAREST,
+        LINEAR_MIPMAP_NEAREST       = GL_LINEAR_MIPMAP_NEAREST,
+        NEAREST_MIPMAP_LINEAR       = GL_NEAREST_MIPMAP_LINEAR,
+        LINEAR_MIPMAP_LINEAR        = GL_LINEAR_MIPMAP_LINEAR
     };
 
     enum class TextureTarget : GLenum {
@@ -120,40 +132,40 @@ namespace ev2 {
     };
 
     enum class TextureInternalFormat : GLenum { // internal storage format
-        RED = GL_RED,
-        RG = GL_RG,
-        RGB = GL_RGB,
-        BGR = GL_BGR,
-        RGBA = GL_RGBA,
-        BGRA = GL_BGRA,
-        DEPTH_COMPONENT = GL_DEPTH_COMPONENT,
-        DEPTH_COMPONENT16 = GL_DEPTH_COMPONENT16,
-        DEPTH_COMPONENT24 = GL_DEPTH_COMPONENT24,
-        DEPTH_COMPONENT32 = GL_DEPTH_COMPONENT32,
-        DEPTH_COMPONENT32F = GL_DEPTH_COMPONENT32F,
-        DEPTH_STENCIL = GL_DEPTH_STENCIL
+        RED                 = GL_RED,
+        RG                  = GL_RG,
+        RGB                 = GL_RGB,
+        BGR                 = GL_BGR,
+        RGBA                = GL_RGBA,
+        BGRA                = GL_BGRA,
+        DEPTH_COMPONENT     = GL_DEPTH_COMPONENT,
+        DEPTH_COMPONENT16   = GL_DEPTH_COMPONENT16,
+        DEPTH_COMPONENT24   = GL_DEPTH_COMPONENT24,
+        DEPTH_COMPONENT32   = GL_DEPTH_COMPONENT32,
+        DEPTH_COMPONENT32F  = GL_DEPTH_COMPONENT32F,
+        DEPTH_STENCIL       = GL_DEPTH_STENCIL
     };
 
     enum class PixelFormat : GLenum { // input format
-        RED = GL_RED,
-        RG = GL_RG,
-        RGB = GL_RGB,
-        BGR = GL_BGR,
-        RGBA = GL_RGBA,
-        BGRA = GL_BGRA,
+        RED             = GL_RED,
+        RG              = GL_RG,
+        RGB             = GL_RGB,
+        BGR             = GL_BGR,
+        RGBA            = GL_RGBA,
+        BGRA            = GL_BGRA,
         DEPTH_COMPONENT = GL_DEPTH_COMPONENT,
-        DEPTH_STENCIL = GL_DEPTH_STENCIL
+        DEPTH_STENCIL   = GL_DEPTH_STENCIL
     };
 
     enum class PixelType : GLenum {
-        UNSIGNED_BYTE = GL_UNSIGNED_BYTE, 
-        BYTE = GL_BYTE, 
-        UNSIGNED_SHORT = GL_UNSIGNED_SHORT, 
-        SHORT = GL_SHORT, 
-        UNSIGNED_INT = GL_UNSIGNED_INT, 
-        INT = GL_INT, 
-        HALF_FLOAT = GL_HALF_FLOAT, 
-        FLOAT = GL_FLOAT, 
+        UNSIGNED_BYTE   = GL_UNSIGNED_BYTE, 
+        BYTE            = GL_BYTE, 
+        UNSIGNED_SHORT  = GL_UNSIGNED_SHORT, 
+        SHORT           = GL_SHORT, 
+        UNSIGNED_INT    = GL_UNSIGNED_INT, 
+        INT             = GL_INT, 
+        HALF_FLOAT      = GL_HALF_FLOAT, 
+        FLOAT           = GL_FLOAT, 
         UNSIGNED_BYTE_3_3_2 = GL_UNSIGNED_BYTE_3_3_2, 
         UNSIGNED_BYTE_2_3_3_REV = GL_UNSIGNED_BYTE_2_3_3_REV, 
         UNSIGNED_SHORT_5_6_5 = GL_UNSIGNED_SHORT_5_6_5, 
@@ -205,49 +217,46 @@ namespace ev2 {
 
     constexpr uint32_t NumTextureUnits = sizeof(TextureUnit) / sizeof(GLenum);
 
-    namespace {
 
-    void glUniform(const GLint& value, GLint location)      {glUniform1i(location, value);}
-    void glUniform(const GLuint& value, GLint location)     {glUniform1ui(location, value);}
-    void glUniform(const GLfloat& value, GLint location)    {glUniform1f(location, value);}
+    inline void glUniform(const GLint& value, GLint location)      {glUniform1i(location, value);}
+    inline void glUniform(const GLuint& value, GLint location)     {glUniform1ui(location, value);}
+    inline void glUniform(const GLfloat& value, GLint location)    {glUniform1f(location, value);}
     
-    void glUniform(const glm::ivec2& value, GLint location) {glUniform2i(location, value[0], value[1]);}
-    void glUniform(const glm::uvec2& value, GLint location) {glUniform2ui(location, value[0], value[1]);}
-    void glUniform(const glm::vec2& value, GLint location)  {glUniform2f(location, value[0], value[1]);}
+    inline void glUniform(const glm::ivec2& value, GLint location) {glUniform2i(location, value[0], value[1]);}
+    inline void glUniform(const glm::uvec2& value, GLint location) {glUniform2ui(location, value[0], value[1]);}
+    inline void glUniform(const glm::vec2& value, GLint location)  {glUniform2f(location, value[0], value[1]);}
 
-    void glUniform(const glm::ivec3& value, GLint location) {glUniform3i(location, value[0], value[1], value[2]);}
-    void glUniform(const glm::uvec3& value, GLint location) {glUniform3ui(location, value[0], value[1], value[2]);}
-    void glUniform(const glm::vec3& value, GLint location)  {glUniform3f(location, value[0], value[1], value[2]);}
+    inline void glUniform(const glm::ivec3& value, GLint location) {glUniform3i(location, value[0], value[1], value[2]);}
+    inline void glUniform(const glm::uvec3& value, GLint location) {glUniform3ui(location, value[0], value[1], value[2]);}
+    inline void glUniform(const glm::vec3& value, GLint location)  {glUniform3f(location, value[0], value[1], value[2]);}
 
-    void glUniform(const glm::ivec4& value, GLint location) {glUniform4i(location, value[0], value[1], value[2], value[3]);}
-    void glUniform(const glm::uvec4& value, GLint location) {glUniform4ui(location, value[0], value[1], value[2], value[3]);}
-    void glUniform(const glm::vec4& value, GLint location)  {glUniform4f(location, value[0], value[1], value[2], value[3]);}
+    inline void glUniform(const glm::ivec4& value, GLint location) {glUniform4i(location, value[0], value[1], value[2], value[3]);}
+    inline void glUniform(const glm::uvec4& value, GLint location) {glUniform4ui(location, value[0], value[1], value[2], value[3]);}
+    inline void glUniform(const glm::vec4& value, GLint location)  {glUniform4f(location, value[0], value[1], value[2], value[3]);}
 
-    void glUniform(const glm::mat3& value, GLint location)  {glUniformMatrix3fv(location, 1, GL_FALSE, &value[0][0]);}
-    void glUniform(const glm::mat4& value, GLint location)  {glUniformMatrix4fv(location, 1, GL_FALSE, &value[0][0]);}
+    inline void glUniform(const glm::mat3& value, GLint location)  {glUniformMatrix3fv(location, 1, GL_FALSE, &value[0][0]);}
+    inline void glUniform(const glm::mat4& value, GLint location)  {glUniformMatrix4fv(location, 1, GL_FALSE, &value[0][0]);}
 
     template<typename T>
-    constexpr DataType getGlEnumForType() {return DataType::UNKNOWN;}
+    inline constexpr DataType getGlEnumForType() {return DataType::UNKNOWN;}
     template<>
-    constexpr DataType getGlEnumForType<char>() {return DataType::BYTE;}
+    inline constexpr DataType getGlEnumForType<char>() {return DataType::BYTE;}
     template<>
-    constexpr DataType getGlEnumForType<unsigned char>() {return DataType::UNSIGNED_BYTE;}
+    inline constexpr DataType getGlEnumForType<unsigned char>() {return DataType::UNSIGNED_BYTE;}
     template<>
-    constexpr DataType getGlEnumForType<short>() {return DataType::SHORT;}
+    inline constexpr DataType getGlEnumForType<short>() {return DataType::SHORT;}
     template<>
-    constexpr DataType getGlEnumForType<unsigned short>() {return DataType::UNSIGNED_SHORT;}
+    inline constexpr DataType getGlEnumForType<unsigned short>() {return DataType::UNSIGNED_SHORT;}
     template<>
-    constexpr DataType getGlEnumForType<int>() {return DataType::INT;}
+    inline constexpr DataType getGlEnumForType<int>() {return DataType::INT;}
     template<>
-    constexpr DataType getGlEnumForType<unsigned int>() {return DataType::UNSIGNED_INT;}
+    inline constexpr DataType getGlEnumForType<unsigned int>() {return DataType::UNSIGNED_INT;}
     template<>
-    constexpr DataType getGlEnumForType<float>() {return DataType::FLOAT;}
+    inline constexpr DataType getGlEnumForType<float>() {return DataType::FLOAT;}
     template<>
-    constexpr DataType getGlEnumForType<double>() {return DataType::DOUBLE;}
-
-    }
+    inline constexpr DataType getGlEnumForType<double>() {return DataType::DOUBLE;}
     
     }
 }
 
-#endif // EV_GL_H
+#endif // EV2_GL_H
