@@ -111,7 +111,8 @@
 			"valarray": "cpp",
 			"*.inc": "cpp",
 			"bitset": "cpp",
-			"regex": "cpp"
+			"regex": "cpp",
+			"*.def": "cpp"
 		},
 		"cmake.buildDirectory": "${workspaceRoot}/build",
 		"glsllint.glslangValidatorPath": "../glslang-master-windows-x64-Release/bin/glslangValidator.exe"

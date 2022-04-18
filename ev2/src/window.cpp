@@ -145,15 +145,6 @@ input::MouseButton::Enum translateMouseButton(int _button)
     return input::MouseButton::Middle;
 }
 
-double getElapsedTime() {
-    static float lastTime = glfwGetTime();
-    double thisTime = glfwGetTime();
-    double delta = thisTime - lastTime;
-    lastTime = thisTime;
-    return delta;
-}
-
-
 } // namespace
 
 
@@ -336,13 +327,24 @@ public:
         glDebugMessageInsert(GL_DEBUG_SOURCE_APPLICATION, GL_DEBUG_TYPE_OTHER, 0, GL_DEBUG_SEVERITY_NOTIFICATION, 25, "TEST DEBUG MESSAGE");
     }
 
+    bool frame() {
+        // display frame
+        glfwSwapBuffers(window_ptr);
+        // update inputs
+        glfwPollEvents();
+        // mark this frame time
+        lastTime = glfwGetTime();
+
+        return !glfwWindowShouldClose(window_ptr);
+    }
+
     int run() {
-
+        lastTime = glfwGetTime();
         while(!glfwWindowShouldClose(window_ptr)) {
-            float dt = getElapsedTime();
-
+            double deltaTime = getDelta();
             // render
             // renderer->render(deltaTime);
+            lastTime = glfwGetTime();
 
             // display frame
             glfwSwapBuffers(window_ptr);
@@ -351,6 +353,14 @@ public:
         }
 
         return 0;
+    }
+
+    double getDelta() {
+        return glfwGetTime() - lastTime;
+    }
+
+    void setWindowTitle(const std::string& title) {
+        glfwSetWindowTitle(window_ptr, title.data());
     }
 
     double scroll_pos = 0;
@@ -366,6 +376,8 @@ private:
     static void dropFileCb(GLFWwindow* _window, int32_t _count, const char** _filePaths);
 
     GLFWwindow* window_ptr;
+
+    double lastTime = 0;
 };
 
 static std::unique_ptr<Context> static_context;
@@ -441,8 +453,22 @@ void Context::dropFileCb(GLFWwindow* _window, int32_t _count, const char** _file
         }
 }
 
+namespace ev2::window {
 
-// void Window::setMouseCursorVisible(bool visible) {
+void init(const Args& args) {
+    static_context = std::make_unique<Context>();
+    static_context->init();
+}
+
+bool frame() {
+    return static_context->frame();
+}
+
+void setWindowTitle(const std::string& title) {
+    static_context->setWindowTitle(title);
+}
+
+// void setMouseCursorVisible(bool visible) {
 //     if(visible) {
 //         glfwSetInputMode(window_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 //     } else {
@@ -451,7 +477,7 @@ void Context::dropFileCb(GLFWwindow* _window, int32_t _count, const char** _file
 //     mouseCursorVisible = visible;
 // }
 
-// void Window::updateMouseVel() {
+// void updateMouseVel() {
 //     if(!mouseCursorVisible) {
 //         mouseVelocity = (mousePosition - prevMousePosition) * (double)deltaTime;
 //     } else {
@@ -459,12 +485,5 @@ void Context::dropFileCb(GLFWwindow* _window, int32_t _count, const char** _file
 //     }
 //     prevMousePosition = mousePosition;
 // }
-
-namespace ev2::window {
-
-void init(const Args& args) {
-    static_context = std::make_unique<Context>();
-    static_context->init();
-}
 
 }

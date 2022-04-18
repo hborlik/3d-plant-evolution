@@ -9,7 +9,17 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-static glm::vec3 CalcNormal(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2)
+#include <buffer.h>
+
+struct DrawObject {
+    ev2::Buffer vb;  // vertex buffer
+    int numTriangles;
+    size_t material_id;
+};
+
+namespace {
+
+glm::vec3 CalcNormal(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2)
 {
     glm::vec3 v10 = v1 - v0;
     glm::vec3 v20 = v2 - v0;
@@ -106,7 +116,7 @@ void computeSmoothingNormals(const tinyobj::attrib_t &attrib, const tinyobj::sha
 
 } // computeSmoothingNormals
 
-static void computeAllSmoothingNormals(tinyobj::attrib_t &attrib,
+void computeAllSmoothingNormals(tinyobj::attrib_t &attrib,
                                        std::vector<tinyobj::shape_t> &shapes)
 {
     glm::vec3 p[3];
@@ -160,7 +170,7 @@ static void computeAllSmoothingNormals(tinyobj::attrib_t &attrib,
     }
 }
 
-static void computeSmoothingShape(tinyobj::attrib_t &inattrib, tinyobj::shape_t &inshape,
+void computeSmoothingShape(tinyobj::attrib_t &inattrib, tinyobj::shape_t &inshape,
                                   std::vector<std::pair<unsigned int, unsigned int>> &sortedids,
                                   unsigned int idbegin, unsigned int idend,
                                   std::vector<tinyobj::shape_t> &outshapes,
@@ -221,7 +231,7 @@ static void computeSmoothingShape(tinyobj::attrib_t &inattrib, tinyobj::shape_t 
     }
 }
 
-static void computeSmoothingShapes(tinyobj::attrib_t &inattrib,
+void computeSmoothingShapes(tinyobj::attrib_t &inattrib,
                                    std::vector<tinyobj::shape_t> &inshapes,
                                    std::vector<tinyobj::shape_t> &outshapes,
                                    tinyobj::attrib_t &outattrib)
@@ -252,11 +262,13 @@ static void computeSmoothingShapes(tinyobj::attrib_t &inattrib,
     }
 }
 
-bool LoadObjAndConvert(float bmin[3], float bmax[3],
+} // namespace
+
+bool LoadObjAndConvert(glm::vec3& bmin, glm::vec3& bmax,
                        std::vector<DrawObject> *drawObjects,
                        std::vector<tinyobj::material_t> &materials,
-                       std::map<std::string, GLuint> &textures,
-                       const char *filename,
+                    //    std::map<std::string, GLuint> &textures,
+                       const std::string& filename,
                        std::string base_dir)
 {
     tinyobj::attrib_t inattrib;
@@ -274,7 +286,7 @@ bool LoadObjAndConvert(float bmin[3], float bmax[3],
 
     std::string warn;
     std::string err;
-    bool ret = tinyobj::LoadObj(&inattrib, &inshapes, &materials, &warn, &err, filename,
+    bool ret = tinyobj::LoadObj(&inattrib, &inshapes, &materials, &warn, &err, filename.data(),
                                 base_dir.c_str());
     if (!warn.empty())
     {
@@ -307,69 +319,69 @@ bool LoadObjAndConvert(float bmin[3], float bmax[3],
     }
 
     // Load diffuse textures
-    {
-        for (size_t m = 0; m < materials.size(); m++)
-        {
-            tinyobj::material_t *mp = &materials[m];
+    // {
+    //     for (size_t m = 0; m < materials.size(); m++)
+    //     {
+    //         tinyobj::material_t *mp = &materials[m];
 
-            if (mp->diffuse_texname.length() > 0)
-            {
-                // Only load the texture if it is not already loaded
-                if (textures.find(mp->diffuse_texname) == textures.end())
-                {
-                    GLuint texture_id;
-                    int w, h;
-                    int comp;
+    //         if (mp->diffuse_texname.length() > 0)
+    //         {
+    //             // Only load the texture if it is not already loaded
+    //             if (textures.find(mp->diffuse_texname) == textures.end())
+    //             {
+    //                 GLuint texture_id;
+    //                 int w, h;
+    //                 int comp;
 
-                    std::string texture_filename = mp->diffuse_texname;
-                    if (!FileExists(texture_filename))
-                    {
-                        // Append base dir.
-                        texture_filename = base_dir + mp->diffuse_texname;
-                        if (!FileExists(texture_filename))
-                        {
-                            std::cerr << "Unable to find file: " << mp->diffuse_texname
-                                      << std::endl;
-                            exit(1);
-                        }
-                    }
+    //                 std::string texture_filename = mp->diffuse_texname;
+    //                 if (!FileExists(texture_filename))
+    //                 {
+    //                     // Append base dir.
+    //                     texture_filename = base_dir + mp->diffuse_texname;
+    //                     if (!FileExists(texture_filename))
+    //                     {
+    //                         std::cerr << "Unable to find file: " << mp->diffuse_texname
+    //                                   << std::endl;
+    //                         exit(1);
+    //                     }
+    //                 }
 
-                    unsigned char *image =
-                        stbi_load(texture_filename.c_str(), &w, &h, &comp, STBI_default);
-                    if (!image)
-                    {
-                        std::cerr << "Unable to load texture: " << texture_filename
-                                  << std::endl;
-                        exit(1);
-                    }
-                    std::cout << "Loaded texture: " << texture_filename << ", w = " << w
-                              << ", h = " << h << ", comp = " << comp << std::endl;
+    //                 unsigned char *image =
+    //                     stbi_load(texture_filename.c_str(), &w, &h, &comp, STBI_default);
+    //                 if (!image)
+    //                 {
+    //                     std::cerr << "Unable to load texture: " << texture_filename
+    //                               << std::endl;
+    //                     exit(1);
+    //                 }
+    //                 std::cout << "Loaded texture: " << texture_filename << ", w = " << w
+    //                           << ", h = " << h << ", comp = " << comp << std::endl;
 
-                    glGenTextures(1, &texture_id);
-                    glBindTexture(GL_TEXTURE_2D, texture_id);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                    if (comp == 3)
-                    {
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB,
-                                     GL_UNSIGNED_BYTE, image);
-                    }
-                    else if (comp == 4)
-                    {
-                        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
-                                     GL_UNSIGNED_BYTE, image);
-                    }
-                    else
-                    {
-                        assert(0); // TODO
-                    }
-                    glBindTexture(GL_TEXTURE_2D, 0);
-                    stbi_image_free(image);
-                    textures.insert(std::make_pair(mp->diffuse_texname, texture_id));
-                }
-            }
-        }
-    }
+    //                 glGenTextures(1, &texture_id);
+    //                 glBindTexture(GL_TEXTURE_2D, texture_id);
+    //                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    //                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //                 if (comp == 3)
+    //                 {
+    //                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB,
+    //                                  GL_UNSIGNED_BYTE, image);
+    //                 }
+    //                 else if (comp == 4)
+    //                 {
+    //                     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA,
+    //                                  GL_UNSIGNED_BYTE, image);
+    //                 }
+    //                 else
+    //                 {
+    //                     assert(0); // TODO
+    //                 }
+    //                 glBindTexture(GL_TEXTURE_2D, 0);
+    //                 stbi_image_free(image);
+    //                 textures.insert(std::make_pair(mp->diffuse_texname, texture_id));
+    //             }
+    //         }
+    //     }
+    // }
 
     bmin[0] = bmin[1] = bmin[2] = std::numeric_limits<float>::max();
     bmax[0] = bmax[1] = bmax[2] = -std::numeric_limits<float>::max();
@@ -389,7 +401,6 @@ bool LoadObjAndConvert(float bmin[3], float bmax[3],
     {
         for (size_t s = 0; s < shapes.size(); s++)
         {
-            DrawObject o;
             std::vector<float> buffer; // pos(3float), normal(3float), color(3float)
 
             // Check for smoothing group and compute smoothing normals
@@ -468,7 +479,7 @@ bool LoadObjAndConvert(float bmin[3], float bmax[3],
                     tc[2][1] = 0.0f;
                 }
 
-                float v[3][3];
+                glm::vec3 v[3];
                 for (int k = 0; k < 3; k++)
                 {
                     int f0 = idx0.vertex_index;
@@ -489,7 +500,7 @@ bool LoadObjAndConvert(float bmin[3], float bmax[3],
                     bmax[k] = std::max(v[2][k], bmax[k]);
                 }
 
-                float n[3][3];
+                glm::vec3 n[3];
                 {
                     bool invalid_normal_index = false;
                     if (attrib.normals.size() > 0)
@@ -530,17 +541,9 @@ bool LoadObjAndConvert(float bmin[3], float bmax[3],
 
                         if (f0 >= 0 && f1 >= 0 && f2 >= 0)
                         {
-                            n[0][0] = smoothVertexNormals[f0].v[0];
-                            n[0][1] = smoothVertexNormals[f0].v[1];
-                            n[0][2] = smoothVertexNormals[f0].v[2];
-
-                            n[1][0] = smoothVertexNormals[f1].v[0];
-                            n[1][1] = smoothVertexNormals[f1].v[1];
-                            n[1][2] = smoothVertexNormals[f1].v[2];
-
-                            n[2][0] = smoothVertexNormals[f2].v[0];
-                            n[2][1] = smoothVertexNormals[f2].v[1];
-                            n[2][2] = smoothVertexNormals[f2].v[2];
+                            n[0] = smoothVertexNormals[f0];
+                            n[1] = smoothVertexNormals[f1];
+                            n[2] = smoothVertexNormals[f2];
 
                             invalid_normal_index = false;
                         }
@@ -549,13 +552,9 @@ bool LoadObjAndConvert(float bmin[3], float bmax[3],
                     if (invalid_normal_index)
                     {
                         // compute geometric normal
-                        CalcNormal(n[0], v[0], v[1], v[2]);
-                        n[1][0] = n[0][0];
-                        n[1][1] = n[0][1];
-                        n[1][2] = n[0][2];
-                        n[2][0] = n[0][0];
-                        n[2][1] = n[0][1];
-                        n[2][2] = n[0][2];
+                        n[0] = CalcNormal(v[0], v[1], v[2]);
+                        n[1] = n[0];
+                        n[2] = n[0];
                     }
                 }
 
@@ -591,36 +590,33 @@ bool LoadObjAndConvert(float bmin[3], float bmax[3],
                 }
             }
 
-            o.vb_id = 0;
-            o.numTriangles = 0;
-
-            // OpenGL viewer does not support texturing with per-face material.
-            if (shapes[s].mesh.material_ids.size() > 0 &&
-                shapes[s].mesh.material_ids.size() > s)
-            {
-                o.material_id = shapes[s].mesh.material_ids[0]; // use the material ID
-                                                                // of the first face.
-            }
-            else
-            {
-                o.material_id = materials.size() - 1; // = ID for default material.
-            }
-            printf("shape[%d] material_id %d\n", int(s), int(o.material_id));
-
             if (buffer.size() > 0)
             {
-                glGenBuffers(1, &o.vb_id);
-                glBindBuffer(GL_ARRAY_BUFFER, o.vb_id);
-                glBufferData(GL_ARRAY_BUFFER, buffer.size() * sizeof(float),
-                             &buffer.at(0), GL_STATIC_DRAW);
+                DrawObject o{ev2::Buffer{ev2::gl::BindingTarget::ARRAY, ev2::gl::Usage::STATIC_DRAW}, 0, 0};
+                o.vb.CopyData(buffer);
+
                 o.numTriangles = buffer.size() / (3 + 3 + 3 + 2) /
                                  3; // 3:vtx, 3:normal, 3:col, 2:texcoord
 
                 printf("shape[%d] # of triangles = %d\n", static_cast<int>(s),
                        o.numTriangles);
+
+                // OpenGL viewer does not support texturing with per-face material.
+                if (shapes[s].mesh.material_ids.size() > 0 &&
+                    shapes[s].mesh.material_ids.size() > s)
+                {
+                    o.material_id = shapes[s].mesh.material_ids[0]; // use the material ID
+                                                                    // of the first face.
+                }
+                else
+                {
+                    o.material_id = materials.size() - 1; // = ID for default material.
+                }
+                printf("shape[%d] material_id %d\n", int(s), int(o.material_id));
+
+                drawObjects->push_back(std::move(o));
             }
 
-            drawObjects->push_back(o);
         }
     }
 

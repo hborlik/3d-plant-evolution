@@ -23,8 +23,12 @@ public:
     virtual ~Buffer();
 
     Buffer(const Buffer& o) = delete;
-    Buffer(Buffer&& o) = delete;
     Buffer& operator=(const Buffer&) = delete;
+
+    Buffer(Buffer&& o) : target{o.target}, usage{o.usage} {
+        std::swap(gl_reference, o.gl_reference);
+    }
+
     Buffer& operator=(Buffer&&) = delete;
 
     /**
@@ -76,6 +80,14 @@ public:
     GLuint Handle() noexcept { return gl_reference; }
 
     /**
+     * @brief Get the size in bytes of buffer
+     * 
+     * @return size_t 
+     */
+    size_t size() const noexcept { return buf_size; }
+
+
+    /**
      * @brief intended binding target of this buffer
      */
     const gl::BindingTarget target;
@@ -85,13 +97,6 @@ public:
      */
     const gl::Usage usage;
 
-    /**
-     * @brief Get the size in bytes of buffer
-     * 
-     * @return size_t 
-     */
-    size_t size() const noexcept { return buf_size; }
-
 private:
 
     /**
@@ -99,7 +104,7 @@ private:
      */
     size_t buf_size;
 
-    GLuint gl_reference;
+    GLuint gl_reference = -1;
 };
 
 template<typename T>
@@ -112,6 +117,13 @@ void Buffer::CopyData(const std::vector<T>& source) {
     }
 }
 
+/**
+ * @brief single element update in buffer data, offset and size must define a range lying entirely within the buffer object's data store
+ * 
+ * @tparam T 
+ * @param source 
+ * @param offset 
+ */
 template<typename T>//, typename>
 void Buffer::SubData(const T& source, uint32_t offset) {
     glBindBuffer((GLenum)target, gl_reference);
@@ -119,6 +131,14 @@ void Buffer::SubData(const T& source, uint32_t offset) {
     glBindBuffer((GLenum)target, 0);
 }
 
+/**
+ * @brief update array, offset and size must define a range lying entirely within the buffer object's data store
+ * 
+ * @tparam T 
+ * @param source 
+ * @param offset 
+ * @param stride 
+ */
 template<typename T>
 void Buffer::SubData(const std::vector<T>& source, uint32_t offset, uint32_t stride) {
     if(!source.empty()) {
@@ -129,6 +149,10 @@ void Buffer::SubData(const std::vector<T>& source, uint32_t offset, uint32_t str
         glBindBuffer((GLenum)target, 0);
     }
 }
+
+class VertexBuffer {
+
+};
 
 } // ev2
 

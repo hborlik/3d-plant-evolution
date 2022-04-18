@@ -7,10 +7,17 @@
 #ifndef EV2_MESH_H
 #define EV2_MESH_H
 
+#include <memory>
+
+#include <buffer.h>
+
 namespace ev2 {
 
 class Mesh {
-
+public:
+    void init();
+private:
+    std::unique_ptr<VertexBuffer> vb;
 };
 
 }
