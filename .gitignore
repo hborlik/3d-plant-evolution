@@ -5,4 +5,4 @@ build/*
 
 !*.gitkeep
 
-*/asset/*
+testapp/asset/models/*
