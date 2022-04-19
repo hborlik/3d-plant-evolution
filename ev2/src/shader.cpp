@@ -15,9 +15,7 @@
 #include <algorithm>
 
 #include <shader.h>
-// #include <material.h>
 #include <uniform.h>
-// #include <texture.h>
 
 using namespace ev2;
 
