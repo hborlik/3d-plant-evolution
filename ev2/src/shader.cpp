@@ -64,8 +64,6 @@ Shader::~Shader() {
 void Shader::LoadFrom(const std::filesystem::path& path) {
     std::ifstream in{path};
     // make sure the file exists
-    std::cout << path.generic_string();
-
     EV2_CHECK_THROW(in.is_open(), "Shader File not found at " + path.generic_string());
     // copy out file contents
     std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
