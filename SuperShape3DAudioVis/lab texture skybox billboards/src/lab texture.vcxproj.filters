@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Program.cpp" />
+    <ClCompile Include="..\ext\glad\src\glad.c">
+      <Filter>ext</Filter>
+    </ClCompile>
+    <ClCompile Include="GLSL.cpp" />
+    <ClCompile Include="WindowManager.cpp" />
+    <ClCompile Include="MatrixStack.cpp" />
+    <ClCompile Include="Shape.cpp" />
+    <ClCompile Include="Bmp.cpp" />
+    <ClCompile Include="Sphere.cpp" />
+    <ClCompile Include="recordAudio.cpp" />
+    <ClCompile Include="kiss_fft.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Program.h" />
+    <ClInclude Include="GLSL.h" />
+    <ClInclude Include="WindowManager.h" />
+    <ClInclude Include="MatrixStack.h" />
+    <ClInclude Include="Shape.h" />
+    <ClInclude Include="tiny_obj_loader.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="Bmp.h" />
+    <ClInclude Include="Sphere.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="freeglut\include\GL\freeglut.h" />
+    <ClInclude Include="freeglut\include\GL\freeglut_ext.h" />
+    <ClInclude Include="freeglut\include\GL\freeglut_std.h" />
+    <ClInclude Include="freeglut\include\GL\glut.h" />
+    <ClInclude Include="glut\include\GL\glut.h" />
+    <ClInclude Include="recordAudio.h" />
+    <ClInclude Include="kiss_fft.h" />
+    <ClInclude Include="kissfft.hh" />
+    <ClInclude Include="_kiss_fft_guts.h" />
+    <ClInclude Include="glut.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="ext">
+      <UniqueIdentifier>{a1735e5b-c01d-45eb-b937-869f0ba27591}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\resources\shader_fragment.glsl" />
+    <None Include="..\resources\shader_vertex.glsl" />
+    <None Include="..\resources\skyfrag.glsl" />
+    <None Include="..\resources\skyvertex.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="lab texture.rc" />
+  </ItemGroup>
+</Project>
