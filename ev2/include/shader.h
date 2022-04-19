@@ -13,6 +13,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include <filesystem>
 
 #include <ev.h>
 #include <ev_gl.h>
@@ -83,7 +84,7 @@ namespace ev2
          *
          * @param path path to shader code file
          */
-        void LoadFrom(const std::string &path);
+        void LoadFrom(const std::filesystem::path &path);
 
         /**
          * @brief Get the shader type
@@ -94,7 +95,7 @@ namespace ev2
 
         bool IsCompiled() const noexcept { return compiled; }
 
-        std::string shaderPath() const noexcept { return path; }
+        std::filesystem::path shaderPath() const noexcept { return path; }
 
         /**
          * @brief return opengl reference, for this shader program
@@ -107,7 +108,7 @@ namespace ev2
         GLuint gl_reference;
         gl::GLSLShaderType type;
         bool compiled = false;
-        std::string path;
+        std::filesystem::path path;
     };
 
     class Buffer;
@@ -179,7 +180,7 @@ namespace ev2
          *
          * @param program
          */
-        void loadShader(gl::GLSLShaderType type, const std::string &path);
+        void loadShader(gl::GLSLShaderType type, const std::filesystem::path &path);
 
         /**
          * @brief Load, Compile, and Link shader programs

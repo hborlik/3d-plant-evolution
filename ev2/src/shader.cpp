@@ -61,10 +61,12 @@ Shader::~Shader() {
         glDeleteShader(gl_reference);
 }
 
-void Shader::LoadFrom(const std::string& path) {
+void Shader::LoadFrom(const std::filesystem::path& path) {
     std::ifstream in{path};
     // make sure the file exists
-    EV2_CHECK_THROW(in.is_open(), "Shader File not found at " + path);
+    std::cout << path.generic_string();
+
+    EV2_CHECK_THROW(in.is_open(), "Shader File not found at " + path.generic_string());
     // copy out file contents
     std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
     in.close();
@@ -93,7 +95,7 @@ void Shader::LoadFrom(const std::string& path) {
 
             std::cout << "Shader Log for " << path << ":\n" << std::string{log.begin(), log.end()} << std::endl;
         }
-        throw shader_error{path, "Failed to compile shader"};
+        throw shader_error{path.generic_string(), "Failed to compile shader"};
     }
 }
 
@@ -114,7 +116,7 @@ Program::~Program() {
         glDeleteProgram(gl_reference);
 }
 
-void Program::loadShader(gl::GLSLShaderType type, const std::string& path) {
+void Program::loadShader(gl::GLSLShaderType type, const std::filesystem::path& path) {
     Shader s{type};
     s.LoadFrom(path);
     attachedShaders.emplace(std::pair(type, std::move(s)));
