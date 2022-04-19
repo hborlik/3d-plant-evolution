@@ -150,10 +150,6 @@ void Buffer::SubData(const std::vector<T>& source, uint32_t offset, uint32_t str
     }
 }
 
-class VertexBuffer {
-
-};
-
 } // ev2
 
 #endif // EV2_BUFFER_H

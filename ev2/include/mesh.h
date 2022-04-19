@@ -10,14 +10,32 @@
 #include <memory>
 
 #include <buffer.h>
+#include <material.h>
 
 namespace ev2 {
 
-class Mesh {
+class VertexBuffer {
 public:
-    void init();
+    Buffer vb;
+
 private:
-    std::unique_ptr<VertexBuffer> vb;
+    GLuint gl_vbo;
+};
+
+struct Mesh {
+    size_t start_index;
+    size_t num_elements;
+    size_t material_id;
+};
+
+class Model {
+public:
+    std::vector<Mesh> meshes;
+    std::vector<Material> materials;
+
+    VertexBuffer buffer;
+
+    void draw();
 };
 
 }

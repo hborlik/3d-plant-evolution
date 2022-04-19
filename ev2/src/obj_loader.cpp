@@ -10,6 +10,7 @@
 #include <tiny_obj_loader.h>
 
 #include <buffer.h>
+#include <resource.h>
 
 struct DrawObject {
     ev2::Buffer vb;  // vertex buffer
@@ -264,7 +265,9 @@ void computeSmoothingShapes(tinyobj::attrib_t &inattrib,
 
 } // namespace
 
-bool LoadObjAndConvert(glm::vec3& bmin, glm::vec3& bmax,
+namespace ev2 {
+
+bool LoadObj(glm::vec3& bmin, glm::vec3& bmax,
                        std::vector<DrawObject> *drawObjects,
                        std::vector<tinyobj::material_t> &materials,
                     //    std::map<std::string, GLuint> &textures,
@@ -625,3 +628,5 @@ bool LoadObjAndConvert(glm::vec3& bmin, glm::vec3& bmax,
 
     return true;
 }
+
+} // namespace ev2
