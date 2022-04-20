@@ -25,6 +25,12 @@ struct Plane {
         p /= glm::length(glm::vec3(p));
     }
 
+    /**
+     * @brief Normalized plane required
+     * 
+     * @param point 
+     * @return float 
+     */
     inline float distanceFromPlane(glm::vec3 point) const noexcept {
         return p.x * point.x + p.y * point.y + p.z * point.z + p.w;
     }

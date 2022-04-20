@@ -13,8 +13,8 @@
 #include <resource.h>
 
 struct DrawObject {
-    ev2::Buffer vb;  // vertex buffer
-    int numTriangles;
+    size_t start;
+    size_t numTriangles;
     size_t material_id;
 };
 
@@ -265,14 +265,13 @@ void computeSmoothingShapes(tinyobj::attrib_t &inattrib,
 
 } // namespace
 
-namespace ev2 {
-
-bool LoadObj(glm::vec3& bmin, glm::vec3& bmax,
-                       std::vector<DrawObject> *drawObjects,
-                       std::vector<tinyobj::material_t> &materials,
+static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
+                        std::vector<DrawObject> *drawObjects,
+                        std::vector<tinyobj::material_t> &materials,
                     //    std::map<std::string, GLuint> &textures,
-                       const std::string& filename,
-                       std::string base_dir)
+                        std::vector<float> &buffer,
+                        const std::string &filename,
+                        std::string base_dir)
 {
     tinyobj::attrib_t inattrib;
     std::vector<tinyobj::shape_t> inshapes;
@@ -402,10 +401,10 @@ bool LoadObj(glm::vec3& bmin, glm::vec3& bmax,
     tinyobj::attrib_t &attrib = regen_all_normals ? outattrib : inattrib;
 
     {
+        //std::vector<float> buffer; // pos(3float), normal(3float), color(3float), texcoord(2float)
         for (size_t s = 0; s < shapes.size(); s++)
         {
-            std::vector<float> buffer; // pos(3float), normal(3float), color(3float)
-
+            size_t buffer_start = buffer.size();
             // Check for smoothing group and compute smoothing normals
             std::map<int, glm::vec3> smoothVertexNormals;
             if (!regen_all_normals && (hasSmoothingGroup(shapes[s]) > 0))
@@ -593,12 +592,11 @@ bool LoadObj(glm::vec3& bmin, glm::vec3& bmax,
                 }
             }
 
-            if (buffer.size() > 0)
+            if (buffer.size() - buffer_start > 0)
             {
-                DrawObject o{ev2::Buffer{ev2::gl::BindingTarget::ARRAY, ev2::gl::Usage::STATIC_DRAW}, 0, 0};
-                o.vb.CopyData(buffer);
+                DrawObject o{buffer_start, 0, 0};
 
-                o.numTriangles = buffer.size() / (3 + 3 + 3 + 2) /
+                o.numTriangles = (buffer.size() - buffer_start) / (3 + 3 + 3 + 2) /
                                  3; // 3:vtx, 3:normal, 3:col, 2:texcoord
 
                 printf("shape[%d] # of triangles = %d\n", static_cast<int>(s),
@@ -621,12 +619,58 @@ bool LoadObj(glm::vec3& bmin, glm::vec3& bmax,
             }
 
         }
+
     }
 
     printf("bmin = %f, %f, %f\n", bmin[0], bmin[1], bmin[2]);
     printf("bmax = %f, %f, %f\n", bmax[0], bmax[1], bmax[2]);
 
     return true;
+}
+
+namespace ev2 {
+
+std::unique_ptr<Model> loadObj(const std::string& filename, const std::string& base_dir) {
+    glm::vec3 bmin, bmax;
+    std::vector<DrawObject> drawObjects;
+    std::vector<tinyobj::material_t> materials;
+    std::vector<float> buffer;
+    bool success = LoadObjAndConvert(bmin, bmax, &drawObjects, materials, buffer, filename, base_dir);
+    if (success) {
+        std::vector<Material> ev_materials(materials.size());
+        std::vector<Mesh> ev_mesh(drawObjects.size());
+        size_t i = 0;
+        for (auto& m : materials) {
+            // copy materials
+            ev_materials[i++] = Material {
+                m.name
+                ,glm::vec3{m.ambient[0], m.ambient[1], m.ambient[2]}
+                ,glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]}
+                ,glm::vec3{m.specular[0], m.specular[1], m.specular[2]}
+                ,glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}
+                ,glm::vec3{m.emission[0], m.emission[1], m.emission[2]}
+                ,m.shininess
+                ,m.ior
+                ,m.dissolve
+                ,m.ambient_texname
+                ,m.diffuse_texname
+                ,m.specular_texname
+                ,m.specular_highlight_texname
+                ,m.bump_texname
+                ,m.displacement_texname
+                ,m.alpha_texname
+                ,m.reflection_texname
+            };
+        }
+
+        Model model {
+
+        };
+
+        VertexBuffer vb = VertexBuffer::vbInitArrayVertexData(buffer);
+
+    }
+    return {};
 }
 
 } // namespace ev2

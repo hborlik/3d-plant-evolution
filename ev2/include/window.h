@@ -24,6 +24,7 @@ namespace ev2::window {
 void init(const Args& args);
 void setWindowTitle(const std::string& title);
 
+double getFrameTime();
 bool frame();
 
 

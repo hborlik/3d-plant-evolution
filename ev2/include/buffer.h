@@ -20,6 +20,13 @@ class Buffer {
 public:
 
     Buffer(gl::BindingTarget target, gl::Usage usage);
+
+    template<typename T>
+    Buffer(gl::BindingTarget target, gl::Usage usage, const std::vector<T>& data) : target{target}, usage{usage} {
+        glGenBuffers(1, &gl_reference);
+        CopyData(data);
+    }
+
     virtual ~Buffer();
 
     Buffer(const Buffer& o) = delete;

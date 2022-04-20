@@ -217,6 +217,11 @@ namespace ev2 {
 
     constexpr uint32_t NumTextureUnits = sizeof(TextureUnit) / sizeof(GLenum);
 
+    constexpr uint32_t VERTEX_BINDING_LOCATION = 0;
+    constexpr uint32_t NORMAL_BINDING_LOCATION = 1;
+    constexpr uint32_t COLOR_BINDING_LOCATION = 2;
+    constexpr uint32_t TEXCOORD_BINDING_LOCATION = 3;
+
 
     inline void glUniform(const GLint& value, GLint location)      {glUniform1i(location, value);}
     inline void glUniform(const GLuint& value, GLint location)     {glUniform1ui(location, value);}

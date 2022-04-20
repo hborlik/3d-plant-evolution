@@ -21,11 +21,7 @@ public:
     
 };
 
-bool loadObj(std::vector<DrawObject>& drawObjects,
-                       std::vector<Material> &mats,
-                    //    std::map<std::string, GLuint> &textures,
-                       const std::string& filename,
-                       std::string base_dir);
+std::unique_ptr<Model> loadObj(const std::string& filename, const std::string& base_dir);
 
 }
 
