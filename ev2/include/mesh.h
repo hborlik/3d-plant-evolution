@@ -30,6 +30,9 @@ public:
         if (gl_vao != -1)
             glDeleteVertexArrays(1, &gl_vao);
     }
+
+    void bind() const {glBindVertexArray(gl_vao);}
+    void unbind() const {glBindVertexArray(0);}
     
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<float>& vertex_colors);
     
@@ -55,13 +58,22 @@ struct Mesh {
 
 class Model {
 public:
-    std::vector<Mesh> meshes;
-    std::vector<Material> materials;
+    Model(std::vector<Mesh> meshes, std::vector<Material> materials, glm::vec3 bmin, glm::vec3 bmax, VertexBuffer&& vb) : 
+        meshes{std::move(meshes)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, vb{std::move(vb)} {}
+    
+    std::vector<Mesh>       meshes;
+    std::vector<Material>   materials;
 
-    std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> normals;
+    glm::vec3 bmin, bmax;
 
     VertexBuffer vb;
+
+    void draw();
+};
+
+struct VisualInstance {
+    glm::mat4   transform;
+    Model*      model;
 };
 
 }

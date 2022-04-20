@@ -364,6 +364,12 @@ public:
         glfwSetWindowTitle(window_ptr, title.data());
     }
 
+    glm::vec2 getCursor() const {
+        double x, y;
+        glfwGetCursorPos(window_ptr, &x, &y);
+        return {x, y};
+    }
+
     double scroll_pos = 0;
     Application* application = nullptr;
 
@@ -461,12 +467,24 @@ void init(const Args& args) {
     static_context->init();
 }
 
+double getFrameTime() {
+    return static_context->getDelta();
+}
+
 bool frame() {
     return static_context->frame();
 }
 
 void setWindowTitle(const std::string& title) {
     static_context->setWindowTitle(title);
+}
+
+void setApplication(Application* app) {
+    static_context->application = app;
+}
+
+glm::vec2 getCursorPosition() {
+    return static_context->getCursor();
 }
 
 // void setMouseCursorVisible(bool visible) {

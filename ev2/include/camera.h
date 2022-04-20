@@ -28,48 +28,85 @@ public:
         auto& Near = f.near();
         auto& Far = f.far();
 
-        Left.x = comp[0][3] + comp[0][0]; 
-        Left.y = comp[1][3] + comp[1][0]; 
-        Left.z = comp[2][3] + comp[2][0]; 
-        Left.w = comp[3][3] + comp[3][0];
-        Left /= length(vec3{Left});
+        Left.p.x = comp[0][3] + comp[0][0]; 
+        Left.p.y = comp[1][3] + comp[1][0]; 
+        Left.p.z = comp[2][3] + comp[2][0]; 
+        Left.p.w = comp[3][3] + comp[3][0];
+        Left.normalize();
 
-        Right.x = comp[0][3] - comp[0][0];
-        Right.y = comp[1][3] - comp[1][0];
-        Right.z = comp[2][3] - comp[2][0];
-        Right.w = comp[3][3] - comp[3][0];
-        Right /= length(vec3{Right});
+        Right.p.x = comp[0][3] - comp[0][0];
+        Right.p.y = comp[1][3] - comp[1][0];
+        Right.p.z = comp[2][3] - comp[2][0];
+        Right.p.w = comp[3][3] - comp[3][0];
+        Right.normalize();
 
-        Bottom.x = comp[0][3] + comp[0][1];
-        Bottom.y = comp[1][3] + comp[1][1];
-        Bottom.z = comp[2][3] + comp[2][1];
-        Bottom.w = comp[3][3] + comp[3][1];
-        Bottom /= length(vec3{Bottom});
+        Bottom.p.x = comp[0][3] + comp[0][1];
+        Bottom.p.y = comp[1][3] + comp[1][1];
+        Bottom.p.z = comp[2][3] + comp[2][1];
+        Bottom.p.w = comp[3][3] + comp[3][1];
+        Bottom.normalize();
 
-        Top.x = comp[0][3] - comp[0][1];
-        Top.y = comp[1][3] - comp[1][1];
-        Top.z = comp[2][3] - comp[2][1];
-        Top.w = comp[3][3] - comp[3][1];
-        Top /= length(vec3{Top});
+        Top.p.x = comp[0][3] - comp[0][1];
+        Top.p.y = comp[1][3] - comp[1][1];
+        Top.p.z = comp[2][3] - comp[2][1];
+        Top.p.w = comp[3][3] - comp[3][1];
+        Top.normalize();
 
-        Near.x = comp[0][3] + comp[0][2];
-        Near.y = comp[1][3] + comp[1][2];
-        Near.z = comp[2][3] + comp[2][2];
-        Near.w = comp[3][3] + comp[3][2];
-        Near /= length(vec3{Near});
+        Near.p.x = comp[0][3] + comp[0][2];
+        Near.p.y = comp[1][3] + comp[1][2];
+        Near.p.z = comp[2][3] + comp[2][2];
+        Near.p.w = comp[3][3] + comp[3][2];
+        Near.normalize();
 
-        Far.x = comp[0][3] - comp[0][2];
-        Far.y = comp[1][3] - comp[1][2];
-        Far.z = comp[2][3] - comp[2][2];
-        Far.w = comp[3][3] - comp[3][2];
-        Far /= length(vec3{Far});
+        Far.p.x = comp[0][3] - comp[0][2];
+        Far.p.y = comp[1][3] - comp[1][2];
+        Far.p.z = comp[2][3] - comp[2][2];
+        Far.p.w = comp[3][3] - comp[3][2];
+        Far.normalize();
 
         return f;
     }
 
+    void forceUpdateInternal() const {
+        view = glm::inverse(glm::translate(glm::identity<glm::mat4>(), position) * glm::mat4_cast(rotation));
+        composite = projection * view;
+        dirty = false;
+    }
+
+    glm::mat4 getView() const {
+        if (dirty)
+            forceUpdateInternal();
+        return view;
+    }
+
+    glm::mat4 getProjection() const {return projection;}
+    glm::vec3 getPosition() const {return position;}
+    glm::quat getRotation() const {return rotation;}
+
+    void setProjection(const glm::mat4& p) {
+        projection = p;
+        dirty = true;
+    }
+
+    void setPosition(const glm::vec3& p) {
+        position = p;
+        dirty = true;
+    }
+
+    void setRotation(const glm::quat& q) {
+        rotation = q;
+        dirty = true;
+    }
+
 private:
-    glm::mat4 projection, view;
-    glm::mat4 composite;
+    glm::vec3 position;
+    glm::quat rotation;
+
+    glm::mat4 projection;
+
+    mutable glm::mat4 view;
+    mutable glm::mat4 composite;
+    mutable bool dirty = true;
 };
 
 } // namespace ev

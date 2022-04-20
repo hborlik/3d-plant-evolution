@@ -21,7 +21,7 @@ public:
     
 };
 
-std::unique_ptr<Model> loadObj(const std::string& filename, const std::string& base_dir);
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir);
 
 }
 

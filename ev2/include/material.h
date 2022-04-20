@@ -12,13 +12,13 @@
 namespace ev2 {
 
 struct Material {
-    std::string name;
+    std::string name = "default";
 
-    glm::vec3 ambient;
-    glm::vec3 diffuse;
-    glm::vec3 specular;
-    glm::vec3 transmittance;
-    glm::vec3 emission;
+    glm::vec3 ambient = {};
+    glm::vec3 diffuse = {1.,.0,.5};
+    glm::vec3 specular = {};
+    glm::vec3 transmittance = {};
+    glm::vec3 emission = {};
     float shininess;
     float ior;      
     float dissolve;
@@ -31,6 +31,8 @@ struct Material {
     std::string displacement_texname;        // disp
     std::string alpha_texname;               // map_d
     std::string reflection_texname;          // refl
+
+    Material() = default;
 };
 
 }

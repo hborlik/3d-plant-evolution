@@ -18,12 +18,15 @@
 #include <ev_gl.h>
 #include <delegate.h>
 #include <singleton.h>
+#include <application.h>
 
 namespace ev2::window {
 
 void init(const Args& args);
 void setWindowTitle(const std::string& title);
+void setApplication(Application* app);
 
+glm::vec2 getCursorPosition();
 double getFrameTime();
 bool frame();
 

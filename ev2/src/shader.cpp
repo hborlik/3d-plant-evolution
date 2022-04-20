@@ -142,7 +142,7 @@ void Program::link() {
         built = true;
 
         // if we have a shader parameter ubo, save it
-        shaderDataDescription = getUniformBlockInfo(mat_spec::ShaderUniformBlockName);
+        shaderDataDescription = getUniformBlockInfo(mat_spec::GUBName);
         if (shaderDataDescription.isValid()) {
             shaderParameters = std::make_unique<Buffer>(gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW);
             shaderParameters->Allocate(shaderDataDescription.block_size);

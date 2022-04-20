@@ -608,6 +608,8 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
                 {
                     o.material_id = shapes[s].mesh.material_ids[0]; // use the material ID
                                                                     // of the first face.
+                    if (int(o.material_id) == -1)
+                        o.material_id = 0; // default material
                 }
                 else
                 {
@@ -615,7 +617,7 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
                 }
                 printf("shape[%d] material_id %d\n", int(s), int(o.material_id));
 
-                drawObjects->push_back(std::move(o));
+                drawObjects->push_back(o);
             }
 
         }
@@ -630,15 +632,17 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
 
 namespace ev2 {
 
-std::unique_ptr<Model> loadObj(const std::string& filename, const std::string& base_dir) {
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir) {
     glm::vec3 bmin, bmax;
     std::vector<DrawObject> drawObjects;
     std::vector<tinyobj::material_t> materials;
     std::vector<float> buffer;
-    bool success = LoadObjAndConvert(bmin, bmax, &drawObjects, materials, buffer, filename, base_dir);
+    std::cout << base_dir / filename << std::endl;
+    bool success = LoadObjAndConvert(bmin, bmax, &drawObjects, materials, buffer, base_dir / filename, base_dir);
     if (success) {
         std::vector<Material> ev_materials(materials.size());
-        std::vector<Mesh> ev_mesh(drawObjects.size());
+        std::vector<Mesh> ev_meshs(drawObjects.size());
+
         size_t i = 0;
         for (auto& m : materials) {
             // copy materials
@@ -663,11 +667,26 @@ std::unique_ptr<Model> loadObj(const std::string& filename, const std::string& b
             };
         }
 
-        Model model {
+        if (ev_materials.size() > 1)
+            ev_materials[0] = Material{}; // default material
 
-        };
+        // copy index information
+        i = 0;
+        for (auto& dObj : drawObjects) {
+            ev_meshs[i++] = Mesh {
+                dObj.start,
+                dObj.numTriangles * 3,
+                dObj.material_id
+            };
+        }
 
-        VertexBuffer vb = VertexBuffer::vbInitArrayVertexData(buffer);
+        return std::make_unique<Model>(
+            std::move(ev_meshs),
+            std::move(ev_materials),
+            bmin,
+            bmax,
+            VertexBuffer::vbInitArrayVertexData(buffer)
+        );
 
     }
     return {};
