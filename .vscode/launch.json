@@ -11,7 +11,7 @@
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/testapp",
+            "cwd": "${workspaceFolder}/ev2_tests",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -30,7 +30,7 @@
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}\\testapp",
+            "cwd": "${workspaceFolder}\\ev2_tests",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -52,25 +52,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/vfc_base2022v2/resources",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) Launch testapp",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/testapp",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
