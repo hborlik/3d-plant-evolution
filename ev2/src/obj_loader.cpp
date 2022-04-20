@@ -639,7 +639,7 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
     std::vector<tinyobj::material_t> materials;
     std::vector<float> buffer;
     std::cout << base_dir / filename << std::endl;
-    bool success = LoadObjAndConvert(bmin, bmax, &drawObjects, materials, buffer, base_dir / filename, base_dir);
+    bool success = LoadObjAndConvert(bmin, bmax, &drawObjects, materials, buffer, (base_dir / filename).generic_string(), base_dir.generic_string());
     if (success) {
         std::vector<Material> ev_materials(materials.size());
         std::vector<Mesh> ev_meshs(drawObjects.size());
