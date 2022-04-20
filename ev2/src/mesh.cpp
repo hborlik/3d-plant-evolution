@@ -62,7 +62,7 @@ void Model::draw() {
     glCullFace(GL_BACK);
     // TODO: support index buffers
     for (auto& m : meshes) {
-        glDrawArrays(GL_TRIANGLE_STRIP, m.start_index, m.num_elements);
+        glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
     }
     vb.unbind();
 }

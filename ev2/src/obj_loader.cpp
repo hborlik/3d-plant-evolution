@@ -594,8 +594,9 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
 
             if (buffer.size() - buffer_start > 0)
             {
-                DrawObject o{buffer_start, 0, 0};
-
+                DrawObject o{0, 0, 0};
+                o.start = (buffer_start) / (3 + 3 + 3 + 2) /
+                                 3;
                 o.numTriangles = (buffer.size() - buffer_start) / (3 + 3 + 3 + 2) /
                                  3; // 3:vtx, 3:normal, 3:col, 2:texcoord
 
@@ -674,7 +675,7 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
         i = 0;
         for (auto& dObj : drawObjects) {
             ev_meshs[i++] = Mesh {
-                dObj.start,
+                dObj.start * 3,
                 dObj.numTriangles * 3,
                 dObj.material_id
             };
