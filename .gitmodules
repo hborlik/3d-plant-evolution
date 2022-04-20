@@ -1,0 +1,3 @@
+[submodule "p-tree"]
+	path = p-tree
+	url = git@github.com:hborlik/p-tree.git
