@@ -10,7 +10,7 @@
 #include <window.h>
 #include <mesh.h>
 #include <resource.h>
-#include <sphere.h>
+#include <Sphere.h>
 #include <iostream>
 #include <filesystem>
 
@@ -64,8 +64,8 @@ public:
 
     void load_models() {
         Sphere supershape(1.0f , 20, 20);
-        cube =  supershape.getModel();
-                //ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
+        // cube =  supershape.getModel();
+        cube = ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
     }
 
     int run() {

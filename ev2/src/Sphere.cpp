@@ -15,7 +15,7 @@
 #include <tiny_obj_loader.h>
 #include <iostream>
 #include <iomanip>
-#include <sphere.h>
+#include <Sphere.h>
 #include <cmath>
 
 float amplitude_on_frequency_10steps_temp[10] = { 0 };
