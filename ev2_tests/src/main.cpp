@@ -64,16 +64,11 @@ public:
         // first update scene
 
         if (mouse_down) {
-            glm::vec2 m = ev2::window::getCursorPosition();
-            mouse_delta = m - mouse_p;
-            mouse_p = m;
-        } else {
-            mouse_delta = {};
+            mouse_delta = ev2::window::getCursorPosition() - mouse_p;
             mouse_p = ev2::window::getCursorPosition();
+            cam_x += mouse_delta.x * -.005f;
+            cam_y += mouse_delta.y * -.005f;
         }
-
-        cam_x += mouse_delta.x * -150.0f * dt;
-        cam_y += mouse_delta.y * -150.0f * dt;
 
         glm::vec3 boom = {0, 0, 60};
         glm::mat4 cam_t = glm::rotate(glm::mat4{1.0f}, (float)cam_y, glm::vec3{1, 0, 0});
@@ -113,6 +108,7 @@ public:
 
     void onMouseButton(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos, ev2::input::MouseButton::Enum button, bool down) override {
         mouse_down = down;
+        mouse_p = ev2::window::getCursorPosition();
     }
 
     void onWindowSizeChange(int32_t width, int32_t height) override {
@@ -125,16 +121,13 @@ public:
     void onDropFile(const std::string& path) override {}
 };
 
-static std::unique_ptr<TestApp> app;
-
-
 int main(int argc, char *argv[]) {
     ev2::Args args{argc, argv};
 
     ev2::EV2_init(args);
     ev2::window::setWindowTitle("Testing");
 
-    app = std::make_unique<TestApp>();
+    std::unique_ptr<TestApp> app = std::make_unique<TestApp>();
     ev2::window::setApplication(app.get());
 
     app->load_shaders();
