@@ -68,6 +68,14 @@ public:
                 //ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
     }
 
+    void updateShape(float dt) {
+        Sphere supershape(1.0f , 20, 20);
+        supershape.set(1.f, 20, 20, 1.0 + dt);
+        cube =  supershape.getModel();
+                //ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
+    }
+
+
     int run() {
         glClearColor(.72f, .84f, 1.06f, 1.0f);
         // Enable z-buffer test.
@@ -118,9 +126,14 @@ public:
 
         glm::mat4 M = glm::identity<glm::mat4>();//glm::rotate(glm::identity<glm::mat4>(), 0.3f, glm::vec3{0, 1, 0});
         glm::mat3 G = glm::inverse(glm::transpose(glm::mat3(M)));
-        
+        //glm::mat4 Trans = glm::translate( glm::mat4(1.0f), glm::vec3(0, -1, -1));
+        //glm::mat4 RotX = glm::rotate( glm::mat4(1.0f), rotX, vec3(1, 0, 0));
+        //glm::mat4 RotY = glm::rotate( glm::mat4(1.0f), rotY, vec3(0, 1, 0));
+        glm::mat4 ScaleS = glm::scale(glm::mat4(1.0f), glm::vec3(0.1, 0.1, 0.1));        
+        M = M*ScaleS;
         ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
         ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
+        updateShape(dt);
         cube->draw();
     }
 

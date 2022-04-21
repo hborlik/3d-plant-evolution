@@ -158,18 +158,6 @@ float superformula(float o, float a, float b, float m, float n1, float n2, float
 //superparameters & pi
 float pi = 3.1415926f;
 float halfpi = pi / 2.0f;
-float a = 1.f; //* //sin(time); //+ sin(f);
-float b = 1.f;
-float m = 1.f;
-float n1 = 1.f;
-float n2 = 1.f;
-float n3 = 1.f;
-float a2 = a; //+ sin(f);
-float b2 = b;
-float m2 = m;
-float n12 = n1;
-float n22 = n2;
-float n32 = n3;
 int randLim = 1;
 
 
@@ -179,6 +167,24 @@ Sphere::Sphere(float radius, int sectors, int stacks, bool smooth) : interleaved
     set(radius, sectors, stacks, smooth, 1.f);
 }
 
+Sphere Sphere::crossGenes(const Sphere parentB){
+                      Sphere child = Sphere();
+                      child.setGenes(
+                                     ((this->a + parentB.a)/2),
+                                     ((this->b + parentB.b)/2),
+                                     ((this->m + parentB.m)/2),
+                                     ((this->n1 + parentB.n1)/2),
+                                     ((this->n2 + parentB.n2)/2),
+                                     ((this->n3 + parentB.n3)/2),
+                                     ((this->c + parentB.c)/2),
+                                     ((this->d + parentB.d)/2),
+                                     ((this->k + parentB.k)/2),
+                                     ((this->q1 + parentB.q1)/2),
+                                     ((this->q2 + parentB.q2)/2),
+                                     ((this->q3 + parentB.q3)/2)
+                                     );
+                      return child;
+                  }
 
 void Sphere::set(float radius, int sectors, int stacks, float time, bool smooth)
 {
