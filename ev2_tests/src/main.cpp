@@ -109,6 +109,15 @@ public:
         return 0;
     }
 
+    void toggleWireframe() {
+        static bool enabled = false;
+        if (enabled)
+            glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+        else
+            glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+        enabled = !enabled;
+    }
+
     void placeObj() {
         Sphere supershape(1.0f , 20, 20);
         supershape.set(1.f, 20, 20, 1.0);
@@ -148,14 +157,16 @@ public:
     void render(float dt) {
         // first update scene
 
-        if (mouse_down) {
+        
+
+        if (mouse_down || ev2::window::getMouseCaptured()) {
             mouse_delta = ev2::window::getCursorPosition() - mouse_p;
             mouse_p = ev2::window::getCursorPosition();
             cam_x += mouse_delta.x * -.005f;
             cam_y = glm::clamp<float>(cam_y + mouse_delta.y * -.005f, glm::radians(-85.0f), glm::radians(85.0f));
         }
 
-        glm::vec3 boom = {0, 0, 60};
+        glm::vec3 boom = {0, 0, 70};
         glm::mat4 cam_t = glm::rotate(glm::mat4{1.0f}, (float)cam_y, glm::vec3{1, 0, 0});
         cam_t = glm::rotate(glm::mat4{1.0f}, (float)cam_x, {0, 1, 0}) * cam_t;
 
@@ -247,6 +258,10 @@ public:
             case ev2::input::Key::KeyF:
                 if (down)
                     camera_type = CameraMode((camera_type + 1) % 3);
+                break;
+            case ev2::input::Key::KeyZ:
+                if (down)
+                    toggleWireframe();
                 break;
             case ev2::input::Key::KeyW:
                 move_input.y = down ? 1.0f : 0.0f;
