@@ -59,13 +59,13 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
 
 VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer) {
     VertexBuffer vb;
-    vb.indexed = true;
     int some = indexBuffer[101];
     std::cout << "indexbuffer? " << some << "\n";
 
     vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
-
     vb.buffers.push_back(Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
+
+    vb.indexed = 1;
 
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
@@ -95,9 +95,9 @@ void Model::draw() {
     vb.bind();
     glCullFace(GL_BACK);
     // TODO: support index buffers
-    if (vb.getIndexed()) {
+    if (vb.getIndexed() != -1) {
         for (auto& m : meshes) {
-            vb.buffers[1].Bind();
+            vb.buffers[vb.getIndexed()].Bind();
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {
