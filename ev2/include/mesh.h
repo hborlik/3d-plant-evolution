@@ -23,6 +23,7 @@ public:
 
     VertexBuffer(VertexBuffer&& o) : buffers{std::move(o.buffers)} {
         std::swap(gl_vao, o.gl_vao);
+        indexed = o.indexed;
     }
     VertexBuffer& operator=(VertexBuffer&& o) = delete;
 
@@ -43,11 +44,14 @@ public:
      * @return VertexBuffer 
      */
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& buffer);
+    static VertexBuffer vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer);
 
     std::vector<Buffer> buffers;
 
+    bool getIndexed() {return indexed;}
 private:
     GLuint gl_vao = -1;
+    bool indexed = false;
 };
 
 struct Mesh {
