@@ -249,7 +249,7 @@ public:
 
         // system info
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        int width_mm, height_mm, defaultWidth, defaultHeight;
+        int width_mm, height_mm;
         float scale;
         glfwGetMonitorPhysicalSize(monitor, &width_mm, &height_mm);
         glfwGetMonitorContentScale(monitor, &scale, nullptr);
@@ -364,6 +364,18 @@ public:
         glfwSetWindowTitle(window_ptr, title.data());
     }
 
+    void setMouseCaptured(bool visible) {
+        if(visible) {
+            glfwSetInputMode(window_ptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        } else {
+            glfwSetInputMode(window_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+
+    bool getMouseCaptured() {
+        return glfwGetInputMode(window_ptr, GLFW_CURSOR) == GLFW_CURSOR_DISABLED;
+    }
+
     glm::vec2 getCursor() const {
         double x, y;
         glfwGetCursorPos(window_ptr, &x, &y);
@@ -372,6 +384,8 @@ public:
 
     double scroll_pos = 0;
     Application* application = nullptr;
+
+    int defaultWidth, defaultHeight;
 
 private:
     static void keyCb(GLFWwindow* _window, int32_t _key, int32_t _scancode, int32_t _action, int32_t _mods);
@@ -481,28 +495,19 @@ void setWindowTitle(const std::string& title) {
 
 void setApplication(Application* app) {
     static_context->application = app;
+    app->onWindowSizeChange(static_context->defaultWidth, static_context->defaultWidth);
+}
+
+void setMouseCaptured(bool captured) {
+    static_context->setMouseCaptured(captured);
+}
+
+bool getMouseCaptured() {
+    return static_context->getMouseCaptured();
 }
 
 glm::vec2 getCursorPosition() {
     return static_context->getCursor();
 }
-
-// void setMouseCursorVisible(bool visible) {
-//     if(visible) {
-//         glfwSetInputMode(window_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-//     } else {
-//         glfwSetInputMode(window_ptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-//     }
-//     mouseCursorVisible = visible;
-// }
-
-// void updateMouseVel() {
-//     if(!mouseCursorVisible) {
-//         mouseVelocity = (mousePosition - prevMousePosition) * (double)deltaTime;
-//     } else {
-//         mouseVelocity = {};
-//     }
-//     prevMousePosition = mousePosition;
-// }
 
 }

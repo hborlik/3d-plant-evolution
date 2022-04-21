@@ -25,6 +25,8 @@ namespace ev2::window {
 void init(const Args& args);
 void setWindowTitle(const std::string& title);
 void setApplication(Application* app);
+void setMouseCaptured(bool captured);
+bool getMouseCaptured();
 
 glm::vec2 getCursorPosition();
 double getFrameTime();
