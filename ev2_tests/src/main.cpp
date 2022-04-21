@@ -23,8 +23,11 @@ float randomFloatTo(float limit) {
 struct Plant {
     glm::vec3 position;
     glm::vec3 color;
+    glm::quat rot;
     Sphere geometry;
-    Plant(glm::vec3 pos, glm::vec3 col, Sphere geo) {position = pos; color = col; geometry = geo;}
+    Plant(glm::vec3 pos, glm::vec3 col, Sphere geo) {position = pos; color = col; geometry = geo; 
+        rot = glm::quatLookAt(glm::vec3(randomFloatTo(2) - 1, 0, randomFloatTo(2) - 1), glm::vec3{0, 1, 0});
+    }
 };
 
 class TestApp : public ev2::Application {
@@ -132,8 +135,8 @@ public:
         child = supershape.crossGenes(surrogate);
         child.set(1.f, 20, 20, 1.0);
         } else {
-            col = glm::vec3((plants[0].color + plants[1].color) * .5f);
-            child = plants[0].geometry.crossGenes(plants[1].geometry);
+            col = glm::vec3((plants[0].color + plants[plants.size()-1].color) * .5f);
+            child = plants[0].geometry.crossGenes(plants[plants.size()-1].geometry);
             child.set(1.f, 20, 20, 1.0);
         }
 
@@ -198,7 +201,7 @@ public:
 
         for (auto& p : plants) {
             updateShape(dt, p.geometry);
-            M = glm::translate(glm::identity<glm::mat4>(), p.position) * glm::rotate(glm::identity<glm::mat4>(), glm::radians(90.0f), glm::vec3{0, 0, 1});
+            M = glm::translate(glm::identity<glm::mat4>(), p.position) * glm::mat4_cast(p.rot);
             G = glm::inverse(glm::transpose(glm::mat3(M)));
             glm::mat4 ScaleS = glm::scale(glm::mat4(1.0f), glm::vec3(0.1, 0.1, 0.1));        
             M = M*ScaleS;            
