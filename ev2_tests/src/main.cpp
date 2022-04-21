@@ -16,13 +16,23 @@
 
 namespace fs = std::filesystem;
 
+float randomFloatTo(float limit) {
+    return static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/limit));
+}
+
+struct Plant {
+    glm::vec3 position;
+    Sphere geometry;
+    Plant(glm::vec3 pos, Sphere geo) {position = pos; geometry = geo;}
+};
+
 class TestApp : public ev2::Application {
 public:
     ev2::Camera cam_orbital;
     ev2::Camera cam_fly;
     ev2::Camera cam_first_person;
 
-    std::vector<glm::vec3> plants;
+    std::vector<Plant> plants;
 
     glm::vec2 mouse_p;
     glm::vec2 mouse_delta;
@@ -35,6 +45,7 @@ public:
         Fly,
         Orbital
     } camera_type;
+
 
     ev2::Camera& getActiveCam() {
         switch(camera_type) {
@@ -75,10 +86,8 @@ public:
         ground_cube->materials[0].shininess = 0.02;
     }
 
-    void updateShape(float dt) {
-        Sphere supershape(1.0f , 20, 20);
-        supershape.set(1.f, 20, 20, 1.0 + dt);
-        cube =  supershape.getModel();
+    void updateShape(float dt, Sphere geometry) {
+        cube = geometry.getModel();
                 //ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
     }
 
@@ -97,7 +106,33 @@ public:
     }
 
     void placeObj() {
-        plants.push_back(cam_first_person.getPosition());
+Sphere supershape(1.0f , 20, 20);
+        supershape.set(1.f, 20, 20, 1.0);
+        Sphere surrogate(1.0f , 20, 20);
+        surrogate.set(1.f, 20, 20, 1.0);
+        float geneLimit = 1.f;
+        supershape.setGenes(
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit)
+        );
+
+
+        Sphere child = supershape.crossGenes(surrogate);
+        child.set(1.f, 20, 20, 1.0);
+
+        glm::vec3 pos = cam_first_person.getPosition() + glm::vec3(0, 0, -5);
+        Plant newPlant = Plant(pos, child);
+        plants.push_back(newPlant);
     }
 
     void render(float dt) {
@@ -155,11 +190,14 @@ public:
         cube->draw(prog);
 
         for (auto& p : plants) {
-            M = glm::translate(glm::identity<glm::mat4>(), p) * glm::rotate(glm::identity<glm::mat4>(), glm::radians(90.0f), glm::vec3{0, 0, 1});
+            updateShape(dt, p.geometry);
+            M = glm::translate(glm::identity<glm::mat4>(), p.position) * glm::rotate(glm::identity<glm::mat4>(), glm::radians(90.0f), glm::vec3{0, 0, 1});
             G = glm::inverse(glm::transpose(glm::mat3(M)));
-            updateShape(dt);
+            glm::mat4 ScaleS = glm::scale(glm::mat4(1.0f), glm::vec3(0.1, 0.1, 0.1));        
+            M = M*ScaleS;            
             ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
             ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
+            
             cube->draw(prog);
         }
 
