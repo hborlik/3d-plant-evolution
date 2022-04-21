@@ -25,5 +25,5 @@ void main() {
     vec3 normal = normalize(vert_normal);
 
     float dC = clamp(dot(normal, vec3(0, 1, 0)), 0.0, 1.0);
-    color = vec4(vert_color + emission + diffuse * dC, 1.0);
+    color = vec4(emission + (vert_color + diffuse) * dC, 1.0);
 }
