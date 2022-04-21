@@ -19,7 +19,7 @@ public:
     float getRadius() const                 { return radius; }
     int getSectorCount() const              { return sectorCount; }
     int getStackCount() const               { return stackCount; }
-    void set(float radius, int sectorCount, int stackCount, float time, float* amplitude_on_frequency, bool smooth = true);
+    void set(float radius, int sectorCount, int stackCount, float time, bool smooth = true);
     void setRadius(float radius);
     void setSectorCount(int sectorCount);
     void setStackCount(int stackCount);
@@ -61,7 +61,7 @@ protected:
 
 private:
     // member functions
-    void buildVerticesSmooth(float time, float* amplitude_on_frequency);
+    void buildVerticesSmooth(float time);
     void buildInterleavedVertices();
     void clearArrays();
     void addVertex(float x, float y, float z);

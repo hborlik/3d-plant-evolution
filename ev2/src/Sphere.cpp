@@ -9,13 +9,14 @@
 #ifdef __APPLE__
 #include <OpenGL/gl.h>
 #else
-#include <GL/gl.h>
+//#include <GL/gl.h>
 #endif
 
-//#include <cmath>
 #include <iostream>
 #include <iomanip>
-#include "Sphere.h"
+#include <Sphere.h>
+#include <cmath>
+#include <mesh.h>
 
 float amplitude_on_frequency_10steps_temp[10] = { 0 };
 
@@ -23,11 +24,10 @@ const int MIN_SECTOR_COUNT = 3;
 const int MIN_STACK_COUNT = 2;
 
 //stl lerp 
-template <class _Ty>
-_NODISCARD /* constexpr */ _Ty lerp(const _Ty _ArgA, const _Ty _ArgB, const _Ty _ArgT) noexcept {
+template <class _Ty> /* constexpr */ _Ty lerp(const _Ty _ArgA, const _Ty _ArgB, const _Ty _ArgT) noexcept {
     // on a line intersecting {(0.0, _ArgA), (1.0, _ArgB)}, return the Y value for X == _ArgT
 
-    const int _Finite_mask = (int{ isfinite(_ArgA) } << 2) | (int{ isfinite(_ArgB) } << 1) | int{ isfinite(_ArgT) };
+    const int _Finite_mask = (int{ std::isfinite(_ArgA) } << 2) | (int{ std::isfinite(_ArgB) } << 1) | int{ std::isfinite(_ArgT) };
     if (_Finite_mask == 0b111) {
         // 99% case, put it first; this block comes from P0811R3
         if ((_ArgA <= 0 && _ArgB >= 0) || (_ArgA >= 0 && _ArgB <= 0)) {
@@ -57,15 +57,15 @@ _NODISCARD /* constexpr */ _Ty lerp(const _Ty _ArgA, const _Ty _ArgB, const _Ty 
         return _Candidate;
     }
 
-    if (isnan(_ArgA)) {
+    if (std::isnan(_ArgA)) {
         return _ArgA;
     }
 
-    if (isnan(_ArgB)) {
+    if (std::isnan(_ArgB)) {
         return _ArgB;
     }
 
-    if (isnan(_ArgT)) {
+    if (std::isnan(_ArgT)) {
         return _ArgT;
     }
 
@@ -132,7 +132,7 @@ _NODISCARD /* constexpr */ _Ty lerp(const _Ty _ArgA, const _Ty _ArgB, const _Ty 
         return -_ArgB;
     case 0b111: // impossible; handled in fast path
     default:
-        _CSTD abort();
+        exit(1);
     }
 }
 
@@ -163,11 +163,11 @@ int randLim = 1;
 
 Sphere::Sphere(float radius, int sectors, int stacks, bool smooth) : interleavedStride(32)
 {
-    set(radius, sectors, stacks, smooth, amplitude_on_frequency_10steps_temp);
+    set(radius, sectors, stacks, smooth, 1.f);
 }
 
 
-void Sphere::set(float radius, int sectors, int stacks, float time, float* amplitude_on_frequency, bool smooth)
+void Sphere::set(float radius, int sectors, int stacks, float time, bool smooth)
 {
     this->radius = radius;
     this->sectorCount = sectors;
@@ -179,7 +179,7 @@ void Sphere::set(float radius, int sectors, int stacks, float time, float* ampli
     this->smooth = true;
 
     if (smooth)
-        buildVerticesSmooth(time, amplitude_on_frequency);
+        buildVerticesSmooth(time);
 }
 
 void Sphere::setRadius(float radius)
@@ -197,7 +197,7 @@ void Sphere::setSectorCount(int sectors)
 void Sphere::setStackCount(int stacks)
 {
     if (stacks != this->stackCount)
-        set(radius, sectorCount, stacks, smooth, amplitude_on_frequency_10steps_temp);
+        set(radius, sectorCount, stacks, smooth);
 }
 
 void Sphere::setSmooth(bool smooth)
@@ -207,7 +207,7 @@ void Sphere::setSmooth(bool smooth)
 
     this->smooth = smooth;
     if (smooth)
-        buildVerticesSmooth(1.f, amplitude_on_frequency_10steps_temp);
+        buildVerticesSmooth(1.f);
 }
 
 
@@ -224,15 +224,14 @@ void Sphere::printSelf() const
 }
 
 
-
+/*
 void Sphere::draw() const
 {
+    std::cout << "drawing\n";
     // interleaved array
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    
-    
     glVertexPointer(3, GL_FLOAT, interleavedStride, &interleavedVertices[0]);
     glNormalPointer(GL_FLOAT, interleavedStride, &interleavedVertices[3]);
     glTexCoordPointer(2, GL_FLOAT, interleavedStride, &interleavedVertices[6]);
@@ -243,10 +242,10 @@ void Sphere::draw() const
     glDisableClientState(GL_NORMAL_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
+*/
 
 
-
-
+/*
 void Sphere::drawLines(const float lineColor[4]) const
 {
     // set line colour
@@ -265,7 +264,7 @@ void Sphere::drawLines(const float lineColor[4]) const
     glEnable(GL_LIGHTING);
     glEnable(GL_TEXTURE_2D);
 }
-
+*/
 
 
 void Sphere::drawWithLines(const float lineColor[4]) const
@@ -291,7 +290,7 @@ void Sphere::clearArrays()
 
 
 
-void Sphere::buildVerticesSmooth(float time, float* amplitude_on_frequency)
+void Sphere::buildVerticesSmooth(float time)
 {
     const float PI = acos(-1);
 
@@ -310,6 +309,7 @@ void Sphere::buildVerticesSmooth(float time, float* amplitude_on_frequency)
     float rTheta;
     float vPer;
 
+    float tempFloat = 1.f;
     float phi;
     float rPhi;
     float cosphi;
@@ -320,7 +320,10 @@ void Sphere::buildVerticesSmooth(float time, float* amplitude_on_frequency)
 
         uPer = float(i) / float(stackCount);
         theta = lerp(-pi, pi, uPer);
-        rTheta = superformula(theta, minSize + a * sin(time) * amplitude_on_frequency[1], minSize + b + 10 * sin(time) * amplitude_on_frequency[6] * amplitude_on_frequency[7] * amplitude_on_frequency[8] * amplitude_on_frequency[9], m * sin(time) * amplitude_on_frequency[1] * 3 + amplitude_on_frequency[8] * amplitude_on_frequency[9], n1 * amplitude_on_frequency[4], n2 * amplitude_on_frequency[3], n3 * amplitude_on_frequency[7] * amplitude_on_frequency[4]);
+        rTheta = superformula(theta, minSize + a * sin(time) * tempFloat,
+         minSize + b + 10 * sin(time) * tempFloat
+          * tempFloat * tempFloat * tempFloat, m * sin(time) * tempFloat * 3 + tempFloat * tempFloat, n1 * tempFloat
+          , n2 * tempFloat, n3 * tempFloat * tempFloat);
 
 
         // add (sectorCount+1) vertices per stack
@@ -331,7 +334,10 @@ void Sphere::buildVerticesSmooth(float time, float* amplitude_on_frequency)
             float vPer = float(j) / float(sectorCount);
 
             float phi = lerp(-pi/2, pi/2, vPer);
-            float rPhi = superformula(phi, minSize + a * sin(time) * amplitude_on_frequency[0], minSize + b * sin(time) * amplitude_on_frequency[5] * amplitude_on_frequency[6], m * (amplitude_on_frequency[0]) * 10 * sin(time), n1 * 2* amplitude_on_frequency[3] * amplitude_on_frequency[2] * amplitude_on_frequency[3], n2 * amplitude_on_frequency[6], n3 * amplitude_on_frequency[2]);
+            float rPhi = superformula(phi, minSize + a * sin(time) * tempFloat,
+         minSize + b + 10 * sin(time) * tempFloat
+          * tempFloat * tempFloat * tempFloat, m * sin(time) * tempFloat * 3 + tempFloat * tempFloat, n1 * tempFloat
+          , n2 * tempFloat, n3 * tempFloat * tempFloat);
             float cosphi = cos(phi);
             x = cos(theta) * cosphi / rTheta / rPhi;
             y = sin(theta) * cosphi / rTheta / rPhi;
@@ -426,7 +432,7 @@ void Sphere::buildInterleavedVertices()
     }
 }
 
-VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffer) {
+ev2::VertexBuffer ev2::VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffer) {
     VertexBuffer vb;
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
