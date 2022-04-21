@@ -272,7 +272,7 @@ void Sphere::drawLines(const float lineColor[4]) const
 }
 */
 
-
+/*
 void Sphere::drawWithLines(const float lineColor[4]) const
 {
     glEnable(GL_POLYGON_OFFSET_FILL);
@@ -283,7 +283,7 @@ void Sphere::drawWithLines(const float lineColor[4]) const
     // draw lines with VA
     drawLines(lineColor);
 }
-
+*/
 
 void Sphere::clearArrays()
 {
@@ -438,63 +438,24 @@ void Sphere::buildInterleavedVertices()
     }
 }
 
-ev2::VertexBuffer Sphere::convertBufferToVertexBuffer() {
-    return ev2::VertexBuffer::vbInitSphereArrayVertexData(interleavedVertices);
-}
-
-std::unique_ptr<ev2::Model> loadObj() {
+std::unique_ptr<ev2::Model> Sphere::getModel() {
     glm::vec3 bmin, bmax;
     std::vector<DrawObject> drawObjects;
-    std::vector<tinyobj::material_t> materials;
-    std::vector<float> buffer;
     bool success = true;
     if (success) {
-        std::vector<ev2::Material> ev_materials(materials.size());
+        std::vector<ev2::Material> ev_materials;
         std::vector<ev2::Mesh> ev_meshs(drawObjects.size());
+        ev_materials.push_back(ev2::Material{});
 
-        size_t i = 0;
-        for (auto& m : materials) {
-            // copy materials
-            ev_materials[i++] = ev2::Material {
-                m.name
-                ,glm::vec3{m.ambient[0], m.ambient[1], m.ambient[2]}
-                ,glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]}
-                ,glm::vec3{m.specular[0], m.specular[1], m.specular[2]}
-                ,glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}
-                ,glm::vec3{m.emission[0], m.emission[1], m.emission[2]}
-                ,m.shininess
-                ,m.ior
-                ,m.dissolve
-                ,m.ambient_texname
-                ,m.diffuse_texname
-                ,m.specular_texname
-                ,m.specular_highlight_texname
-                ,m.bump_texname
-                ,m.displacement_texname
-                ,m.alpha_texname
-                ,m.reflection_texname
-            };
-        }
+        ev_meshs.push_back(ev2::Mesh{0, indices.size(), 0});
 
-        if (ev_materials.size() > 1)
-            ev_materials[0] = ev2::Material{}; // default material
-
-        // copy index information
-        i = 0;
-        for (auto& dObj : drawObjects) {
-            ev_meshs[i++] = ev2::Mesh {
-                dObj.start * 3,
-                dObj.numTriangles * 3,
-                dObj.material_id
-            };
-        }
 
         return std::make_unique<ev2::Model>(
             std::move(ev_meshs),
             std::move(ev_materials),
             bmin,
             bmax,
-            ev2::VertexBuffer::vbInitArrayVertexData(buffer)
+            ev2::VertexBuffer::vbInitSphereArrayVertexData(interleavedVertices, indices)
         );
 
     }

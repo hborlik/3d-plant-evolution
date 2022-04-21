@@ -63,7 +63,9 @@ public:
     }
 
     void load_models() {
-        cube = ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
+        Sphere supershape(1.0f , 20, 20);
+        cube =  supershape.getModel();
+                //ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
     }
 
     int run() {
@@ -119,8 +121,6 @@ public:
         
         ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
         ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
-        Sphere sphere1 = 
-
         cube->draw();
     }
 

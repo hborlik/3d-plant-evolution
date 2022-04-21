@@ -58,7 +58,7 @@ public:
     // debug
     void printSelf() const;
 
-    ev2::VertexBuffer convertBufferToVertexBuffer();
+    std::unique_ptr<ev2::Model> getModel();
 
 protected:
 

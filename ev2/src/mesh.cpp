@@ -57,14 +57,24 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer) {
+VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer) {
     VertexBuffer vb;
+    vb.indexed = true;
+    int some = indexBuffer[101];
+    std::cout << "indexbuffer? " << some << "\n";
+    std::cout << indexBuffer[102] << "\n";
+    std::cout << indexBuffer[103] << "\n";
+
+
+    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+
+    vb.buffers.push_back(Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
+
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
-
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
-    vb.buffers[vb.buffers.size() - 1].Bind();
+    vb.buffers[0].Bind();
+    vb.buffers[1].Bind();
 
     glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)0);
@@ -73,9 +83,12 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
 
     glEnableVertexAttribArray(gl::TEXCOORD_BINDING_LOCATION);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
 
-    vb.buffers[vb.buffers.size() - 1].Unbind();
+
+
+    vb.buffers[0].Unbind();
+    vb.buffers[1].Unbind();
 
     glBindVertexArray(0);
 
@@ -87,8 +100,14 @@ void Model::draw() {
     vb.bind();
     glCullFace(GL_BACK);
     // TODO: support index buffers
-    for (auto& m : meshes) {
-        glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
+    if (vb.getIndexed()) {
+        for (auto& m : meshes) {
+            glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
+        }
+    } else {
+        for (auto& m : meshes) {
+            glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
+        }
     }
     vb.unbind();
 }
