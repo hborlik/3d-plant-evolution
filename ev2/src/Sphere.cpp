@@ -145,8 +145,15 @@ template <class _Ty> /* constexpr */ _Ty lerp(const _Ty _ArgA, const _Ty _ArgB, 
 //Supershape superformula
 float superformula(float o, float a, float b, float m, float n1, float n2, float n3)
 {
-    return pow(pow(abs(cos(m * o / 4)) / a, n2) + pow(abs(sin(m * o / 4)) / b, n3), 1 / n1);
-}
+    double ffc = cos(m * o / 4);
+    double ffs = sin(m * o / 4);
+    double fa = glm::abs(ffc) / a;
+    double fb = glm::abs(ffs) / b;
+    double fffb = pow(fa, n2);
+    double fffc = pow(fb, n3);
+    return pow(fffb + fffc, 1 / n1);
+    }
+
 
 //superparameters & pi
 float pi = 3.1415926f;
