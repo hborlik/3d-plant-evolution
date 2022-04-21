@@ -13,6 +13,52 @@
 
 namespace ev2 {
 
+struct Interaction
+{
+    double t = 0;
+    glm::vec3 point;
+    glm::vec3 incoming;
+
+    Interaction() = default;
+    Interaction(float t, glm::vec3 point, glm::vec3 incoming) : t{t},
+                                                                    point{point},
+                                                                    incoming{incoming} {}
+    virtual ~Interaction() = default;
+};
+
+struct SurfaceInteraction : public Interaction
+{
+    glm::vec3 normal;
+    glm::vec3 tan;
+    glm::vec3 bi;
+    glm::vec2 uv;
+
+    SurfaceInteraction() = default;
+    SurfaceInteraction(glm::vec3 normal,
+                       glm::vec3 tan,
+                       glm::vec3 bi,
+                       glm::vec2 uv,
+                       float t,
+                       glm::vec3 point,
+                       glm::vec3 incoming)
+        : Interaction{t, point, incoming},
+          normal{normal},
+          tan{tan},
+          bi{bi},
+          uv{uv}
+    {
+    }
+};
+
+struct Ray {
+    glm::vec3 origin;
+    glm::vec3 direction;
+
+    Ray(const glm::vec3& origin, const glm::vec3& direction) : origin{origin}, direction{glm::normalize(direction)} {}
+
+    glm::vec3 eval(float t) const {return origin + t * direction;}
+};
+
 struct Sphere {
     glm::vec3   center;
     float       radius;
@@ -79,6 +125,36 @@ bool intersect(const Frustum& f, const Sphere& s) noexcept {
     }
     return false;
 };
+
+bool intersect(const Ray& ray, const Sphere& sph, SurfaceInteraction& hit) {
+    using namespace glm;
+    vec3 e_c = (ray.origin - sph.center);
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(ray.direction, e_c);
+    float c = dot(e_c,e_c) - sph.radius*sph.radius;
+    float det_sq = b*b - 4*a*c;
+    if(det_sq <= 0)
+        return false;
+    det_sq = glm::sqrt(det_sq);
+    float t = -b - det_sq;
+    t /= 2*a;
+    if(t < 0)
+        return false;
+
+    auto hit_point = ray.eval(t);
+    // hit info into surface interaction
+    SurfaceInteraction h {
+        normalize(hit_point - sph.center),
+        {},
+        {},
+        {},
+        t,
+        hit_point,
+        ray.direction
+    };
+    hit = h;
+    return true;
+}
 
 }
 
