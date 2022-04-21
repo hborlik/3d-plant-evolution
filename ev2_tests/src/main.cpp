@@ -64,8 +64,8 @@ public:
 
     void load_models() {
         Sphere supershape(1.0f , 20, 20);
-        // cube =  supershape.getModel();
-        cube = ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
+        cube =  supershape.getModel();
+        // cube = ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
     }
 
     int run() {
