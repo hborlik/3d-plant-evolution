@@ -609,8 +609,6 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
                 {
                     o.material_id = shapes[s].mesh.material_ids[0]; // use the material ID
                                                                     // of the first face.
-                    if (int(o.material_id) == -1)
-                        o.material_id = 0; // default material
                 }
                 else
                 {
@@ -668,17 +666,17 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
             };
         }
 
-        if (ev_materials.size() > 1)
-            ev_materials[0] = Material{}; // default material
-
         // copy index information
         i = 0;
         for (auto& dObj : drawObjects) {
-            ev_meshs[i++] = Mesh {
+            auto n_mesh = Mesh {
                 dObj.start * 3,
                 dObj.numTriangles * 3,
                 dObj.material_id
             };
+            if (int(dObj.material_id) == -1)
+                n_mesh.material_id = ev_materials.size() - 1;
+            ev_meshs[i++] = n_mesh;
         }
 
         return std::make_unique<Model>(

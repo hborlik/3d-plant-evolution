@@ -19,9 +19,9 @@ struct Material {
     glm::vec3 specular = {};
     glm::vec3 transmittance = {};
     glm::vec3 emission = {};
-    float shininess;
-    float ior;      
-    float dissolve;
+    float shininess = 1.0f;
+    float ior = 0;
+    float dissolve = 0;
 
     std::string ambient_texname;             // map_Ka
     std::string diffuse_texname;             // map_Kd

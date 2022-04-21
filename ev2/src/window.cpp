@@ -329,12 +329,12 @@ public:
     }
 
     bool frame() {
+        // mark this frame time
+        lastTime = glfwGetTime();
         // display frame
         glfwSwapBuffers(window_ptr);
         // update inputs
         glfwPollEvents();
-        // mark this frame time
-        lastTime = glfwGetTime();
 
         return !glfwWindowShouldClose(window_ptr);
     }

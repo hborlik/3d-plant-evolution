@@ -61,9 +61,11 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
     VertexBuffer vb;
     vb.indexed = true;
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
 
+    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
     vb.buffers.push_back(Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
+
+    vb.indexed = 1;
 
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
@@ -89,17 +91,21 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
 }
 
 
-void Model::draw() {
+void Model::draw(const Program& prog) {
     vb.bind();
     glCullFace(GL_BACK);
-    // TODO: support index buffers
-    if (vb.getIndexed()) {
+    // TODO: support for multiple index buffers
+    if (vb.getIndexed() != -1) {
         for (auto& m : meshes) {
-            vb.buffers[1].Bind();
+            prog.applyMaterial(materials[m.material_id]);
+
+            vb.buffers[vb.getIndexed()].Bind();
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {
         for (auto& m : meshes) {
+            prog.applyMaterial(materials[m.material_id]);
+
             glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
         }
     }

@@ -15,7 +15,7 @@
 #include <tiny_obj_loader.h>
 #include <iostream>
 #include <iomanip>
-#include <sphere.h>
+#include <Sphere.h>
 #include <cmath>
 
 float amplitude_on_frequency_10steps_temp[10] = { 0 };
@@ -458,7 +458,10 @@ std::unique_ptr<ev2::Model> Sphere::getModel() {
     if (success) {
         std::vector<ev2::Material> ev_materials;
         std::vector<ev2::Mesh> ev_meshs(drawObjects.size());
-        ev_materials.push_back(ev2::Material{});
+        auto mat = ev2::Material{};
+        mat.diffuse = {0, 0.9, 0.05};
+        mat.emission = mat.diffuse * 0.3f;
+        ev_materials.push_back(mat);
 
         ev_meshs.push_back(ev2::Mesh{0, indices.size(), 0});
 

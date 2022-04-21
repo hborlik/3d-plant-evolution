@@ -119,6 +119,14 @@ public:
         position += dir;
     }
 
+    glm::vec3 getForward() const {
+        return -glm::mat4_cast(rotation)[2];
+    }
+
+    glm::vec3 getRight() const {
+        return glm::mat4_cast(rotation)[0];
+    }
+
 private:
     glm::vec3 position;
     glm::quat rotation;

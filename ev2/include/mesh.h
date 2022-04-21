@@ -11,6 +11,7 @@
 
 #include <buffer.h>
 #include <material.h>
+#include <shader.h>
 
 namespace ev2 {
 
@@ -48,10 +49,10 @@ public:
 
     std::vector<Buffer> buffers;
 
-    bool getIndexed() {return indexed;}
+    int getIndexed() {return indexed;}
 private:
     GLuint gl_vao = -1;
-    bool indexed = false;
+    int indexed = -1;
 };
 
 struct Mesh {
@@ -72,7 +73,7 @@ public:
 
     VertexBuffer vb;
 
-    void draw();
+    void draw(const Program& prog);
 };
 
 struct VisualInstance {
