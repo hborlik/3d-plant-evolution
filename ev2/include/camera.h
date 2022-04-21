@@ -67,12 +67,22 @@ public:
         return f;
     }
 
+    /**
+     * @brief Force internal View and Projection * View matrices to be updated.
+     * 
+     */
     void forceUpdateInternal() const {
-        view = glm::inverse(glm::translate(glm::identity<glm::mat4>(), position) * glm::mat4_cast(rotation));
+        using namespace glm;
+        view = inverse(translate(identity<glm::mat4>(), position) * mat4_cast(rotation));
         composite = projection * view;
         dirty = false;
     }
 
+    /**
+     * @brief Get the View Matrix for Camera
+     * 
+     * @return glm::mat4 
+     */
     glm::mat4 getView() const {
         if (dirty)
             forceUpdateInternal();
@@ -96,6 +106,17 @@ public:
     void setRotation(const glm::quat& q) {
         rotation = q;
         dirty = true;
+    }
+
+    /**
+     * @brief Move camera in a local direction
+     * 
+     * @param direction 
+     */
+    void move(const glm::vec3 &direction) {
+        using namespace glm;
+        vec3 dir = glm::mat3(rotation) * direction;
+        position += dir;
     }
 
 private:
