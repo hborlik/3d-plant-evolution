@@ -19,9 +19,14 @@ out vec3 world_pos;
 out vec3 vert_color;
 out vec2 tex_pos;
 
+out vec3 view_vec;
+
 void main()
 {
-    gl_Position = P * V * M * vec4(VertPos, 1.0);
+    vec4 vertV = V * M * vec4(VertPos, 1.0);
+    vec4 vert = P * vertV;
+    view_vec = vec3(vertV);
+    gl_Position = vert;
     vert_normal = G * Normal;
     vert_color = VertCol;
     tex_pos = TexPos;

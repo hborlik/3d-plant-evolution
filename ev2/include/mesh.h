@@ -11,6 +11,7 @@
 
 #include <buffer.h>
 #include <material.h>
+#include <shader.h>
 
 namespace ev2 {
 
@@ -72,7 +73,7 @@ public:
 
     VertexBuffer vb;
 
-    void draw();
+    void draw(const Program& prog);
 };
 
 struct VisualInstance {

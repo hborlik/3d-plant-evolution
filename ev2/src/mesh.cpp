@@ -91,17 +91,21 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
 }
 
 
-void Model::draw() {
+void Model::draw(const Program& prog) {
     vb.bind();
     glCullFace(GL_BACK);
-    // TODO: support index buffers
+    // TODO: support for multiple index buffers
     if (vb.getIndexed() != -1) {
         for (auto& m : meshes) {
+            prog.applyMaterial(materials[m.material_id]);
+
             vb.buffers[vb.getIndexed()].Bind();
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {
         for (auto& m : meshes) {
+            prog.applyMaterial(materials[m.material_id]);
+
             glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
         }
     }
