@@ -7,6 +7,7 @@
 #define GEOMETRY_SPHERE_H
 
 #include <vector>
+#include <mesh.h>
 
 class Sphere
 {
@@ -56,6 +57,8 @@ public:
 
     // debug
     void printSelf() const;
+
+    ev2::VertexBuffer convertBufferToVertexBuffer();
 
 protected:
 

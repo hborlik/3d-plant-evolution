@@ -12,16 +12,22 @@
 //#include <GL/gl.h>
 #endif
 
+#include <tiny_obj_loader.h>
 #include <iostream>
 #include <iomanip>
 #include <Sphere.h>
 #include <cmath>
-#include <mesh.h>
 
 float amplitude_on_frequency_10steps_temp[10] = { 0 };
 
 const int MIN_SECTOR_COUNT = 3;
 const int MIN_STACK_COUNT = 2;
+
+struct DrawObject {
+    size_t start;
+    size_t numTriangles;
+    size_t material_id;
+};
 
 //stl lerp 
 template <class _Ty> /* constexpr */ _Ty lerp(const _Ty _ArgA, const _Ty _ArgB, const _Ty _ArgT) noexcept {
@@ -432,29 +438,67 @@ void Sphere::buildInterleavedVertices()
     }
 }
 
-ev2::VertexBuffer ev2::VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffer) {
-    VertexBuffer vb;
-    // pos(3float), normal(3float), color(3float), texcoord(2float)
-    glGenVertexArrays(1, &vb.gl_vao);
-    glBindVertexArray(vb.gl_vao);
+ev2::VertexBuffer Sphere::convertBufferToVertexBuffer() {
+    return ev2::VertexBuffer::vbInitSphereArrayVertexData(interleavedVertices);
+}
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
-    vb.buffers[vb.buffers.size() - 1].Bind();
+std::unique_ptr<ev2::Model> loadObj() {
+    glm::vec3 bmin, bmax;
+    std::vector<DrawObject> drawObjects;
+    std::vector<tinyobj::material_t> materials;
+    std::vector<float> buffer;
+    bool success = true;
+    if (success) {
+        std::vector<ev2::Material> ev_materials(materials.size());
+        std::vector<ev2::Mesh> ev_meshs(drawObjects.size());
 
-    glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)0);
+        size_t i = 0;
+        for (auto& m : materials) {
+            // copy materials
+            ev_materials[i++] = ev2::Material {
+                m.name
+                ,glm::vec3{m.ambient[0], m.ambient[1], m.ambient[2]}
+                ,glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]}
+                ,glm::vec3{m.specular[0], m.specular[1], m.specular[2]}
+                ,glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}
+                ,glm::vec3{m.emission[0], m.emission[1], m.emission[2]}
+                ,m.shininess
+                ,m.ior
+                ,m.dissolve
+                ,m.ambient_texname
+                ,m.diffuse_texname
+                ,m.specular_texname
+                ,m.specular_highlight_texname
+                ,m.bump_texname
+                ,m.displacement_texname
+                ,m.alpha_texname
+                ,m.reflection_texname
+            };
+        }
 
-    glEnableVertexAttribArray(gl::NORMAL_BINDING_LOCATION);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
+        if (ev_materials.size() > 1)
+            ev_materials[0] = ev2::Material{}; // default material
 
-    glEnableVertexAttribArray(gl::TEXCOORD_BINDING_LOCATION);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
+        // copy index information
+        i = 0;
+        for (auto& dObj : drawObjects) {
+            ev_meshs[i++] = ev2::Mesh {
+                dObj.start * 3,
+                dObj.numTriangles * 3,
+                dObj.material_id
+            };
+        }
 
-    vb.buffers[vb.buffers.size() - 1].Unbind();
+        return std::make_unique<ev2::Model>(
+            std::move(ev_meshs),
+            std::move(ev_materials),
+            bmin,
+            bmax,
+            ev2::VertexBuffer::vbInitArrayVertexData(buffer)
+        );
 
-    glBindVertexArray(0);
-
-    return std::move(vb);
+    }
+    return {};
 }
 
 ///////////////////////////////////////////////////////////////////////////////

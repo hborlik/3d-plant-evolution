@@ -57,6 +57,32 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
     return std::move(vb);
 }
 
+VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer) {
+    VertexBuffer vb;
+    // pos(3float), normal(3float), color(3float), texcoord(2float)
+    glGenVertexArrays(1, &vb.gl_vao);
+    glBindVertexArray(vb.gl_vao);
+
+    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers[vb.buffers.size() - 1].Bind();
+
+    glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)0);
+
+    glEnableVertexAttribArray(gl::NORMAL_BINDING_LOCATION);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
+
+    glEnableVertexAttribArray(gl::TEXCOORD_BINDING_LOCATION);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
+
+    vb.buffers[vb.buffers.size() - 1].Unbind();
+
+    glBindVertexArray(0);
+
+    return std::move(vb);
+}
+
+
 void Model::draw() {
     vb.bind();
     glCullFace(GL_BACK);

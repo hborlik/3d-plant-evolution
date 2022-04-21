@@ -10,7 +10,7 @@
 #include <window.h>
 #include <mesh.h>
 #include <resource.h>
-
+#include <sphere.h>
 #include <iostream>
 #include <filesystem>
 
@@ -119,6 +119,7 @@ public:
         
         ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
         ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
+        Sphere sphere1 = 
 
         cube->draw();
     }

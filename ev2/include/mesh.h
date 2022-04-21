@@ -43,6 +43,7 @@ public:
      * @return VertexBuffer 
      */
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& buffer);
+    static VertexBuffer vbInitSphereArrayVertexData(const std::vector<float>& buffer);
 
     std::vector<Buffer> buffers;
 
