@@ -42,6 +42,7 @@ public:
     glm::vec2 mouse_delta;
     glm::vec2 move_input;
     bool mouse_down;
+    bool wireframe = false;
     float cam_x, cam_y;
 
     enum CameraMode : uint8_t {
@@ -135,7 +136,8 @@ public:
         child = supershape.crossGenes(surrogate);
         child.set(1.f, 20, 20, 1.0);
         } else {
-            col = glm::vec3((plants[0].color + plants[plants.size()-1].color) * .5f);
+            float randomColorWeight = randomFloatTo(.25) + .25f;
+            col = glm::vec3((plants[0].color + plants[plants.size()-1].color) * randomColorWeight);
             child = plants[0].geometry.crossGenes(plants[plants.size()-1].geometry);
             child.set(1.f, 20, 20, 1.0);
         }
@@ -259,6 +261,16 @@ public:
                 break;
             case ev2::input::Key::KeyD:
                 move_input.x = down ? 1.0f : 0.0f;
+                break;
+            case ev2::input::Key::KeyZ:
+                    if (down) {
+                        if (!wireframe) {
+                            glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+                        } else {
+                            glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+                        }
+                        wireframe = !wireframe;
+                    }
                 break;
             default:
                 break;
