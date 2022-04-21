@@ -22,8 +22,9 @@ float randomFloatTo(float limit) {
 
 struct Plant {
     glm::vec3 position;
+    glm::vec3 color;
     Sphere geometry;
-    Plant(glm::vec3 pos, Sphere geo) {position = pos; geometry = geo;}
+    Plant(glm::vec3 pos, glm::vec3 col, Sphere geo) {position = pos; color = col; geometry = geo;}
 };
 
 class TestApp : public ev2::Application {
@@ -106,32 +107,38 @@ public:
     }
 
     void placeObj() {
-Sphere supershape(1.0f , 20, 20);
+        Sphere supershape(1.0f , 20, 20);
         supershape.set(1.f, 20, 20, 1.0);
         Sphere surrogate(1.0f , 20, 20);
         surrogate.set(1.f, 20, 20, 1.0);
-        float geneLimit = 1.f;
-        supershape.setGenes(
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit)
-        );
+        Sphere child(1.f, 20, 20, 1.0);
 
-
-        Sphere child = supershape.crossGenes(surrogate);
+        glm::vec3 col = glm::vec3(randomFloatTo(1.), randomFloatTo(1.), randomFloatTo(1.));
+        if (plants.size() < 2) {
+            float geneLimit = 1.f;
+            supershape.setGenes(
+                            randomFloatTo(geneLimit), //a
+                            randomFloatTo(geneLimit), //b
+                            randomFloatTo(geneLimit + 20.), //m
+                            randomFloatTo(geneLimit), //n1
+                            randomFloatTo(geneLimit), //n2
+                            randomFloatTo(geneLimit), //n3
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit),
+                            randomFloatTo(geneLimit));
+        child = supershape.crossGenes(surrogate);
         child.set(1.f, 20, 20, 1.0);
+        } else {
+            col = glm::vec3((plants[0].color + plants[1].color) * .5f);
+            child = plants[0].geometry.crossGenes(plants[1].geometry);
+            child.set(1.f, 20, 20, 1.0);
+        }
 
-        glm::vec3 pos = cam_first_person.getPosition() + glm::vec3(0, 0, -5);
-        Plant newPlant = Plant(pos, child);
+        glm::vec3 pos = cam_first_person.getPosition() + cam_first_person.getForward() * 2.f;
+        Plant newPlant = Plant(pos, col, child);
         plants.push_back(newPlant);
     }
 
@@ -162,8 +169,8 @@ Sphere supershape(1.0f , 20, 20);
             cam_first_person.setPosition(
                 cam_first_person.getPosition() * glm::vec3{1, 0, 1} + 
                 glm::vec3{0, 2, 0} + 
-                cam_forward * 4.0f * dt * input.y + 
-                cam_right * 4.0f * dt * input.x
+                cam_forward * 10.0f * dt * input.y + 
+                cam_right * 10.0f * dt * input.x
             ); // force camera movement on y plane
         }
 
@@ -197,20 +204,24 @@ Sphere supershape(1.0f , 20, 20);
             M = M*ScaleS;            
             ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
             ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
+            cube->materials[0].diffuse = p.color;
+            cube->materials[0].ambient = p.color;
+            cube->materials[0].emission = p.color * 0.9f;
             
             cube->draw(prog);
         }
 
         // house
-        M = glm::translate(glm::identity<glm::mat4>(), {40, -7, 40});
+        M = glm::translate(glm::identity<glm::mat4>(), {40, -17, 40});
+        M = M * glm::scale(glm::identity<glm::mat4>(), glm::vec3(2, 2, 2));
         G = glm::inverse(glm::transpose(glm::mat3(M)));
-        
+
         ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
         ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
         house->draw(prog);
 
         // ground cube
-        M = glm::translate(glm::identity<glm::mat4>(), {0, 0, 0}) * glm::scale(glm::identity<glm::mat4>(), {300, 0.2, 300});
+        M = glm::translate(glm::identity<glm::mat4>(), {0, -5, 0}) * glm::scale(glm::identity<glm::mat4>(), {300, 0.2, 300});
         G = glm::inverse(glm::transpose(glm::mat3(M)));
         
         ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
