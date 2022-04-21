@@ -59,8 +59,8 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
 
 VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer) {
     VertexBuffer vb;
-    int some = indexBuffer[101];
-    std::cout << "indexbuffer? " << some << "\n";
+    vb.indexed = true;
+
 
     vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
     vb.buffers.push_back(Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});

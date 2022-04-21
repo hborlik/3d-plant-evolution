@@ -60,6 +60,29 @@ public:
 
     std::unique_ptr<ev2::Model> getModel();
 
+    // genes
+    void setGenes(float a, float b, float m, float n1, float n2, float n3, 
+                  float c, float d, float k, float q1, float q2, float q3){
+                  this->a = a; this->b = b; this->m = m; this->n1 = n1; this->n2 = n2; this->n3 = n3;     
+                  this->c = c; this->d = d; this->k = k; this->q1 = q1; this->q2 = q2; this->q3 = q3; 
+                  }
+
+    Sphere crossGenes(Sphere parentB);
+
+    //genes
+    float a = 1.f; //* //sin(time); //+ sin(f);
+    float b = 1.f;
+    float m = 1.f;
+    float n1 = 1.f;
+    float n2 = 1.f;
+    float n3 = 1.f;
+    float c = a; //+ sin(f);
+    float d = b;
+    float k = m;
+    float q1 = n1;
+    float q2 = n2;
+    float q3 = n3;
+
 protected:
 
 private:
@@ -89,6 +112,7 @@ private:
     // interleaved
     std::vector<float> interleavedVertices;
     int interleavedStride;                  // # of bytes to hop to the next vertex (should be 32 bytes)
+
 
 };
 
