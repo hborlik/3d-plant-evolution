@@ -126,9 +126,25 @@ namespace ev2 {
         LINEAR_MIPMAP_LINEAR        = GL_LINEAR_MIPMAP_LINEAR
     };
 
-    enum class TextureTarget : GLenum {
+    enum class TextureType : GLenum {
+        TEXTURE_1D = GL_TEXTURE_1D,
         TEXTURE_2D = GL_TEXTURE_2D,
         TEXTURE_CUBE_MAP = GL_TEXTURE_CUBE_MAP
+    };
+
+    enum class TextureTarget : GLenum {
+        TEXTURE_2D              = GL_TEXTURE_2D, 
+        PROXY_TEXTURE_2D        = GL_PROXY_TEXTURE_2D, 
+        TEXTURE_1D_ARRAY        = GL_TEXTURE_1D_ARRAY, 
+        PROXY_TEXTURE_1D_ARRAY  = GL_PROXY_TEXTURE_1D_ARRAY, 
+        TEXTURE_RECTANGLE       = GL_TEXTURE_RECTANGLE, 
+        PROXY_TEXTURE_RECTANGLE = GL_PROXY_TEXTURE_RECTANGLE,
+        POSITIVE_X              = GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+        NEGATIVE_X              = GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+        POSITIVE_Y              = GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+        NEGATIVE_Y              = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+        POSITIVE_Z              = GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+        NEGATIVE_Z              = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
     };
 
     enum class TextureInternalFormat : GLenum { // internal storage format
