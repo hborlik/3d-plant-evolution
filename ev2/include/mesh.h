@@ -29,7 +29,7 @@ public:
     VertexBuffer& operator=(VertexBuffer&& o) = delete;
 
     ~VertexBuffer() {
-        if (gl_vao != -1)
+        if (gl_vao != 0)
             glDeleteVertexArrays(1, &gl_vao);
     }
 
@@ -51,7 +51,7 @@ public:
 
     int getIndexed() {return indexed;}
 private:
-    GLuint gl_vao = -1;
+    GLuint gl_vao = 0;
     int indexed = -1;
 };
 

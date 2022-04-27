@@ -43,6 +43,19 @@ bool ev2::isGLError() {
     return status != GL_NO_ERROR;
 }
 
+GLenum ev2::getGLError() {
+    return glGetError();
+}
+
+void ev2::clearGLErrors() {
+    while (true)
+    {
+        const GLenum err = glGetError();
+        if (GL_NO_ERROR == err)
+            break;
+    }
+}
+
 Args::Args(int argc, char* argv[]) {
     for (int i = 0; i < argc; ++i) {
 

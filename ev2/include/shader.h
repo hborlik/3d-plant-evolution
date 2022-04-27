@@ -293,8 +293,8 @@ namespace ev2
         std::unordered_map<std::string, ProgramInputDescription> inputs;
         std::unordered_map<std::string, ProgramUniformBlockDescription> uniformBlocks;
 
-        // shader ubo, contains shader parameters
-        ProgramUniformBlockDescription shaderDataDescription;
+        // shader global data
+        ProgramUniformBlockDescription shaderGlobalDataDescription;
         std::unique_ptr<Buffer> shaderParameters;
 
         // counter to let dependent objects know when this shader has been reloaded.
@@ -324,9 +324,9 @@ namespace ev2
     template <typename T>
     bool Program::setShaderParameter(const std::string &paramName, const T &data)
     {
-        if (shaderDataDescription.isValid())
+        if (shaderGlobalDataDescription.isValid())
         {
-            GLint uoff = shaderDataDescription.getOffset(paramName);
+            GLint uoff = shaderGlobalDataDescription.getOffset(paramName);
             if (uoff != -1)
             {
                 shaderParameters->SubData(data, uoff);
@@ -340,9 +340,9 @@ namespace ev2
     template <typename T>
     bool Program::setShaderParameter(const std::string &paramName, const std::vector<T> &data)
     {
-        if (shaderDataDescription.isValid())
+        if (shaderGlobalDataDescription.isValid())
         {
-            ProgramUniformBlockDescription::Layout layout = shaderDataDescription.getLayout(paramName);
+            ProgramUniformBlockDescription::Layout layout = shaderGlobalDataDescription.getLayout(paramName);
             GLint uoff = layout.Offset;
             GLint stride = layout.ArrayStride;
             if (uoff != -1 && layout.ArraySize >= data.size())

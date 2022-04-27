@@ -141,11 +141,12 @@ void Program::link() {
         updateProgramUniformInfo();
         built = true;
 
-        // if we have a shader parameter ubo, save it
-        shaderDataDescription = getUniformBlockInfo(mat_spec::GUBName);
-        if (shaderDataDescription.isValid()) {
+        // if we have a global shader parameter ubo, save it
+        // TODO separate global shader information UBO from shader data UBO
+        shaderGlobalDataDescription = getUniformBlockInfo(mat_spec::GUBName);
+        if (shaderGlobalDataDescription.isValid()) {
             shaderParameters = std::make_unique<Buffer>(gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW);
-            shaderParameters->Allocate(shaderDataDescription.block_size);
+            shaderParameters->Allocate(shaderGlobalDataDescription.block_size);
         }
 
         // additional configuration
@@ -172,9 +173,9 @@ void Program::use() const {
     // set program to active
     glUseProgram(gl_reference);
     // bind shader UBO to shader data location if available
-    if(shaderDataDescription.isValid())
+    if(shaderGlobalDataDescription.isValid())
         GL_CHECKED_CALL(
-            glBindBufferRange(GL_UNIFORM_BUFFER, shaderDataDescription.location, shaderParameters->Handle(), 0, shaderParameters->size())
+            glBindBufferRange(GL_UNIFORM_BUFFER, shaderGlobalDataDescription.location, shaderParameters->Handle(), 0, shaderParameters->size())
         );
 }
 

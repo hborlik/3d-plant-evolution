@@ -25,8 +25,8 @@ struct Ref {
 
     Ref<T>& operator=(const Ref<T>& o) noexcept;
 
-    T* Ref<T>::operator->() noexcept {
-        return object;
+    T* operator->() noexcept {
+        return reinterpret_cast<T*>(object);
     }
 
     bool operator==(const Ref<T>& o) noexcept {return o.object == object;}

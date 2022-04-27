@@ -19,7 +19,7 @@
 #define GL_CHECKED_CALL(call) {isGLError(); (call); if(isGLError()) std::cerr << __FILE__ << ":" << __LINE__ << " GL_CHECKED_CALL error" << std::endl;}
 
 #ifndef NDEBUG
-#define GL_ERROR_CHECK(call, var) {isGLError(); (call); var = isGLError();}
+#define GL_ERROR_CHECK(call, var) {clearGLErrors(); (call); var = getGLError();}
 #else
 #define GL_ERROR_CHECK(call, var) {(call);}
 #endif
@@ -32,6 +32,19 @@ namespace ev2 {
      * @return false no error
      */
     bool isGLError();
+
+    /**
+     * @brief get gl error value from last call
+     * 
+     * @return GLenum 
+     */
+    GLenum getGLError();
+
+    /**
+     * @brief clear all gl errors
+     * 
+     */
+    void clearGLErrors();
 
     namespace gl {
     
@@ -232,6 +245,29 @@ namespace ev2 {
     };
 
     constexpr uint32_t NumTextureUnits = sizeof(TextureUnit) / sizeof(GLenum);
+
+    enum class FBOTarget : GLenum {
+        DRAW    = GL_DRAW_FRAMEBUFFER, // for blit operations
+        READ    = GL_READ_FRAMEBUFFER, // for blit operations
+        RW      = GL_FRAMEBUFFER
+    };
+
+    enum class FBOAttachment : GLenum {
+        COLOR0          = GL_COLOR_ATTACHMENT0,
+        COLOR1          = GL_COLOR_ATTACHMENT1,
+        COLOR2          = GL_COLOR_ATTACHMENT2,
+        COLOR3          = GL_COLOR_ATTACHMENT3,
+        COLOR4          = GL_COLOR_ATTACHMENT4,
+        COLOR5          = GL_COLOR_ATTACHMENT5,
+        COLOR6          = GL_COLOR_ATTACHMENT6,
+        COLOR7          = GL_COLOR_ATTACHMENT7,
+        COLOR8          = GL_COLOR_ATTACHMENT8,
+        COLOR9          = GL_COLOR_ATTACHMENT9,
+        COLOR10         = GL_COLOR_ATTACHMENT10,
+        DEPTH           = GL_DEPTH_ATTACHMENT,
+        STENCIL         = GL_STENCIL_ATTACHMENT,
+        DEPTH_STENCIL   = GL_DEPTH_STENCIL_ATTACHMENT
+    };
 
     constexpr uint32_t VERTEX_BINDING_LOCATION = 0;
     constexpr uint32_t NORMAL_BINDING_LOCATION = 1;
