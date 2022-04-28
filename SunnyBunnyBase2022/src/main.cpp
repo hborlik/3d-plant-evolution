@@ -95,7 +95,7 @@ public:
      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
@@ -118,6 +118,7 @@ public:
     //this shader just draws right now
     tex_prog->bind();
       glUniform1i(tex_prog->getUniform("texBuf"), 0);
+      glUniform1f(tex_prog->getUniform("time"), glfwGetTime());
       glEnableVertexAttribArray(0);
       glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
       glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *) 0);
@@ -161,6 +162,7 @@ public:
     tex_prog->init();
     tex_prog->addUniform("texBuf");
     tex_prog->addAttribute("vertPos");
+    tex_prog->addUniform("time");
 
     //create two frame buffer objects to toggle between
     //make two FBOs and two textures

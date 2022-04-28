@@ -55,6 +55,6 @@ if(NOT WIN32)
 else()
 
   # Link OpenGL on Windows
-  target_link_libraries(FBO opengl32.lib)
+  target_link_libraries(FBO PUBLIC opengl32.lib)
 
 endif()
