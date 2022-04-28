@@ -26,14 +26,14 @@ void Texture::generate_mips() {
     unbind();
 }
 
-void Texture::set_data2D(const unsigned char* data, gl::PixelFormat dataFormat, gl::PixelType dataType, gl::TextureInternalFormat internalFormat, uint32_t width, uint32_t height) {
+void Texture::set_data2D(gl::TextureInternalFormat internalFormat, uint32_t width, uint32_t height, gl::PixelFormat dataFormat, gl::PixelType dataType, const unsigned char* data) {
     bind();
     glTexImage2D((GLenum)gl::TextureTarget::TEXTURE_2D, 0, (GLint)internalFormat, width, height, 0, (GLenum)dataFormat, (GLenum)dataType, data);
     unbind();
     internal_format = internalFormat;
 }
 
-void Texture::set_data3D(const unsigned char* data, gl::PixelFormat dataFormat, gl::PixelType dataType, gl::TextureInternalFormat internalFormat, uint32_t width, uint32_t height, gl::TextureTarget side) {
+void Texture::set_data3D(gl::TextureInternalFormat internalFormat, uint32_t width, uint32_t height, gl::PixelFormat dataFormat, gl::PixelType dataType, const unsigned char* data, gl::TextureTarget side) {
     bind();
     glTexImage2D((GLenum)side, 0, (GLint)internalFormat, width, height, 0, (GLenum)dataFormat, (GLenum)dataType, data);
     unbind();
@@ -45,7 +45,11 @@ void Texture::set_data3D(const unsigned char* data, gl::PixelFormat dataFormat, 
 void FBO::resize_all(uint32_t width, uint32_t height) {
     for (auto& tex_at : attachments) {
         auto &tex = tex_at.second;
-        tex->set_data2D(nullptr, gl::PixelFormat::RGB, tex->get_pixel_type(), tex->get_internal_format(), width, height);
+        tex->set_data2D(tex->get_internal_format(), width, height, tex->get_pixel_format(), tex->get_pixel_type(), nullptr);
+    }
+    for (auto& rb_at : rb_attachments) {
+        auto &rb = rb_at.second;
+        rb.set_data(rb.get_format(), width, height);
     }
 }
 
@@ -58,13 +62,38 @@ bool FBO::check() {
 }
 
 bool FBO::attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_point) {
+    if (attachments.find(attachment_point) != attachments.end())
+        return false;
     if (texture && texture->type() == gl::TextureType::TEXTURE_2D) {
         clearGLErrors();
         glFramebufferTexture2D((GLenum)target, (GLenum)attachment_point, (GLenum)texture->type(), texture->get_handle(), 0);
         if (!isGLError()) {
-            attachments.insert_or_assign(attachment_point, texture);
+            attachments.insert(std::pair{attachment_point, texture});
+            rb_attachments.erase(attachment_point);
+
+            glNamedFramebufferDrawBuffers(gl_reference, 1, (GLenum*)&attachment_point);
             return true;
         }
+    }
+    return false;
+}
+
+bool FBO::attach_renderbuffer(gl::RenderBufferInternalFormat format, uint32_t width, uint32_t height, gl::FBOAttachment attachment_point) {
+    // create new renderbuffer
+    auto ip = rb_attachments.emplace(std::pair{attachment_point, RenderBuffer{}});
+    if (!ip.second)
+        return false;
+
+    RenderBuffer &r_buffer = ip.first->second;
+
+    // attempt to attach the renderbuffer
+    clearGLErrors();
+    glFramebufferRenderbuffer(GL_RENDERBUFFER, (GLenum)attachment_point, GL_RENDERBUFFER, r_buffer.get_handle());
+    if (!isGLError()) {
+        attachments.erase(attachment_point);
+
+        glNamedFramebufferDrawBuffers(gl_reference, 1, (GLenum*)&attachment_point);
+        return true;
     }
     return false;
 }

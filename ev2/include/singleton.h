@@ -38,7 +38,7 @@ public:
 
     inline static T& get_singleton() {
         if (!m_singleton)
-            throw std::runtime_error("Singleton " + util::type_name<T>() + " was used without initialization");
+            throw engine_exception{"Singleton " + util::type_name<T>() + " was used without initialization"};
         return *m_singleton.get();
     }
 };

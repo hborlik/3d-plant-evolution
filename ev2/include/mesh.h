@@ -73,10 +73,12 @@ public:
 
     VertexBuffer vb;
 
+    gl::CullMode cull_mode;
+
     void draw(const Program& prog);
 };
 
-struct VisualInstance {
+struct ModelInstance {
     glm::mat4   transform;
     Model*      model;
 };

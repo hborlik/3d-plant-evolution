@@ -93,13 +93,18 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
 
 void Model::draw(const Program& prog) {
     vb.bind();
-    glCullFace(GL_BACK);
+    if (cull_mode == gl::CullMode::NONE) {
+        glDisable(GL_CULL_FACE);
+    } else {
+        glEnable(GL_CULL_FACE);
+        glCullFace((GLenum)cull_mode);
+    }
     // TODO: support for multiple index buffers
     if (vb.getIndexed() != -1) {
         for (auto& m : meshes) {
             prog.applyMaterial(materials[m.material_id]);
 
-            vb.buffers[vb.getIndexed()].Bind();
+            vb.buffers[vb.getIndexed()].Bind(); // bind index buffer (again, @Windows)
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {

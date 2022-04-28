@@ -97,10 +97,17 @@ void Shader::LoadFrom(const std::filesystem::path& path) {
 
 // ShaderProgram
 
+Program::Program() : 
+    attachedShaders{} {
+
+    gl_reference = glCreateProgram();
+    if(gl_reference == 0)
+        throw engine_exception{"Failed to create Shader Program"};
+}
+
 Program::Program(std::string name) : 
     ProgramName{std::move(name)}, 
-    attachedShaders{},
-    shaderParameters{} {
+    attachedShaders{} {
 
     gl_reference = glCreateProgram();
     if(gl_reference == 0)
@@ -141,13 +148,13 @@ void Program::link() {
         updateProgramUniformInfo();
         built = true;
 
-        // if we have a global shader parameter ubo, save it
-        // TODO separate global shader information UBO from shader data UBO
-        shaderGlobalDataDescription = getUniformBlockInfo(mat_spec::GUBName);
-        if (shaderGlobalDataDescription.isValid()) {
-            shaderParameters = std::make_unique<Buffer>(gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW);
-            shaderParameters->Allocate(shaderGlobalDataDescription.block_size);
-        }
+        // // if we have a global shader parameter ubo, save it
+        // // TODO separate global shader information UBO from shader data UBO
+        // shaderGlobalDataDescription = getUniformBlockInfo(mat_spec::GUBName);
+        // if (shaderGlobalDataDescription.isValid()) {
+        //     shaderParameters = std::make_unique<Buffer>(gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW);
+        //     shaderParameters->Allocate(shaderGlobalDataDescription.block_size);
+        // }
 
         // additional configuration
         onBuilt();
@@ -172,11 +179,6 @@ void Program::link() {
 void Program::use() const {
     // set program to active
     glUseProgram(gl_reference);
-    // bind shader UBO to shader data location if available
-    if(shaderGlobalDataDescription.isValid())
-        GL_CHECKED_CALL(
-            glBindBufferRange(GL_UNIFORM_BUFFER, shaderGlobalDataDescription.location, shaderParameters->Handle(), 0, shaderParameters->size())
-        );
 }
 
 void Program::applyMaterial(const Material& material) const {

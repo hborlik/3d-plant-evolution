@@ -43,9 +43,29 @@ public:
     explicit Node(const std::string& name) : name{name} {}
     virtual ~Node() = default;
 
+    /**
+     * @brief node initialization
+     * 
+     */
     virtual void on_init() {}
+
+    /**
+     * @brief node has been added to scene
+     * 
+     */
     virtual void on_ready() {}
+
+    /**
+     * @brief per frame update function
+     * 
+     * @param delta 
+     */
     virtual void on_process(float delta) {}
+
+    /**
+     * @brief called before node is removed from the scene
+     * 
+     */
     virtual void on_destroy() {}
 
     void add_child(Ref<Node> node);
@@ -80,12 +100,17 @@ public:
     }
 
     Transform transform{};
-    
+
 private:
     const std::string name = "Node";
 
     std::list<Ref<Node>> children;
     Node* parent = nullptr;
+};
+
+class Scene {
+public:
+    void update(float dt);
 };
 
 }

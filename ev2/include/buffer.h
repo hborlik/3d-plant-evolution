@@ -84,7 +84,7 @@ public:
      */
     void Unbind() {glBindBuffer((GLenum)target, 0);}
 
-    GLuint Handle() noexcept { return gl_reference; }
+    GLuint handle() const noexcept { return gl_reference; }
 
     /**
      * @brief Get the size in bytes of buffer

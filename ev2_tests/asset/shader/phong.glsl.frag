@@ -4,7 +4,7 @@ out vec4 color;
 in vec3 vert_normal;
 in vec3 world_pos;
 in vec3 vert_color;
-in vec2 tex_pos;
+in vec2 tex_coord;
 
 in vec3 view_vec;
 

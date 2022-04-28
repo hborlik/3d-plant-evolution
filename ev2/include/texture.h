@@ -83,9 +83,9 @@ public:
      * @param width 
      * @param height 
      */
-    void set_data2D(const unsigned char* data, gl::PixelFormat dataFormat, gl::PixelType dataType, gl::TextureInternalFormat internalFormat, uint32_t width, uint32_t height);
+    void set_data2D(gl::TextureInternalFormat internalFormat, uint32_t width, uint32_t height, gl::PixelFormat dataFormat, gl::PixelType dataType, const unsigned char* data);
 
-    void set_data3D(const unsigned char* data, gl::PixelFormat dataFormat, gl::PixelType dataType, gl::TextureInternalFormat internalFormat, uint32_t width, uint32_t height, gl::TextureTarget side);
+    void set_data3D(gl::TextureInternalFormat internalFormat, uint32_t width, uint32_t height, gl::PixelFormat dataFormat, gl::PixelType dataType, const unsigned char* data, gl::TextureTarget side);
 
 protected:
     const gl::TextureType texture_type;
@@ -93,6 +93,38 @@ protected:
     gl::PixelFormat pixel_format;
     gl::PixelType pixel_type;
     GLuint handle = 0;
+};
+
+class RenderBuffer {
+public:
+    RenderBuffer() {
+        glGenRenderbuffers(1, &gl_reference);
+    }
+
+    ~RenderBuffer() {
+        if (gl_reference != 0)
+            glDeleteRenderbuffers(1, &gl_reference);
+    }
+
+    RenderBuffer(RenderBuffer&& o) {
+        std::swap(gl_reference, o.gl_reference);
+    }
+
+    RenderBuffer(const RenderBuffer& o) = delete;
+    RenderBuffer& operator              = (const RenderBuffer&) = delete;
+    RenderBuffer& operator              = (RenderBuffer&&)      = delete;
+
+    void set_data(gl::RenderBufferInternalFormat format, uint32_t width, uint32_t height) {
+        GL_CHECKED_CALL(glNamedRenderbufferStorage(gl_reference, (GLenum)format, width, height));
+    }
+
+    GLuint get_handle() const noexcept {return gl_reference;}
+
+    gl::RenderBufferInternalFormat get_format() const noexcept {return format;}
+
+private:
+    GLuint gl_reference = 0;
+    gl::RenderBufferInternalFormat format;
 };
 
 /**
@@ -148,6 +180,8 @@ public:
      */
     bool attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_point);
 
+    bool attach_renderbuffer(gl::RenderBufferInternalFormat format, uint32_t width, uint32_t height, gl::FBOAttachment attachment_point);
+
     void detach(gl::FBOAttachment attachment_point);
 
 private:
@@ -155,6 +189,7 @@ private:
     GLuint gl_reference = 0;
 
     std::unordered_map<gl::FBOAttachment, std::shared_ptr<Texture>> attachments;
+    std::unordered_map<gl::FBOAttachment, RenderBuffer> rb_attachments;
 };
 
 }
