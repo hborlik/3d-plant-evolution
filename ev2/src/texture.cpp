@@ -54,10 +54,12 @@ void FBO::resize_all(uint32_t width, uint32_t height) {
 }
 
 bool FBO::check() {
-    GLenum err = glCheckNamedFramebufferStatus(gl_reference, (GLenum)target);
+    bind();
+    GLenum err = glCheckFramebufferStatus((GLenum)target);
     if (err != GL_FRAMEBUFFER_COMPLETE) {
         // TODO error println
     }
+    unbind();
     return err == GL_FRAMEBUFFER_COMPLETE;
 }
 
@@ -66,15 +68,19 @@ bool FBO::attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_
         return false;
     if (texture && texture->type() == gl::TextureType::TEXTURE_2D) {
         clearGLErrors();
+        // glNamedFramebufferTexture(gl_reference, (GLenum)attachment_point, texture->get_handle(), 0);
+        bind();
         glFramebufferTexture2D((GLenum)target, (GLenum)attachment_point, (GLenum)texture->type(), texture->get_handle(), 0);
         if (!isGLError()) {
             attachments.insert(std::pair{attachment_point, texture});
             rb_attachments.erase(attachment_point);
 
-            glNamedFramebufferDrawBuffers(gl_reference, 1, (GLenum*)&attachment_point);
+            glDrawBuffers(1, (GLenum*)&attachment_point);
+            unbind();
             return true;
         }
     }
+    unbind();
     return false;
 }
 
@@ -85,16 +91,21 @@ bool FBO::attach_renderbuffer(gl::RenderBufferInternalFormat format, uint32_t wi
         return false;
 
     RenderBuffer &r_buffer = ip.first->second;
+    r_buffer.set_data(format, width, height);
 
     // attempt to attach the renderbuffer
     clearGLErrors();
-    glFramebufferRenderbuffer(GL_RENDERBUFFER, (GLenum)attachment_point, GL_RENDERBUFFER, r_buffer.get_handle());
+    // glNamedFramebufferRenderbuffer(gl_reference, (GLenum)attachment_point, GL_RENDERBUFFER, r_buffer.get_handle());
+    bind();
+    glFramebufferRenderbuffer((GLenum)target, (GLenum)attachment_point, GL_RENDERBUFFER, r_buffer.get_handle());
     if (!isGLError()) {
         attachments.erase(attachment_point);
 
-        glNamedFramebufferDrawBuffers(gl_reference, 1, (GLenum*)&attachment_point);
+        // glDrawBuffers(1, (GLenum*)&attachment_point);
+        unbind();
         return true;
     }
+    unbind();
     return false;
 }
 

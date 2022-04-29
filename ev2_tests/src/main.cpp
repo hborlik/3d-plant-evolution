@@ -1,4 +1,7 @@
 
+#include <iostream>
+#include <filesystem>
+
 #include <tests.h>
 
 #include <ev.h>
@@ -11,8 +14,9 @@
 #include <mesh.h>
 #include <resource.h>
 #include <Sphere.h>
-#include <iostream>
-#include <filesystem>
+#include <renderer.h>
+#include <node.h>
+
 
 namespace fs = std::filesystem;
 
@@ -36,7 +40,7 @@ public:
     ev2::Camera cam_fly;
     ev2::Camera cam_first_person;
 
-    std::vector<Plant> plants;
+    ev2::Scene scene;
 
     glm::vec2 mouse_p;
     glm::vec2 mouse_delta;
@@ -66,9 +70,9 @@ public:
     fs::path asset_path = fs::path("asset");
 
     ev2::Program prog{"phong"};
-    std::unique_ptr<ev2::Model> cube;
-    std::unique_ptr<ev2::Model> house;
-    std::unique_ptr<ev2::Model> ground_cube;
+    std::shared_ptr<ev2::Model> cube;
+    std::shared_ptr<ev2::Model> house;
+    std::shared_ptr<ev2::Model> ground_cube;
 
     uint32_t width = 800, height = 600;
 
@@ -79,6 +83,9 @@ public:
         prog.link();
         
         std::cout << prog;
+
+        ev2::Renderer::intitalize(width, height, shader_dir);
+
     }
 
     void load_models() {
@@ -88,6 +95,12 @@ public:
         ground_cube = ev2::loadObj("cube.obj", asset_path / "models");
         ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         ground_cube->materials[0].shininess = 0.02;
+
+        ev2::Renderer::get_singleton().create_model(1, cube);
+        ev2::Renderer::get_singleton().create_model(2, house);
+        ev2::Renderer::get_singleton().create_model(3, ground_cube);
+
+        ev2::Renderer::get_singleton().create_instance(2);
     }
 
     void updateShape(float dt, Sphere geometry) {
@@ -116,42 +129,6 @@ public:
         else
             glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
         enabled = !enabled;
-    }
-
-    void placeObj() {
-        Sphere supershape(1.0f , 20, 20);
-        supershape.set(1.f, 20, 20, 1.0);
-        Sphere surrogate(1.0f , 20, 20);
-        surrogate.set(1.f, 20, 20, 1.0);
-        Sphere child(1.f, 20, 20, 1.0);
-
-        glm::vec3 col = glm::vec3(randomFloatTo(1.), randomFloatTo(1.), randomFloatTo(1.));
-        if (plants.size() < 2) {
-            float geneLimit = 1.f;
-            supershape.setGenes(
-                            randomFloatTo(geneLimit), //a
-                            randomFloatTo(geneLimit), //b
-                            randomFloatTo(geneLimit + 20.), //m
-                            randomFloatTo(geneLimit), //n1
-                            randomFloatTo(geneLimit), //n2
-                            randomFloatTo(geneLimit), //n3
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit),
-                            randomFloatTo(geneLimit));
-        child = supershape.crossGenes(surrogate);
-        child.set(1.f, 20, 20, 1.0);
-        } else {
-            col = glm::vec3((plants[0].color + plants[plants.size()-1].color) * .5f);
-            child = plants[0].geometry.crossGenes(plants[plants.size()-1].geometry);
-            child.set(1.f, 20, 20, 1.0);
-        }
-
-        glm::vec3 pos = cam_first_person.getPosition() + cam_first_person.getForward() * 2.f;
-        Plant newPlant = Plant(pos, col, child);
-        plants.push_back(newPlant);
     }
 
     void render(float dt) {
@@ -189,58 +166,61 @@ public:
         }
 
         // render scene
-        glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        prog.use();
+        ev2::Renderer::get_singleton().render(getActiveCam());
 
-        prog.setShaderParameter("P", getActiveCam().getProjection());
-        prog.setShaderParameter("V", getActiveCam().getView());
-        prog.setShaderParameter("CameraPos", getActiveCam().getPosition());
+        // glViewport(0, 0, width, height);
+        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 M = glm::translate(glm::identity<glm::mat4>(), glm::vec3{0, 3, -5}) * glm::rotate(glm::identity<glm::mat4>(), glm::radians(90.0f), glm::vec3{0, 0, 1});
-        glm::mat3 G = glm::inverse(glm::transpose(glm::mat3(M)));
-        //glm::mat4 Trans = glm::translate( glm::mat4(1.0f), glm::vec3(0, -1, -1));
-        //glm::mat4 RotX = glm::rotate( glm::mat4(1.0f), rotX, vec3(1, 0, 0));
-        //glm::mat4 RotY = glm::rotate( glm::mat4(1.0f), rotY, vec3(0, 1, 0));
-        glm::mat4 ScaleS = glm::scale(glm::mat4(1.0f), glm::vec3(0.1, 0.1, 0.1));        
-        M = M*ScaleS;
-        ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
-        ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
+        // prog.use();
 
-        cube->draw(prog);
+        // prog.setShaderParameter("P", getActiveCam().getProjection());
+        // prog.setShaderParameter("V", getActiveCam().getView());
+        // prog.setShaderParameter("CameraPos", getActiveCam().getPosition());
 
-        for (auto& p : plants) {
-            updateShape(dt, p.geometry);
-            M = glm::translate(glm::identity<glm::mat4>(), p.position) * glm::mat4_cast(p.rot);
-            G = glm::inverse(glm::transpose(glm::mat3(M)));
-            glm::mat4 ScaleS = glm::scale(glm::mat4(1.0f), glm::vec3(0.1, 0.1, 0.1));        
-            M = M*ScaleS;            
-            ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
-            ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
-            cube->materials[0].diffuse = p.color;
-            cube->materials[0].ambient = p.color;
-            cube->materials[0].emission = p.color * 0.9f;
+        // glm::mat4 M = glm::translate(glm::identity<glm::mat4>(), glm::vec3{0, 3, -5}) * glm::rotate(glm::identity<glm::mat4>(), glm::radians(90.0f), glm::vec3{0, 0, 1});
+        // glm::mat3 G = glm::inverse(glm::transpose(glm::mat3(M)));
+        // //glm::mat4 Trans = glm::translate( glm::mat4(1.0f), glm::vec3(0, -1, -1));
+        // //glm::mat4 RotX = glm::rotate( glm::mat4(1.0f), rotX, vec3(1, 0, 0));
+        // //glm::mat4 RotY = glm::rotate( glm::mat4(1.0f), rotY, vec3(0, 1, 0));
+        // glm::mat4 ScaleS = glm::scale(glm::mat4(1.0f), glm::vec3(0.1, 0.1, 0.1));        
+        // M = M*ScaleS;
+        // ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
+        // ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
+
+        // cube->draw(prog);
+
+        // for (auto& p : plants) {
+        //     updateShape(dt, p.geometry);
+        //     M = glm::translate(glm::identity<glm::mat4>(), p.position) * glm::mat4_cast(p.rot);
+        //     G = glm::inverse(glm::transpose(glm::mat3(M)));
+        //     glm::mat4 ScaleS = glm::scale(glm::mat4(1.0f), glm::vec3(0.1, 0.1, 0.1));        
+        //     M = M*ScaleS;            
+        //     ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
+        //     ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
+        //     cube->materials[0].diffuse = p.color;
+        //     cube->materials[0].ambient = p.color;
+        //     cube->materials[0].emission = p.color * 0.9f;
             
-            cube->draw(prog);
-        }
+        //     cube->draw(prog);
+        // }
 
-        // house
-        M = glm::translate(glm::identity<glm::mat4>(), {40, -17, 40});
-        M = M * glm::scale(glm::identity<glm::mat4>(), glm::vec3(2, 2, 2));
-        G = glm::inverse(glm::transpose(glm::mat3(M)));
+        // // house
+        // M = glm::translate(glm::identity<glm::mat4>(), {40, -17, 40});
+        // M = M * glm::scale(glm::identity<glm::mat4>(), glm::vec3(2, 2, 2));
+        // G = glm::inverse(glm::transpose(glm::mat3(M)));
 
-        ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
-        ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
-        house->draw(prog);
+        // ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
+        // ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
+        // house->draw(prog);
 
-        // ground cube
-        M = glm::translate(glm::identity<glm::mat4>(), {0, -5, 0}) * glm::scale(glm::identity<glm::mat4>(), {300, 0.2, 300});
-        G = glm::inverse(glm::transpose(glm::mat3(M)));
+        // // ground cube
+        // M = glm::translate(glm::identity<glm::mat4>(), {0, -5, 0}) * glm::scale(glm::identity<glm::mat4>(), {300, 0.2, 300});
+        // G = glm::inverse(glm::transpose(glm::mat3(M)));
         
-        ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
-        ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
-        ground_cube->draw(prog);
+        // ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
+        // ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
+        // ground_cube->draw(prog);
     }
 
     void onKey(ev2::input::Key::Enum key, ev2::input::Modifier mods, bool down) override {
@@ -250,8 +230,6 @@ public:
                     ev2::window::setMouseCaptured(!ev2::window::getMouseCaptured());
                 break;
             case ev2::input::Key::KeyP:
-                if (down)
-                    placeObj();
                 break;
             case ev2::input::Key::Esc:
                 break;

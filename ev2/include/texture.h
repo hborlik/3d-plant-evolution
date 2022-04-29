@@ -114,8 +114,13 @@ public:
     RenderBuffer& operator              = (const RenderBuffer&) = delete;
     RenderBuffer& operator              = (RenderBuffer&&)      = delete;
 
+    void bind() {glBindRenderbuffer(GL_RENDERBUFFER, gl_reference);}
+    void unbind() {glBindRenderbuffer(GL_RENDERBUFFER, 0);}
+
     void set_data(gl::RenderBufferInternalFormat format, uint32_t width, uint32_t height) {
-        GL_CHECKED_CALL(glNamedRenderbufferStorage(gl_reference, (GLenum)format, width, height));
+        bind();
+        glRenderbufferStorage(GL_RENDERBUFFER, (GLenum)format, width, height);
+        unbind();
     }
 
     GLuint get_handle() const noexcept {return gl_reference;}
@@ -134,7 +139,7 @@ private:
 class FBO {
 public:
     FBO(gl::FBOTarget target) : target{target} {
-        glGenFramebuffers(1, &gl_reference);
+        GL_CHECKED_CALL(glGenFramebuffers(1, &gl_reference));
     }
 
     ~FBO() {

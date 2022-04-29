@@ -13,21 +13,11 @@
 
 namespace ev2 {
 
-struct Interaction
+struct SurfaceInteraction
 {
     double t = 0;
     glm::vec3 point;
     glm::vec3 incoming;
-
-    Interaction() = default;
-    Interaction(float t, glm::vec3 point, glm::vec3 incoming) : t{t},
-                                                                    point{point},
-                                                                    incoming{incoming} {}
-    virtual ~Interaction() = default;
-};
-
-struct SurfaceInteraction : public Interaction
-{
     glm::vec3 normal;
     glm::vec3 tan;
     glm::vec3 bi;
@@ -41,7 +31,7 @@ struct SurfaceInteraction : public Interaction
                        float t,
                        glm::vec3 point,
                        glm::vec3 incoming)
-        : Interaction{t, point, incoming},
+        : t{t}, point{point}, incoming{incoming},
           normal{normal},
           tan{tan},
           bi{bi},
@@ -114,7 +104,7 @@ struct Frustum {
  * @param s 
  * @return bool
  */
-bool intersect(const Frustum& f, const Sphere& s) noexcept {
+inline bool intersect(const Frustum& f, const Sphere& s) noexcept {
     float dist = 0;
     for (int i = 0; i < 6; i++) {
         dist = f.planes[i].distanceFromPlane(s.center);
@@ -126,7 +116,7 @@ bool intersect(const Frustum& f, const Sphere& s) noexcept {
     return false;
 };
 
-bool intersect(const Ray& ray, const Sphere& sph, SurfaceInteraction& hit) {
+inline bool intersect(const Ray& ray, const Sphere& sph, SurfaceInteraction& hit) {
     using namespace glm;
     vec3 e_c = (ray.origin - sph.center);
     float a = dot(ray.direction, ray.direction);

@@ -2,12 +2,13 @@
 
 namespace ev2 {
 
-Renderer::Renderer(uint32_t width, uint32_t height) : 
+Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path& asset_path) : 
     models{},
     model_instances{},
     geometry_program{"Geometry Program"},
     lighting_program{"Lighting Program"},
     g_buffer{gl::FBOTarget::RW},
+    sst_vb{VertexBuffer::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     width{width}, 
     height{height} {
@@ -15,7 +16,7 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
     // set up FBO textures
     albedo_spec = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D);
     albedo_spec->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::UNSIGNED_BYTE, nullptr);
-    g_buffer.attach(albedo_spec, gl::FBOAttachment::COLOR0);
+    g_buffer.attach(albedo_spec, gl::FBOAttachment::COLOR2);
 
     normals = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D);
     normals->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
@@ -23,7 +24,7 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
 
     position = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D);
     position->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
-    g_buffer.attach(position, gl::FBOAttachment::COLOR2);
+    g_buffer.attach(position, gl::FBOAttachment::COLOR0);
 
     g_buffer.attach_renderbuffer(gl::RenderBufferInternalFormat::DEPTH24_STENCIL8, width, height, gl::FBOAttachment::DEPTH_STENCIL);
 
@@ -33,21 +34,50 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
 
     // set up programs
 
-    geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "geometry.glsl.vert");
-    geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "geometry.glsl.frag");
+    geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, asset_path / "geometry.glsl.vert");
+    geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, asset_path / "geometry.glsl.frag");
     geometry_program.link();
 
     gp_m_location = geometry_program.getUniformInfo("M").Location;
     gp_g_location = geometry_program.getUniformInfo("G").Location;
 
 
-    lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert");
-    lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "lighting.glsl.frag");
+    lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, asset_path / "sst.glsl.vert");
+    lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, asset_path / "lighting.glsl.frag");
     lighting_program.link();
 
-    lp_pos_location = lighting_program.getUniformInfo("gPosition").Location;
-    lp_nor_location = lighting_program.getUniformInfo("gNormal").Location;
-    lp_als_location = lighting_program.getUniformInfo("gAlbedoSpec").Location;
+
+    // program globals
+    globals_desc = geometry_program.getUniformBlockInfo("Globals");
+    shader_globals.Allocate(globals_desc.block_size);
+}
+
+void Renderer::create_model(uint32_t mid, std::shared_ptr<Model> model) {
+    models.insert_or_assign(mid, model);
+}
+
+int32_t Renderer::create_instance(uint32_t mid) {
+    uint32_t id = model_instances.size();
+    
+    auto model = models.find(mid);
+    if (model != models.end()) {
+        ModelInstance mi{};
+        mi.transform = glm::identity<glm::mat4>();
+        mi.model = (*model).second.get();
+        model_instances.push_back(mi);
+
+        return id;
+    }
+
+    return -1;
+}
+
+void Renderer::set_instance_transform(int32_t iid, const glm::mat4& transform) {
+    if (iid < 0 || iid >= model_instances.size())
+        return;
+    
+    ModelInstance& mi = model_instances[iid];
+    mi.transform = transform;
 }
 
 void Renderer::render(const Camera &camera) {
@@ -89,14 +119,16 @@ void Renderer::render(const Camera &camera) {
 
     glActiveTexture(GL_TEXTURE0);
     position->bind();
+    gl::glUniform(position->get_handle(), glGetUniformLocation(lighting_program.getHandle(), "gPosition"));
+
     glActiveTexture(GL_TEXTURE1);
     normals->bind();
+    gl::glUniform(normals->get_handle(), glGetUniformLocation(lighting_program.getHandle(), "gNormal"));
+
     glActiveTexture(GL_TEXTURE2);
     albedo_spec->bind();
+    gl::glUniform(albedo_spec->get_handle(), glGetUniformLocation(lighting_program.getHandle(), "gAlbedoSpec"));
 
-    gl::glUniform(position->get_handle(), lp_pos_location);
-    gl::glUniform(normals->get_handle(), lp_nor_location);
-    gl::glUniform(albedo_spec->get_handle(), lp_als_location);
 
     draw_screen_space_triangle();
 }
@@ -113,7 +145,9 @@ void Renderer::set_resolution(uint32_t width, uint32_t height) {
 }
 
 void Renderer::draw_screen_space_triangle() {
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    sst_vb.bind();
+    GL_CHECKED_CALL(glDrawArrays(GL_TRIANGLES, 0, 3));
+    sst_vb.unbind();
 }
 
 }

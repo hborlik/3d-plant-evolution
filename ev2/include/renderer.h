@@ -9,6 +9,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <filesystem>
 
 #include <singleton.h>
 #include <mesh.h>
@@ -18,12 +19,19 @@
 
 namespace ev2 {
 
+struct ModelInstance {
+    glm::mat4   transform;
+    Model*      model;
+};
+
 class Renderer : public Singleton<Renderer> {
 public:
-    Renderer(uint32_t width, uint32_t height);
+    Renderer(uint32_t width, uint32_t height, const std::filesystem::path& asset_path);
 
     void create_model(uint32_t mid, std::shared_ptr<Model> model);
-    
+
+    int32_t create_instance(uint32_t mid);
+    void set_instance_transform(int32_t iid, const glm::mat4& transform);
 
     void render(const Camera &camera);
 
@@ -42,9 +50,10 @@ private:
     int gp_g_location;
 
     Program lighting_program;
-    int lp_pos_location, lp_nor_location, lp_als_location;
 
     FBO g_buffer;
+    
+    VertexBuffer sst_vb;
 
     std::shared_ptr<Texture> albedo_spec;
     std::shared_ptr<Texture> normals;

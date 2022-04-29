@@ -59,8 +59,6 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
 
 VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer) {
     VertexBuffer vb;
-    vb.indexed = true;
-
 
     vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
     vb.buffers.push_back(Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
@@ -84,6 +82,29 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
 
     vb.buffers[0].Unbind();
     vb.buffers[1].Unbind();
+
+    glBindVertexArray(0);
+
+    return std::move(vb);
+}
+
+VertexBuffer VertexBuffer::vbInitSST() {
+    VertexBuffer vb;
+    vb.indexed = -1;
+
+    // pos(3float), normal(3float), color(3float), texcoord(2float)
+    glGenVertexArrays(1, &vb.gl_vao);
+    glBindVertexArray(vb.gl_vao);
+
+    std::vector<float> buffer{0, 0, 2, 0, 0, 2};
+
+    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers[vb.buffers.size() - 1].Bind();
+
+    glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
+
+    vb.buffers[vb.buffers.size() - 1].Unbind();
 
     glBindVertexArray(0);
 

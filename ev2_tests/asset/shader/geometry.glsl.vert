@@ -21,9 +21,9 @@ out vec2 tex_coord;
 
 void main() {
     vec4 vertV = V * M * vec4(VertPos, 1.0);
-    frag_pos = vertV;
+    frag_pos = vertV.xyz;
     gl_Position = P * vertV;
-    vert_normal = V * G * Normal;
+    vert_normal = vec3(V * vec4(G * Normal, 0.0));
     vert_color = VertCol;
     tex_coord = TexPos;
 }

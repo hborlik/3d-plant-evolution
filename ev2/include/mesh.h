@@ -47,6 +47,8 @@ public:
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& buffer);
     static VertexBuffer vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer);
 
+    static VertexBuffer vbInitSST();
+
     std::vector<Buffer> buffers;
 
     int getIndexed() {return indexed;}
@@ -73,14 +75,9 @@ public:
 
     VertexBuffer vb;
 
-    gl::CullMode cull_mode;
+    gl::CullMode cull_mode = gl::CullMode::BACK;
 
     void draw(const Program& prog);
-};
-
-struct ModelInstance {
-    glm::mat4   transform;
-    Model*      model;
 };
 
 }
