@@ -50,6 +50,7 @@ private:
     int gp_g_location;
 
     Program lighting_program;
+    int lp_p_location, lp_n_location, lp_as_location;
 
     FBO g_buffer;
     

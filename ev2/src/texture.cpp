@@ -1,11 +1,27 @@
 #include <texture.h>
 
+#include <vector>
+
 namespace ev2 {
 
 Texture::Texture(gl::TextureType texture_type) : texture_type{texture_type} {
     glGenTextures(1, &handle);
+    
     set_filter_mode(gl::TextureParamFilter::TEXTURE_MIN_FILTER, gl::TextureFilterMode::LINEAR);
     set_filter_mode(gl::TextureParamFilter::TEXTURE_MAG_FILTER, gl::TextureFilterMode::LINEAR);
+
+    set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::REPEAT);
+    set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::REPEAT);
+}
+
+Texture::Texture(gl::TextureType texture_type, gl::TextureFilterMode filterMode) : texture_type{texture_type} {
+    glGenTextures(1, &handle);
+
+    set_filter_mode(gl::TextureParamFilter::TEXTURE_MIN_FILTER, filterMode);
+    set_filter_mode(gl::TextureParamFilter::TEXTURE_MAG_FILTER, filterMode);
+
+    set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::REPEAT);
+    set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::REPEAT);
 }
 
 void Texture::set_wrap_mode(gl::TextureParamWrap wrap, gl::TextureWrapMode mode) {
@@ -31,6 +47,8 @@ void Texture::set_data2D(gl::TextureInternalFormat internalFormat, uint32_t widt
     glTexImage2D((GLenum)gl::TextureTarget::TEXTURE_2D, 0, (GLint)internalFormat, width, height, 0, (GLenum)dataFormat, (GLenum)dataType, data);
     unbind();
     internal_format = internalFormat;
+    pixel_format = dataFormat;
+    pixel_type = dataType;
 }
 
 void Texture::set_data3D(gl::TextureInternalFormat internalFormat, uint32_t width, uint32_t height, gl::PixelFormat dataFormat, gl::PixelType dataType, const unsigned char* data, gl::TextureTarget side) {
@@ -38,6 +56,8 @@ void Texture::set_data3D(gl::TextureInternalFormat internalFormat, uint32_t widt
     glTexImage2D((GLenum)side, 0, (GLint)internalFormat, width, height, 0, (GLenum)dataFormat, (GLenum)dataType, data);
     unbind();
     internal_format = internalFormat;
+    pixel_format = dataFormat;
+    pixel_type = dataType;
 }
 
 // FBO
@@ -55,6 +75,15 @@ void FBO::resize_all(uint32_t width, uint32_t height) {
 
 bool FBO::check() {
     bind();
+    // enable all drawbuffers
+    std::vector<gl::FBOAttachment> dbtgt(attachments.size());
+    int i = 0;
+    for (auto &a : attachments) {
+        dbtgt[i++] = a.first;
+    }
+
+    GL_CHECKED_CALL(glDrawBuffers(dbtgt.size(), (GLenum*)dbtgt.data()));
+
     GLenum err = glCheckFramebufferStatus((GLenum)target);
     if (err != GL_FRAMEBUFFER_COMPLETE) {
         // TODO error println
@@ -71,16 +100,14 @@ bool FBO::attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_
         // glNamedFramebufferTexture(gl_reference, (GLenum)attachment_point, texture->get_handle(), 0);
         bind();
         glFramebufferTexture2D((GLenum)target, (GLenum)attachment_point, (GLenum)texture->type(), texture->get_handle(), 0);
+        unbind();
         if (!isGLError()) {
             attachments.insert(std::pair{attachment_point, texture});
             rb_attachments.erase(attachment_point);
 
-            glDrawBuffers(1, (GLenum*)&attachment_point);
-            unbind();
             return true;
         }
     }
-    unbind();
     return false;
 }
 
@@ -98,14 +125,12 @@ bool FBO::attach_renderbuffer(gl::RenderBufferInternalFormat format, uint32_t wi
     // glNamedFramebufferRenderbuffer(gl_reference, (GLenum)attachment_point, GL_RENDERBUFFER, r_buffer.get_handle());
     bind();
     glFramebufferRenderbuffer((GLenum)target, (GLenum)attachment_point, GL_RENDERBUFFER, r_buffer.get_handle());
+    unbind();
     if (!isGLError()) {
         attachments.erase(attachment_point);
 
-        // glDrawBuffers(1, (GLenum*)&attachment_point);
-        unbind();
         return true;
     }
-    unbind();
     return false;
 }
 

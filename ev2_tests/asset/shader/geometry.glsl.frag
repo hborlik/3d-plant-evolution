@@ -21,6 +21,6 @@ uniform float dissolve;
 void main() {
     gPosition = frag_pos;
     gNormal = normalize(vert_normal);
-    gAlbedoSpec.rgb = diffuse;
+    gAlbedoSpec.rgb = vert_color;
     gAlbedoSpec.a = shininess;
 }

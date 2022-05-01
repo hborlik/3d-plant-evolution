@@ -277,6 +277,8 @@ public:
         cam_orbital.setProjection(p);
         cam_fly.setProjection(p);
         cam_first_person.setProjection(p);
+        if (ev2::Renderer::is_initialized())
+            ev2::Renderer::get_singleton().set_resolution(width, height);
     }
 
     void onDropFile(const std::string& path) override {}

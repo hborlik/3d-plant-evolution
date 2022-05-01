@@ -18,6 +18,7 @@ namespace ev2 {
 class Texture {
 public:
     explicit Texture(gl::TextureType texture_type);
+    Texture(gl::TextureType texture_type, gl::TextureFilterMode filterMode);
 
     ~Texture() {
         if (handle != 0)
@@ -121,6 +122,7 @@ public:
         bind();
         glRenderbufferStorage(GL_RENDERBUFFER, (GLenum)format, width, height);
         unbind();
+        this->format = format;
     }
 
     GLuint get_handle() const noexcept {return gl_reference;}

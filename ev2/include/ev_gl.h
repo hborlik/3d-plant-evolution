@@ -247,6 +247,7 @@ namespace ev2 {
         RGB10_A2UI          = GL_RGB10_A2UI,
         R11F_G11F_B10F      = GL_R11F_G11F_B10F,
         SRGB8_ALPHA8        = GL_SRGB8_ALPHA8,
+        DEPTH_COMPONENT     = GL_DEPTH_COMPONENT,
         DEPTH_COMPONENT16   = GL_DEPTH_COMPONENT16,
         DEPTH_COMPONENT24   = GL_DEPTH_COMPONENT24,
         DEPTH_COMPONENT32F  = GL_DEPTH_COMPONENT32F,
@@ -361,6 +362,7 @@ namespace ev2 {
     constexpr uint32_t COLOR_BINDING_LOCATION = 2;
     constexpr uint32_t TEXCOORD_BINDING_LOCATION = 3;
 
+    inline void glUniformSampler(const GLint& value, GLint location)      {glUniform1i(location, value);}
 
     inline void glUniform(const GLint& value, GLint location)      {glUniform1i(location, value);}
     inline void glUniform(const GLuint& value, GLint location)     {glUniform1ui(location, value);}

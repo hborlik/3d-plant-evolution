@@ -243,6 +243,11 @@ public:
      */
     void use() const;
 
+    void unbind()
+    {
+        GL_CHECKED_CALL(glUseProgram(0));
+    }
+
     /**
      * @brief get linking status from openGL
      *

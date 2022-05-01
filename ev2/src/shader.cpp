@@ -122,7 +122,9 @@ Program::~Program() {
 void Program::loadShader(gl::GLSLShaderType type, const std::filesystem::path& path) {
     Shader s{type};
     s.LoadFrom(path);
-    attachedShaders.emplace(std::pair(type, std::move(s)));
+    auto suc = attachedShaders.emplace(std::pair(type, std::move(s)));
+    if (!suc.second)
+        throw shader_error{ProgramName, "Failed to load shader " + path.generic_string()};
 }
 
 void Program::link() {

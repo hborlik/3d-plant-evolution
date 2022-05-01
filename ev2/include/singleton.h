@@ -41,6 +41,8 @@ public:
             throw engine_exception{"Singleton " + util::type_name<T>() + " was used without initialization"};
         return *m_singleton.get();
     }
+
+    static bool is_initialized() noexcept {return (bool)m_singleton;}
 };
 
 template<typename T>
