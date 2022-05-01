@@ -110,31 +110,27 @@ public:
 
 
     int run() {
-        glClearColor(.72f, .84f, 1.06f, 1.0f);
-        // Enable z-buffer test.
-        glEnable(GL_DEPTH_TEST);
+        // glClearColor(.72f, .84f, 1.06f, 1.0f);
+        // // Enable z-buffer test.
+        // glEnable(GL_DEPTH_TEST);
 
         float dt = 0.05f;
         while(ev2::window::frame()) {
             render(dt);
             dt = float(ev2::window::getFrameTime());
         }
+        ev2::Renderer::shutdown();
         return 0;
     }
 
     void toggleWireframe() {
         static bool enabled = false;
-        if (enabled)
-            glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-        else
-            glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
         enabled = !enabled;
+        ev2::Renderer::get_singleton().set_wireframe(enabled);
     }
 
     void render(float dt) {
         // first update scene
-
-        
 
         if (mouse_down || ev2::window::getMouseCaptured()) {
             mouse_delta = ev2::window::getCursorPosition() - mouse_p;

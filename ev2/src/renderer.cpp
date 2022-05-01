@@ -98,6 +98,11 @@ void Renderer::render(const Camera &camera) {
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
 
+    if (wireframe)
+        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    else
+        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
     geometry_program.use();
 
     // bind global shader UBO to shader
@@ -115,13 +120,14 @@ void Renderer::render(const Camera &camera) {
     g_buffer.unbind();
     geometry_program.unbind();
 
-    glFlush();
+    // glFlush();
 
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
     glClear(GL_COLOR_BUFFER_BIT);
     glDisable(GL_DEPTH_TEST);
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
     // globals_desc.bind_buffer(shader_globals);
     lighting_program.use();
