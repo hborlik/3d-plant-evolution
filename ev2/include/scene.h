@@ -104,18 +104,23 @@ public:
     Transform transform{};
 
 private:
+    friend class Scene;
+    
     const std::string name = "Node";
-
     std::list<Ref<Node>> children;
     Node* parent = nullptr;
+    class Scene* scene = nullptr;
 };
 
 class Scene {
 public:
     void update(float dt);
 
+    void add_node();
+
 private:
     std::shared_ptr<ResourceManager> resource_manager;
+    Ref<Node> root;
 };
 
 }

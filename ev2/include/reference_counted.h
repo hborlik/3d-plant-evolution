@@ -17,6 +17,7 @@ class ReferenceCounted;
 template<typename T>
 struct Ref {
 
+    Ref() = default;
     Ref(ReferenceCounted<T>* obj);
     ~Ref();
 

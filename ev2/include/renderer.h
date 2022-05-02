@@ -22,6 +22,14 @@
 namespace ev2 {
 
 /**
+ * @brief light id
+ * 
+ */
+struct LID {
+    int32_t v = -1;
+};
+
+/**
  * @brief instance id
  * 
  */

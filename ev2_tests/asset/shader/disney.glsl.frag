@@ -7,7 +7,7 @@ uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 
-uniform vec3 lightDir;
+uniform vec3 lightPos;
 
 // # Copyright Disney Enterprises, Inc.  All rights reserved.
 // #
@@ -44,7 +44,6 @@ uniform vec3 lightDir;
 // float clearcoatGloss 0 1 1
 // ::end parameters
 
-uniform vec3 baseColor;
 uniform float metallic;
 uniform float subsurface;
 uniform float specular;
@@ -57,10 +56,6 @@ uniform float sheen;
 uniform float sheenTint;
 
 // ::begin shader
-
-const float PI = 3.14159265358979323846;
-
-float sqr(float x) { return x*x; }
 
 float SchlickFresnel(float u)
 {
@@ -107,7 +102,7 @@ vec3 mon2lin(vec3 x)
 }
 
 
-vec3 BRDF( vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
+vec3 BRDF( vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, vec3 baseColor)
 {
     float NdotL = dot(N,L);
     float NdotV = dot(N,V);
@@ -144,7 +139,7 @@ vec3 BRDF( vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y )
     float Ds = GTR2_aniso(NdotH, dot(H, X), dot(H, Y), ax, ay);
     float FH = SchlickFresnel(LdotH);
     vec3 Fs = mix(Cspec0, vec3(1), FH);
-    float Gs;
+    float Gs = 0.0f;
     Gs  = smithG_GGX_aniso(NdotL, dot(L, X), dot(L, Y), ax, ay);
     Gs *= smithG_GGX_aniso(NdotV, dot(V, X), dot(V, Y), ax, ay);
 
@@ -179,5 +174,8 @@ void main() {
     vec3 Y = normalize(cross(Normal, X));
     X = normalize(cross(Y, Normal));
 
-    frag_color = vec4(BRDF(lightDir, vec3(0, 0, -1), Normal, X, Y), 1.0);
+    vec3 lightDir = normalize(vec3(V * vec4(lightPos, 1.0f)) - FragPos);
+    vec3 viewDir = normalize(vec3(0, 0, 0) - FragPos);
+
+    frag_color = vec4(BRDF(lightDir, viewDir, Normal, X, Y, Albedo), 1.0);
 }

@@ -41,14 +41,12 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     geometry_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "geometry.glsl.frag", prep);
     geometry_program.link();
 
-    std::cout << geometry_program << std::endl;
-
     gp_m_location = geometry_program.getUniformInfo("M").Location;
     gp_g_location = geometry_program.getUniformInfo("G").Location;
 
 
     lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
-    lighting_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "lighting.glsl.frag", prep);
+    lighting_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "disney.glsl.frag", prep);
     lighting_program.link();
 
     lp_p_location = lighting_program.getUniformInfo("gPosition").Location;
@@ -136,6 +134,31 @@ void Renderer::render(const Camera &camera) {
 
     // globals_desc.bind_buffer(shader_globals);
     lighting_program.use();
+
+    // TODO material Array
+    // float metallic 0 1 0
+    // float subsurface 0 1 0
+    // float specular 0 1 .5
+    // float roughness 0 1 .5
+    // float specularTint 0 1 0
+    // float clearcoat 0 1 0
+    // float clearcoatGloss 0 1 1
+    // float anisotropic 0 1 0
+    // float sheen 0 1 0
+    // float sheenTint 0 1 .5
+    gl::glUniform(glm::vec3{-0.05, 0.4, 0}, lighting_program.getUniformInfo("lightPos").Location);
+
+    gl::glUniform(.0f, lighting_program.getUniformInfo("metallic").Location);
+    gl::glUniform(.0f, lighting_program.getUniformInfo("subsurface").Location);
+    gl::glUniform(0.5f, lighting_program.getUniformInfo("specular").Location);
+    gl::glUniform(0.5f, lighting_program.getUniformInfo("roughness").Location);
+    gl::glUniform(.0f, lighting_program.getUniformInfo("specularTint").Location);
+    gl::glUniform(.0f, lighting_program.getUniformInfo("clearcoat").Location);
+    gl::glUniform(1.0f, lighting_program.getUniformInfo("clearcoatGloss").Location);
+    gl::glUniform(.0f, lighting_program.getUniformInfo("anisotropic").Location);
+    gl::glUniform(.0f, lighting_program.getUniformInfo("sheen").Location);
+    gl::glUniform(.0f, lighting_program.getUniformInfo("sheenTint").Location);
+
 
     if (lp_p_location >= 0) {
         glActiveTexture(GL_TEXTURE0);
