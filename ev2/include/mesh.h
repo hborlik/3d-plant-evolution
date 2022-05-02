@@ -47,7 +47,21 @@ public:
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& buffer);
     static VertexBuffer vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer);
 
+    /**
+     * @brief init vertex buffer for a screen space triangle (vertices only)
+     * 
+     * @return VertexBuffer 
+     */
     static VertexBuffer vbInitSST();
+
+    /**
+     * @brief buffer format pos(3float), normal(3float), color(3float), texcoord(2float). 
+     *  Instanced array contains mat4 model matrices
+     * 
+     * @param buffer 
+     * @return VertexBuffer 
+     */
+    static VertexBuffer vbInitArrayVertexDataInstanced(const std::vector<float>& buffer);
 
     std::vector<Buffer> buffers;
 
@@ -76,6 +90,7 @@ public:
     VertexBuffer vb;
 
     gl::CullMode cull_mode = gl::CullMode::BACK;
+    gl::FrontFacing front_facing = gl::FrontFacing::CCW;
 
     void draw(const Program& prog);
 };

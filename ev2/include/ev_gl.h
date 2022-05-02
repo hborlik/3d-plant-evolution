@@ -351,10 +351,15 @@ namespace ev2 {
     };
 
     enum class CullMode : GLenum {
-        NONE            = 0,
+        NONE            = GL_NONE,
         FRONT           = GL_FRONT,
         BACK            = GL_BACK,
         FRONT_AND_BACK  = GL_FRONT_AND_BACK
+    };
+
+    enum class FrontFacing : GLenum {
+        CCW            = GL_CCW,
+        CW             = GL_CW
     };
 
     constexpr uint32_t VERTEX_BINDING_LOCATION = 0;

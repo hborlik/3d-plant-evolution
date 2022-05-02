@@ -7,7 +7,7 @@
 #ifndef EV2_VISUAL_INSTANCE_H
 #define EV2_VISUAL_INSTANCE_H
 
-#include <node.h>
+#include <scene.h>
 #include <mesh.h>
 
 namespace ev2 {
@@ -21,7 +21,7 @@ public:
     void on_process(float delta) override;
     void on_destroy() override;
 
-    ModelInstance *model;
+    int iid = 0;
 };
 
 }

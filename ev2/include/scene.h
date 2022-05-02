@@ -10,12 +10,14 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <memory>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <reference_counted.h>
+#include <resource.h>
 
 namespace ev2 {
 
@@ -111,6 +113,9 @@ private:
 class Scene {
 public:
     void update(float dt);
+
+private:
+    std::shared_ptr<ResourceManager> resource_manager;
 };
 
 }

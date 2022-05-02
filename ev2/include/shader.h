@@ -51,6 +51,20 @@ const std::string ShaderUniformBlockName = "ShaderData";
 
 } // mat_spec
 
+class ShaderPreprocessor {
+public:
+    explicit ShaderPreprocessor(const std::filesystem::path& shader_include_dir) : shader_include_dir{shader_include_dir} {}
+
+    std::string preprocess(const std::string& input_source) const;
+    void load_includes();
+
+    std::filesystem::path get_shader_dir() const noexcept {return shader_include_dir;}
+
+private:
+    std::filesystem::path shader_include_dir;
+    std::unordered_map<std::string, std::string> shader_includes; // include name to source
+};
+
 /**
  * @brief Container for GPU Shader
  */
@@ -83,8 +97,9 @@ public:
      * @brief Read compile and load a shader. Will throw ssre_exception if shader cannot be found, or cannot be compiled.
      *
      * @param path path to shader code file
+     * @param pre  shader preprocessor 
      */
-    void LoadFrom(const std::filesystem::path &path);
+    void load_from(const std::filesystem::path &path, const ShaderPreprocessor& pre);
 
     /**
      * @brief Get the shader type
@@ -231,7 +246,7 @@ public:
      *
      * @param program
      */
-    void loadShader(gl::GLSLShaderType type, const std::filesystem::path &path);
+    void loadShader(gl::GLSLShaderType type, const std::filesystem::path &path, const ShaderPreprocessor& preprocessor);
 
     /**
      * @brief Load, Compile, and Link shader programs

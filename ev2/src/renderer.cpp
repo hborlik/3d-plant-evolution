@@ -34,16 +34,21 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
 
     // set up programs
 
-    geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, asset_path / "geometry.glsl.vert");
-    geometry_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, asset_path / "geometry.glsl.frag");
+    ev2::ShaderPreprocessor prep{asset_path / "shader"};
+    prep.load_includes();
+
+    geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "geometry.glsl.vert", prep);
+    geometry_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "geometry.glsl.frag", prep);
     geometry_program.link();
+
+    std::cout << geometry_program << std::endl;
 
     gp_m_location = geometry_program.getUniformInfo("M").Location;
     gp_g_location = geometry_program.getUniformInfo("G").Location;
 
 
-    lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, asset_path / "sst.glsl.vert");
-    lighting_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, asset_path / "lighting.glsl.frag");
+    lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
+    lighting_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "lighting.glsl.frag", prep);
     lighting_program.link();
 
     lp_p_location = lighting_program.getUniformInfo("gPosition").Location;
@@ -55,12 +60,12 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     shader_globals.Allocate(globals_desc.block_size);
 }
 
-void Renderer::create_model(uint32_t mid, std::shared_ptr<Model> model) {
+void Renderer::create_model(MID mid, std::shared_ptr<Model> model) {
     models.insert_or_assign(mid, model);
 }
 
-int32_t Renderer::create_instance(uint32_t mid) {
-    uint32_t id = model_instances.size();
+IID Renderer::create_model_instance(MID mid) {
+    std::size_t id = model_instances.size();
     
     auto model = models.find(mid);
     if (model != models.end()) {
@@ -69,10 +74,10 @@ int32_t Renderer::create_instance(uint32_t mid) {
         mi.model = (*model).second.get();
         model_instances.push_back(mi);
 
-        return id;
+        return {id};
     }
 
-    return -1;
+    return {-1};
 }
 
 void Renderer::set_instance_transform(int32_t iid, const glm::mat4& transform) {

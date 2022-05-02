@@ -12,6 +12,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <sstream>
 #include <algorithm>
 
 #include <shader.h>
@@ -49,6 +50,76 @@ std::ostream& operator<<(std::ostream& os, const Program& input) {
 
 } // ev2
 
+std::string ShaderPreprocessor::preprocess(const std::string& input_source) const {
+    using namespace std;
+    ostringstream result;
+
+    istringstream iss(input_source);
+
+    const string include = "#include";
+    size_t line_num = 0;
+    for (string line; getline(iss, line); ) {
+        auto pos = line.find(include);
+        if (pos != string::npos) {
+            size_t s = string::npos, e = string::npos;
+            while (pos < line.size()) {
+                if (line[pos] == '\"') {
+                    if (s == string::npos) {
+                        s = pos + 1;
+                    } else {
+                        e = pos;
+                        break;
+                    }
+                }
+                pos++;
+            }
+            if (s == string::npos || e == string::npos) {
+                throw shader_error{"Preprocessor", std::to_string(line_num)};
+            }
+            string filename = line.substr(s, e - s);
+            auto inc = shader_includes.find(filename);
+            if (inc != shader_includes.end()) {
+                result << (*inc).second;
+            } else {
+                throw shader_error{"Preprocessor", filename + " include not found"};
+            }
+        } else {
+            result << line << std::endl;
+        }
+        line_num++;
+    }
+    return result.str();
+}
+
+void ShaderPreprocessor::load_includes() {
+    namespace fs = std::filesystem;
+    for (const auto& entry : fs::directory_iterator(shader_include_dir)) {
+        const auto filenameStr = entry.path().filename().string();
+        if (entry.is_directory()) {
+            continue;
+        }
+        else if (entry.is_regular_file()) {
+            if (entry.path().extension() == ".glslinc") {
+                auto path = entry.path();
+                std::ifstream in{path};
+                // make sure the file exists
+                EV2_CHECK_THROW(in.is_open(), "Shader Include File failed to open at " + path.generic_string());
+                // copy out file contents
+                std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
+                in.close();
+
+                shader_includes.insert_or_assign(entry.path().filename().generic_string(), content);
+            }
+        }
+        else
+            continue;
+    }
+}
+
+
+
+//// SHADER ////
+
 Shader::Shader(gl::GLSLShaderType type) : type{type} {
     gl_reference = glCreateShader((GLenum)type);
     EV2_CHECK_THROW(gl_reference != 0, "Failed to create shader");
@@ -59,13 +130,15 @@ Shader::~Shader() {
         glDeleteShader(gl_reference);
 }
 
-void Shader::LoadFrom(const std::filesystem::path& path) {
-    std::ifstream in{path};
+void Shader::load_from(const std::filesystem::path& path, const ShaderPreprocessor& pre) {
+    std::ifstream in{pre.get_shader_dir() / path};
     // make sure the file exists
     EV2_CHECK_THROW(in.is_open(), "Shader File not found at " + path.generic_string());
     // copy out file contents
     std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
     in.close();
+
+    content = pre.preprocess(content);
 
     const GLchar* codeArray = content.c_str();
     glShaderSource(gl_reference, 1, &codeArray, nullptr);
@@ -119,9 +192,13 @@ Program::~Program() {
         glDeleteProgram(gl_reference);
 }
 
-void Program::loadShader(gl::GLSLShaderType type, const std::filesystem::path& path) {
+void Program::loadShader(gl::GLSLShaderType type, const std::filesystem::path& path, const ShaderPreprocessor& preprocessor) {
     Shader s{type};
-    s.LoadFrom(path);
+    try {
+        s.load_from(path, preprocessor);
+    } catch (shader_error se) {
+        throw shader_error{ProgramName, se.what()};
+    }
     auto suc = attachedShaders.emplace(std::pair(type, std::move(s)));
     if (!suc.second)
         throw shader_error{ProgramName, "Failed to load shader " + path.generic_string()};

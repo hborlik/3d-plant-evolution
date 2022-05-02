@@ -15,7 +15,7 @@
 #include <resource.h>
 #include <Sphere.h>
 #include <renderer.h>
-#include <node.h>
+#include <scene.h>
 
 
 namespace fs = std::filesystem;
@@ -77,14 +77,7 @@ public:
     uint32_t width = 800, height = 600;
 
     void load_shaders() {
-        fs::path shader_dir = asset_path / "shader"; 
-        prog.loadShader(ev2::gl::GLSLShaderType::VERTEX_SHADER, shader_dir/"phong.glsl.vert");
-        prog.loadShader(ev2::gl::GLSLShaderType::FRAGMENT_SHADER, shader_dir/"phong.glsl.frag");
-        prog.link();
-        
-        std::cout << prog;
-
-        ev2::Renderer::intitalize(width, height, shader_dir);
+        ev2::Renderer::intitalize(width, height, asset_path);
 
     }
 
@@ -96,11 +89,11 @@ public:
         ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         ground_cube->materials[0].shininess = 0.02;
 
-        ev2::Renderer::get_singleton().create_model(1, cube);
-        ev2::Renderer::get_singleton().create_model(2, house);
-        ev2::Renderer::get_singleton().create_model(3, ground_cube);
+        ev2::Renderer::get_singleton().create_model({1}, cube);
+        ev2::Renderer::get_singleton().create_model({2}, house);
+        ev2::Renderer::get_singleton().create_model({3}, ground_cube);
 
-        ev2::Renderer::get_singleton().create_instance(2);
+        ev2::Renderer::get_singleton().create_model_instance({2});
     }
 
     void updateShape(float dt, Sphere geometry) {

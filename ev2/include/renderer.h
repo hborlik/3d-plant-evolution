@@ -16,8 +16,20 @@
 #include <shader.h>
 #include <texture.h>
 #include <camera.h>
+#include <resource.h>
+
 
 namespace ev2 {
+
+/**
+ * @brief instance id
+ * 
+ */
+struct IID {
+    int32_t v = -1;
+
+    bool is_valid() const noexcept {return v != -1;}
+};
 
 struct ModelInstance {
     glm::mat4   transform;
@@ -28,9 +40,10 @@ class Renderer : public Singleton<Renderer> {
 public:
     Renderer(uint32_t width, uint32_t height, const std::filesystem::path& asset_path);
 
-    void create_model(uint32_t mid, std::shared_ptr<Model> model);
+    void create_model(MID mid, std::shared_ptr<Model> model);
 
-    int32_t create_instance(uint32_t mid);
+    IID create_model_instance(MID mid);
+    void destroy_instance(MID mid);
     void set_instance_transform(int32_t iid, const glm::mat4& transform);
 
     void render(const Camera &camera);
@@ -42,7 +55,7 @@ public:
     void draw_screen_space_triangle();
 
 private:
-    std::unordered_map<uint32_t, std::shared_ptr<Model>> models;
+    std::unordered_map<MID, std::shared_ptr<Model>> models;
     std::vector<ModelInstance> model_instances;
 
     Program geometry_program;

@@ -38,17 +38,18 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
     vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
     vb.buffers[vb.buffers.size() - 1].Bind();
 
+    constexpr std::size_t vec3Size = sizeof(glm::vec3);
     glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)0);
+    glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)0);
 
     glEnableVertexAttribArray(gl::NORMAL_BINDING_LOCATION);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(sizeof(float) * 3));
+    glVertexAttribPointer(gl::NORMAL_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size));
 
     glEnableVertexAttribArray(gl::COLOR_BINDING_LOCATION);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(sizeof(float) * 6));
+    glVertexAttribPointer(gl::COLOR_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size * 2));
 
     glEnableVertexAttribArray(gl::TEXCOORD_BINDING_LOCATION);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(sizeof(float) * 9));
+    glVertexAttribPointer(gl::TEXCOORD_BINDING_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size * 3));
 
     vb.buffers[vb.buffers.size() - 1].Unbind();
 
@@ -111,6 +112,54 @@ VertexBuffer VertexBuffer::vbInitSST() {
     return std::move(vb);
 }
 
+VertexBuffer VertexBuffer::vbInitArrayVertexDataInstanced(const std::vector<float>& buffer) {
+    VertexBuffer vb;
+    // pos(3float), normal(3float), color(3float), texcoord(2float)
+    glGenVertexArrays(1, &vb.gl_vao);
+    glBindVertexArray(vb.gl_vao);
+
+    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers[vb.buffers.size() - 1].Bind();
+
+    constexpr std::size_t vec3Size = sizeof(glm::vec3);
+    glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
+    glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)0);
+
+    glEnableVertexAttribArray(gl::NORMAL_BINDING_LOCATION);
+    glVertexAttribPointer(gl::NORMAL_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size));
+
+    glEnableVertexAttribArray(gl::COLOR_BINDING_LOCATION);
+    glVertexAttribPointer(gl::COLOR_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size * 2));
+
+    glEnableVertexAttribArray(gl::TEXCOORD_BINDING_LOCATION);
+    glVertexAttribPointer(gl::TEXCOORD_BINDING_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size * 3));
+
+    // mat4 instance info, note: max size for a vertex attribute is a vec4
+    constexpr std::size_t vec4Size = sizeof(glm::vec4);
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+
+    glEnableVertexAttribArray(6);
+    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 2));
+
+    glEnableVertexAttribArray(7);
+    glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 3));
+
+    glVertexAttribDivisor(4, 1);
+    glVertexAttribDivisor(5, 1);
+    glVertexAttribDivisor(6, 1);
+    glVertexAttribDivisor(7, 1);
+
+    vb.buffers[vb.buffers.size() - 1].Unbind();
+
+    glBindVertexArray(0);
+
+    return std::move(vb);
+}
+
 
 void Model::draw(const Program& prog) {
     vb.bind();
@@ -120,8 +169,10 @@ void Model::draw(const Program& prog) {
         glEnable(GL_CULL_FACE);
         glCullFace((GLenum)cull_mode);
     }
+    glFrontFace((GLenum)front_facing);
     // TODO: support for multiple index buffers
     if (vb.getIndexed() != -1) {
+        // draw indexed arrays
         for (auto& m : meshes) {
             prog.applyMaterial(materials[m.material_id]);
 

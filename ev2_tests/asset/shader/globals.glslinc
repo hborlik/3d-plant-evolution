@@ -1,0 +1,12 @@
+#version 460 core
+
+layout (std140) uniform Globals {
+    mat4 V;
+    mat4 P;
+    vec3 CameraPos;
+    vec3 CameraDir;
+};
+
+float sqr(float a) {
+    return a*a;
+}
