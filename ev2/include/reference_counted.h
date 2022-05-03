@@ -26,8 +26,16 @@ struct Ref {
 
     Ref<T>& operator=(const Ref<T>& o) noexcept;
 
-    T* operator->() noexcept {
-        return reinterpret_cast<T*>(object);
+    T& operator*() const noexcept {
+        return *this->operator->();
+    }
+
+    T* operator->() const noexcept {
+        return dynamic_cast<T*>(object);
+    }
+
+    T* get() noexcept {
+        return this->operator->();
     }
 
     bool operator==(const Ref<T>& o) noexcept {return o.object == object;}
@@ -109,6 +117,12 @@ void Ref<T>::clear() {
     if (object)
         object->decrement();
     object = nullptr;
+}
+
+template<typename T, typename... Args>
+Ref<T> make_referenced(Args&&... args) {
+    ReferenceCounted<T>* container = new T(std::forward(args)...);
+    return Ref<T>{container};
 }
 
 }

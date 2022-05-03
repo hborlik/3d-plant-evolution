@@ -6,3 +6,4 @@ build/*
 !*.gitkeep
 
 testapp/asset/models/*
+DeferBase22/**

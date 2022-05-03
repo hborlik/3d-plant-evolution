@@ -36,17 +36,27 @@ struct Plant {
 
 class TestApp : public ev2::Application {
 public:
-    ev2::Camera cam_orbital;
-    ev2::Camera cam_fly;
-    ev2::Camera cam_first_person;
+    TestApp() : RM{std::make_unique<ev2::ResourceManager>(asset_path)},
+                scene{std::make_unique<ev2::Scene>(RM)} {}
+    
+    TestApp(const fs::path& asset_path) :   asset_path{asset_path}, 
+                                            RM{std::make_unique<ev2::ResourceManager>(asset_path)}, 
+                                            scene{std::make_unique<ev2::Scene>(RM)} {}
 
-    ev2::Scene scene;
+    fs::path asset_path = fs::path("asset");
 
-    glm::vec2 mouse_p;
-    glm::vec2 mouse_delta;
-    glm::vec2 move_input;
-    bool mouse_down;
-    float cam_x, cam_y;
+    ev2::Camera cam_orbital{};
+    ev2::Camera cam_fly{};
+    ev2::Camera cam_first_person{};
+
+    std::shared_ptr<ev2::ResourceManager> RM;
+    std::unique_ptr<ev2::Scene> scene;
+
+    glm::vec2 mouse_p{};
+    glm::vec2 mouse_delta{};
+    glm::vec2 move_input{};
+    bool mouse_down = false;
+    float cam_x = 0, cam_y = 0;
 
     enum CameraMode : uint8_t {
         FirstPerson = 0,
@@ -66,8 +76,6 @@ public:
                 return cam_fly;
         }
     }
-
-    fs::path asset_path = fs::path("asset");
 
     ev2::Program prog{"phong"};
     std::shared_ptr<ev2::Model> cube;

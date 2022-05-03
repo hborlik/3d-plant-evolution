@@ -1,10 +1,4 @@
-#version 460 core
-
-layout (std140) uniform Globals {
-    mat4 V;
-    mat4 P;
-    vec3 CameraPos;
-};
+#include "globals.glslinc"
 
 in vec3 VertPos;
 in vec3 Normal;
@@ -20,10 +14,10 @@ out vec3 vert_color;    // passthrough
 out vec2 tex_coord;     // passthrough
 
 void main() {
-    vec4 vertV = V * M * vec4(VertPos, 1.0);
+    vec4 vertV = View * M * vec4(VertPos, 1.0);
     frag_pos = vertV.xyz;
     gl_Position = P * vertV;
-    vert_normal = vec3(V * vec4(G * Normal, 0.0));
+    vert_normal = vec3(View * vec4(G * Normal, 0.0));
     vert_color = VertCol;
     tex_coord = TexPos;
 }

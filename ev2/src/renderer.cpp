@@ -10,10 +10,15 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     g_buffer{gl::FBOTarget::RW},
     sst_vb{VertexBuffer::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
+    lighting_materials{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     width{width}, 
     height{height} {
 
     // set up FBO textures
+    material_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    material_tex->set_data2D(gl::TextureInternalFormat::R8UI, width, height, gl::PixelFormat::RED_INTEGER, gl::PixelType::UNSIGNED_BYTE, nullptr);
+    g_buffer.attach(material_tex, gl::FBOAttachment::COLOR3);
+
     albedo_spec = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     albedo_spec->set_data2D(gl::TextureInternalFormat::RGBA, width, height, gl::PixelFormat::RGBA, gl::PixelType::UNSIGNED_BYTE, nullptr);
     g_buffer.attach(albedo_spec, gl::FBOAttachment::COLOR2);
@@ -52,10 +57,14 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     lp_p_location = lighting_program.getUniformInfo("gPosition").Location;
     lp_n_location = lighting_program.getUniformInfo("gNormal").Location;
     lp_as_location = lighting_program.getUniformInfo("gAlbedoSpec").Location;
+    lp_mt_location = lighting_program.getUniformInfo("gMaterialTex").Location;
 
-    // program globals
+    // program block inputs
     globals_desc = geometry_program.getUniformBlockInfo("Globals");
     shader_globals.Allocate(globals_desc.block_size);
+
+    lighting_materials_desc = lighting_program.getUniformBlockInfo("MaterialsInfo");
+    lighting_materials.Allocate(lighting_materials_desc.block_size);
 }
 
 void Renderer::create_model(MID mid, std::shared_ptr<Model> model) {
@@ -90,7 +99,7 @@ void Renderer::render(const Camera &camera) {
 
     // update globals buffer with frame info
     globals_desc.setShaderParameter("P", camera.getProjection(), shader_globals);
-    globals_desc.setShaderParameter("V", camera.getView(), shader_globals);
+    globals_desc.setShaderParameter("View", camera.getView(), shader_globals);
     globals_desc.setShaderParameter("CameraPos", camera.getPosition(), shader_globals);
 
     // render all geometry to g buffer
@@ -117,7 +126,7 @@ void Renderer::render(const Camera &camera) {
         ev2::gl::glUniform(m.transform, gp_m_location);
         ev2::gl::glUniform(G, gp_g_location);
 
-        m.model->draw(geometry_program);
+        m.model->draw(geometry_program, 0); // TODO calculate material offset
     }
 
     g_buffer.unbind();
@@ -132,8 +141,9 @@ void Renderer::render(const Camera &camera) {
     glDisable(GL_DEPTH_TEST);
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
-    // globals_desc.bind_buffer(shader_globals);
     lighting_program.use();
+    globals_desc.bind_buffer(shader_globals);
+    lighting_materials_desc.bind_buffer(lighting_materials);
 
     // TODO material Array
     // float metallic 0 1 0
@@ -146,7 +156,8 @@ void Renderer::render(const Camera &camera) {
     // float anisotropic 0 1 0
     // float sheen 0 1 0
     // float sheenTint 0 1 .5
-    gl::glUniform(glm::vec3{-0.05, 0.4, 0}, lighting_program.getUniformInfo("lightPos").Location);
+    gl::glUniform(glm::vec3{-50, 40, 0}, lighting_program.getUniformInfo("lightPos").Location);
+    gl::glUniform(glm::vec3{400, 400, 400}, lighting_program.getUniformInfo("lightColor").Location);
 
     gl::glUniform(.0f, lighting_program.getUniformInfo("metallic").Location);
     gl::glUniform(.0f, lighting_program.getUniformInfo("subsurface").Location);
@@ -176,6 +187,12 @@ void Renderer::render(const Camera &camera) {
         glActiveTexture(GL_TEXTURE2);
         albedo_spec->bind();
         gl::glUniformSampler(2, lp_as_location);
+    }
+
+    if (lp_mt_location >= 0) {
+        glActiveTexture(GL_TEXTURE3);
+        material_tex->bind();
+        gl::glUniformSampler(3, lp_mt_location);
     }
 
     draw_screen_space_triangle();

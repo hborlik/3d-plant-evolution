@@ -64,13 +64,13 @@
             ]
         },
         {
-            "name": "(gdb) Launch FBO",
+            "name": "(gdb) Launch workshop",
             "type": "cppdbg",
             "request": "launch",
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/SunnyBunnyBase2022/resources",
+            "cwd": "${workspaceFolder}/DeferBase22/resources",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

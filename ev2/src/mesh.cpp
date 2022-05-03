@@ -161,7 +161,7 @@ VertexBuffer VertexBuffer::vbInitArrayVertexDataInstanced(const std::vector<floa
 }
 
 
-void Model::draw(const Program& prog) {
+void Model::draw(const Program& prog, uint16_t materialOffset) {
     vb.bind();
     if (cull_mode == gl::CullMode::NONE) {
         glDisable(GL_CULL_FACE);
@@ -176,12 +176,24 @@ void Model::draw(const Program& prog) {
         for (auto& m : meshes) {
             prog.applyMaterial(materials[m.material_id]);
 
+            // TODO does this go here?
+            int loc = prog.getUniformInfo("materialId").Location;
+            if (loc != -1) {
+                GL_CHECKED_CALL(glUniform1ui(loc, m.material_id + materialOffset));
+            }
+
             vb.buffers[vb.getIndexed()].Bind(); // bind index buffer (again, @Windows)
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {
         for (auto& m : meshes) {
             prog.applyMaterial(materials[m.material_id]);
+
+            // TODO does this go here?
+            int loc = prog.getUniformInfo("materialId").Location;
+            if (loc != -1) {
+                GL_CHECKED_CALL(glUniform1ui(loc, m.material_id + materialOffset));
+            }
 
             glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
         }

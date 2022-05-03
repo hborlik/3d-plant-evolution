@@ -48,6 +48,8 @@ namespace ev2 {
 
 class ResourceManager {
 public:
+    explicit ResourceManager(const std::filesystem::path& asset_path) : asset_path{asset_path} {}
+
     std::filesystem::path asset_path;
     std::unordered_map<MID, std::shared_ptr<Model>> models;
 };

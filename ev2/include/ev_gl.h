@@ -263,6 +263,13 @@ namespace ev2 {
         BGR             = GL_BGR,
         RGBA            = GL_RGBA,
         BGRA            = GL_BGRA,
+        RED_INTEGER     = GL_RED_INTEGER,
+        RG_INTEGER      = GL_RG_INTEGER,
+        RGB_INTEGER     = GL_RGB_INTEGER,
+        BGR_INTEGER     = GL_BGR_INTEGER,
+        RGBA_INTEGER    = GL_RGBA_INTEGER,
+        BGRA_INTEGER    = GL_BGRA_INTEGER,
+        STENCIL_INDEX   = GL_STENCIL_INDEX,
         DEPTH_COMPONENT = GL_DEPTH_COMPONENT,
         DEPTH_STENCIL   = GL_DEPTH_STENCIL
     };

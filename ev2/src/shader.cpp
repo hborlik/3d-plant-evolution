@@ -400,6 +400,10 @@ void Program::updateProgramUniformBlockInfo() {
         GLint blockSize;
         glGetActiveUniformBlockiv(gl_reference, blockIx, GL_UNIFORM_BLOCK_DATA_SIZE, &blockSize);
 
+        // get the binding of the uniform block
+        GLint binding;
+        glGetActiveUniformBlockiv(gl_reference, blockIx, GL_UNIFORM_BLOCK_BINDING, &binding);
+
         // get the uniform block name
         GLint nameLength;
         glGetActiveUniformBlockiv(gl_reference, blockIx, GL_UNIFORM_BLOCK_NAME_LENGTH, &nameLength);
@@ -411,7 +415,7 @@ void Program::updateProgramUniformBlockInfo() {
         blockName.erase(std::find(blockName.begin(), blockName.end(), '\0'), blockName.end());
 
         ProgramUniformBlockDescription& pubd = uniformBlocks[blockName];
-        pubd.location = blockIx;
+        pubd.location = binding;
         pubd.block_size = blockSize;
 
         std::vector<GLuint> unifIndices(numActiveVars); // array of active variable indices associated with an active uniform block

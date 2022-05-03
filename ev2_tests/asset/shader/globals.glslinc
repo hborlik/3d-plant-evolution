@@ -1,7 +1,7 @@
 #version 460 core
 
-layout (std140) uniform Globals {
-    mat4 V;
+layout (std140, binding = 0) uniform Globals {
+    mat4 View;
     mat4 P;
     vec3 CameraPos;
     vec3 CameraDir;

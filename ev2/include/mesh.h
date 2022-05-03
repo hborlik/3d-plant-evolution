@@ -92,7 +92,7 @@ public:
     gl::CullMode cull_mode = gl::CullMode::BACK;
     gl::FrontFacing front_facing = gl::FrontFacing::CCW;
 
-    void draw(const Program& prog);
+    void draw(const Program& prog, uint16_t materialOffset);
 };
 
 }
