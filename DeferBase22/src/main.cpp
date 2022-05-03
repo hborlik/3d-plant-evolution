@@ -107,7 +107,10 @@ public:
 			resourceDirectory + "/pass_vert.glsl",
 			resourceDirectory + "/tex_frag.glsl");
 		texProg->init();
-		texProg->addUniform("texBuf");
+		texProg->addUniform("gBuf");
+		texProg->addUniform("gNor");
+		texProg->addUniform("gColorSpec");
+
 		texProg->addAttribute("vertPos");
 		texProg->addUniform("Ldir");
 
@@ -285,7 +288,15 @@ public:
 			texProg->bind();
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(GL_TEXTURE_2D, gPosition);
-				glUniform1i(texProg->getUniform("texBuf"), 0);
+				glActiveTexture(GL_TEXTURE0+1);
+				glBindTexture(GL_TEXTURE_2D, gNormal);
+				glActiveTexture(GL_TEXTURE0+2);
+				glBindTexture(GL_TEXTURE_2D, gColorSpec);				
+				glUniform1i(texProg->getUniform("gBuf"), 0);
+				glUniform1i(texProg->getUniform("gNor"), 1);
+				glUniform1i(texProg->getUniform("gColorSpec"), 2);
+				
+				//glUniform1i(texProg->getUniform("texBuf"), 0);
 				glUniform3f(texProg->getUniform("Ldir"), g_light.x, g_light.y, g_light.z);
 				glEnableVertexAttribArray(0);
 				glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
@@ -315,7 +326,7 @@ public:
 		texProg->bind();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, inTex);
-		glUniform1i(texProg->getUniform("texBuf"), 0);
+		//glUniform1i(texProg->getUniform("texBuf"), 0);
 		glUniform3f(texProg->getUniform("Ldir"), 1, -1, 0);
 		glEnableVertexAttribArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, quad_vertexbuffer);
