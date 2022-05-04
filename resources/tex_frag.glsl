@@ -14,6 +14,6 @@ void main(){
    vec3 tNor = texture( gNor, texCoord ).rgb;
    vec3 tColor = texture( gColorSpec, texCoord ).rgb;
    float diffuse = dot(Ldir, tNor);
-   color = vec4(tBuf * diffuse, 1.0);
+   color = vec4(tColor * diffuse, 1.0);
 
 }
