@@ -37,11 +37,11 @@ struct Plant {
 class TestApp : public ev2::Application {
 public:
     TestApp() : RM{std::make_unique<ev2::ResourceManager>(asset_path)},
-                scene{std::make_unique<ev2::Scene>(RM)} {}
+                scene{std::make_unique<ev2::Scene>()} {}
     
     TestApp(const fs::path& asset_path) :   asset_path{asset_path}, 
                                             RM{std::make_unique<ev2::ResourceManager>(asset_path)}, 
-                                            scene{std::make_unique<ev2::Scene>(RM)} {}
+                                            scene{std::make_unique<ev2::Scene>()} {}
 
     fs::path asset_path = fs::path("asset");
 
@@ -77,7 +77,6 @@ public:
         }
     }
 
-    ev2::Program prog{"phong"};
     std::shared_ptr<ev2::Model> cube;
     std::shared_ptr<ev2::Model> house;
     std::shared_ptr<ev2::Model> ground_cube;
@@ -97,7 +96,7 @@ public:
         ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         ground_cube->materials[0].shininess = 0.02;
 
-        ev2::Renderer::get_singleton().create_model({1}, cube);
+        // ev2::Renderer::get_singleton().create_model({1}, cube);
         ev2::Renderer::get_singleton().create_model({2}, house);
         ev2::Renderer::get_singleton().create_model({3}, ground_cube);
 

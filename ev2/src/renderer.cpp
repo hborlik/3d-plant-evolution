@@ -2,6 +2,46 @@
 
 namespace ev2 {
 
+void Drawable::draw(const Program& prog) {
+    vb.bind();
+    if (cull_mode == gl::CullMode::NONE) {
+        glDisable(GL_CULL_FACE);
+    } else {
+        glEnable(GL_CULL_FACE);
+        glCullFace((GLenum)cull_mode);
+    }
+    glFrontFace((GLenum)front_facing);
+    // TODO: support for multiple index buffers
+    if (vb.getIndexed() != -1) {
+        // draw indexed arrays
+        for (auto& m : meshes) {
+            // prog.applyMaterial(materials[m.material_id]);
+
+            // TODO does this go here?
+            int loc = prog.getUniformInfo("materialId").Location;
+            if (loc != -1) {
+                GL_CHECKED_CALL(glUniform1ui(loc, m.material_id + material_offset));
+            }
+
+            vb.buffers[vb.getIndexed()].Bind(); // bind index buffer (again, @Windows)
+            glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
+        }
+    } else {
+        for (auto& m : meshes) {
+            // prog.applyMaterial(materials[m.material_id]);
+
+            // TODO does this go here?
+            int loc = prog.getUniformInfo("materialId").Location;
+            if (loc != -1) {
+                GL_CHECKED_CALL(glUniform1ui(loc, m.material_id + material_offset));
+            }
+
+            glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
+        }
+    }
+    vb.unbind();
+}
+
 Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path& asset_path) : 
     models{},
     model_instances{},
@@ -65,10 +105,64 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
 
     lighting_materials_desc = lighting_program.getUniformBlockInfo("MaterialsInfo");
     lighting_materials.Allocate(lighting_materials_desc.block_size);
+
+    materials = std::vector<MaterialData>(100, MaterialData{});
+    
+    int i = 0;
+    for (auto& m : materials) {
+        update_material(i, m);
+    }
+
+}
+
+void Renderer::update_material(int32_t material_id, const MaterialData& material) {
+    materials[material_id] = material;
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].diffuse", material.diffuse, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].metallic", material.metallic, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].subsurface", material.subsurface, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].specular", material.specular, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].roughness", material.roughness, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].specularTint", material.specularTint, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].clearcoat", material.clearcoat, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].clearcoatGloss", material.clearcoatGloss, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].anisotropic", material.anisotropic, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].sheen", material.sheen, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].sheenTint", material.sheenTint, lighting_materials);
+
+}
+
+int32_t Renderer::add_material(const MaterialData& material) {
+    if (next_free_mat < materials.size()) {
+        int32_t mat_id = next_free_mat++;
+        update_material(mat_id, material);
+        return mat_id;
+    } else
+        return -1;
 }
 
 void Renderer::create_model(MID mid, std::shared_ptr<Model> model) {
-    models.insert_or_assign(mid, model);
+    assert(model->bufferFormat == VertexFormat::Array);
+
+    int32_t mat_offset = next_free_mat;
+
+    for (auto& mat : model->materials) {
+        add_material(MaterialData::from_material(mat));
+    }
+
+    std::shared_ptr<Drawable> d = std::make_shared<Drawable>(
+        VertexBuffer::vbInitArrayVertexData(model->buffer),
+        model->meshes,
+        model->bmin,
+        model->bmax,
+        gl::CullMode::BACK,
+        gl::FrontFacing::CCW
+    );
+    d->material_offset = mat_offset;
+    models.insert_or_assign(mid, d);
+}
+
+void Renderer::create_model(MID mid, std::shared_ptr<Drawable> d) {
+    models.insert_or_assign(mid, d);
 }
 
 IID Renderer::create_model_instance(MID mid) {
@@ -77,8 +171,8 @@ IID Renderer::create_model_instance(MID mid) {
     auto model = models.find(mid);
     if (model != models.end()) {
         ModelInstance mi{};
-        mi.transform = glm::identity<glm::mat4>();
-        mi.model = (*model).second.get();
+        mi.transform    = glm::identity<glm::mat4>();
+        mi.drawable     = (*model).second.get();
         model_instances.push_back(mi);
 
         return {id};
@@ -126,7 +220,7 @@ void Renderer::render(const Camera &camera) {
         ev2::gl::glUniform(m.transform, gp_m_location);
         ev2::gl::glUniform(G, gp_g_location);
 
-        m.model->draw(geometry_program, 0); // TODO calculate material offset
+        m.drawable->draw(geometry_program); // TODO calculate material offset
     }
 
     g_buffer.unbind();

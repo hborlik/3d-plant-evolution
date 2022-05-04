@@ -471,13 +471,13 @@ std::unique_ptr<ev2::Model> Sphere::getModel() {
         ev_meshs.push_back(ev2::Mesh{0, indices.size(), 0});
 
 
-        return std::make_unique<ev2::Model>(
-            std::move(ev_meshs),
-            std::move(ev_materials),
-            bmin,
-            bmax,
-            ev2::VertexBuffer::vbInitSphereArrayVertexData(interleavedVertices, indices)
-        );
+        // return std::make_unique<ev2::Model>(
+        //     std::move(ev_meshs),
+        //     std::move(ev_materials),
+        //     bmin,
+        //     bmax,
+        //     ev2::VertexBuffer::vbInitSphereArrayVertexData(interleavedVertices, indices)
+        // );
 
     }
     return {};

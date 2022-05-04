@@ -64,7 +64,7 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
     vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
     vb.buffers.push_back(Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
 
-    vb.indexed = 1;
+    vb.indexed = vb.buffers.size() - 1; // location of index buffer
 
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
@@ -158,47 +158,6 @@ VertexBuffer VertexBuffer::vbInitArrayVertexDataInstanced(const std::vector<floa
     glBindVertexArray(0);
 
     return std::move(vb);
-}
-
-
-void Model::draw(const Program& prog, uint16_t materialOffset) {
-    vb.bind();
-    if (cull_mode == gl::CullMode::NONE) {
-        glDisable(GL_CULL_FACE);
-    } else {
-        glEnable(GL_CULL_FACE);
-        glCullFace((GLenum)cull_mode);
-    }
-    glFrontFace((GLenum)front_facing);
-    // TODO: support for multiple index buffers
-    if (vb.getIndexed() != -1) {
-        // draw indexed arrays
-        for (auto& m : meshes) {
-            prog.applyMaterial(materials[m.material_id]);
-
-            // TODO does this go here?
-            int loc = prog.getUniformInfo("materialId").Location;
-            if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1ui(loc, m.material_id + materialOffset));
-            }
-
-            vb.buffers[vb.getIndexed()].Bind(); // bind index buffer (again, @Windows)
-            glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
-        }
-    } else {
-        for (auto& m : meshes) {
-            prog.applyMaterial(materials[m.material_id]);
-
-            // TODO does this go here?
-            int loc = prog.getUniformInfo("materialId").Location;
-            if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1ui(loc, m.material_id + materialOffset));
-            }
-
-            glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
-        }
-    }
-    vb.unbind();
 }
 
 }

@@ -17,7 +17,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <reference_counted.h>
-#include <resource.h>
 
 namespace ev2 {
 
@@ -114,8 +113,6 @@ private:
 
 class Scene {
 public:
-    explicit Scene(std::shared_ptr<ResourceManager> rm) : resource_manager{rm} {}
-
     void update(float dt);
 
     void add_node(Ref<Node> n, Ref<Node> parent);
@@ -126,7 +123,6 @@ public:
     void destroy_node(Ref<Node> node);
 
 private:
-    std::shared_ptr<ResourceManager> resource_manager;
     Ref<Node> root;
 };
 
@@ -135,6 +131,7 @@ Ref<Node> Scene::create_node(const std::string& name) {
     Ref<Node> node = make_referenced<T>(name);
     node->scene = this;
     node->parent = root.get();
+    return node;
 }
 
 }

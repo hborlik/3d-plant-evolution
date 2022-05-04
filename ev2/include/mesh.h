@@ -15,6 +15,11 @@
 
 namespace ev2 {
 
+enum class VertexFormat {
+    Array = 0,
+    Indexed
+};
+
 class VertexBuffer {
 public:
     VertexBuffer() = default;
@@ -79,20 +84,16 @@ struct Mesh {
 
 class Model {
 public:
-    Model(std::vector<Mesh> meshes, std::vector<Material> materials, glm::vec3 bmin, glm::vec3 bmax, VertexBuffer&& vb) : 
-        meshes{std::move(meshes)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, vb{std::move(vb)} {}
+    Model(std::vector<Mesh> meshes, std::vector<Material> materials, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
+        meshes{std::move(meshes)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
     
     std::vector<Mesh>       meshes;
     std::vector<Material>   materials;
+    std::vector<float>      buffer;
 
     glm::vec3 bmin, bmax;
 
-    VertexBuffer vb;
-
-    gl::CullMode cull_mode = gl::CullMode::BACK;
-    gl::FrontFacing front_facing = gl::FrontFacing::CCW;
-
-    void draw(const Program& prog, uint16_t materialOffset);
+    VertexFormat bufferFormat;
 };
 
 }

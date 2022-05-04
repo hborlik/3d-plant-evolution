@@ -684,7 +684,8 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
             std::move(ev_materials),
             bmin,
             bmax,
-            VertexBuffer::vbInitArrayVertexData(buffer)
+            buffer,
+            VertexFormat::Array
         );
 
     }

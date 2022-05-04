@@ -16,7 +16,6 @@
 #include <algorithm>
 
 #include <shader.h>
-#include <uniform.h>
 
 using namespace ev2;
 
