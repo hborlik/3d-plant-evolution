@@ -77,9 +77,9 @@ private:
 };
 
 struct Mesh {
-    size_t start_index;
-    size_t num_elements;
-    size_t material_id;
+    size_t  start_index;
+    size_t  num_elements;
+    int32_t material_id;
 };
 
 class Model {

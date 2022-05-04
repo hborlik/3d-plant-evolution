@@ -1,3 +1,4 @@
+#include <resource.h>
 
 #include <map>
 #include <unordered_map>
@@ -10,7 +11,7 @@
 #include <tiny_obj_loader.h>
 
 #include <buffer.h>
-#include <resource.h>
+#include <renderer.h>
 
 struct DrawObject {
     size_t start;
@@ -631,6 +632,25 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
 
 namespace ev2 {
 
+MID ResourceManager::get_model(const std::filesystem::path& filename) {
+    auto itr = model_lookup.find(filename.generic_string());
+    if (itr != model_lookup.end()) { // already loaded
+        return itr->second;
+    }
+    auto base_dir = filename;
+    base_dir.remove_filename();
+    std::shared_ptr<Model> loaded_model = loadObj(filename.filename().generic_string(), (asset_path / base_dir).generic_string());
+    if (loaded_model) {
+        MID id = ev2::Renderer::get_singleton().create_model(loaded_model);
+        models.insert(std::make_pair(id, loaded_model));
+        model_lookup.insert(std::make_pair(filename, id));
+        return id;
+    } else {
+        std::cerr << "Failed to load model " + filename.generic_string() << std::endl;
+        return {};
+    }
+}
+
 std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir) {
     glm::vec3 bmin, bmax;
     std::vector<DrawObject> drawObjects;
@@ -675,7 +695,7 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
                 dObj.material_id
             };
             if (int(dObj.material_id) == -1)
-                n_mesh.material_id = ev_materials.size() - 1;
+                n_mesh.material_id = 0;
             ev_meshs[i++] = n_mesh;
         }
 

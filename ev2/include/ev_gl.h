@@ -376,9 +376,9 @@ namespace ev2 {
 
     inline void glUniformSampler(const GLint& value, GLint location)      {glUniform1i(location, value);}
 
-    inline void glUniform(const GLint& value, GLint location)      {glUniform1i(location, value);}
-    inline void glUniform(const GLuint& value, GLint location)     {glUniform1ui(location, value);}
-    inline void glUniform(const GLfloat& value, GLint location)    {glUniform1f(location, value);}
+    inline void glUniformu(const GLint& value, GLint location)     {glUniform1i(location, value);}
+    inline void glUniformui(const GLuint& value, GLint location)   {glUniform1ui(location, value);}
+    inline void glUniformf(const GLfloat& value, GLint location)   {glUniform1f(location, value);}
     
     inline void glUniform(const glm::ivec2& value, GLint location) {glUniform2i(location, value[0], value[1]);}
     inline void glUniform(const glm::uvec2& value, GLint location) {glUniform2ui(location, value[0], value[1]);}

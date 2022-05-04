@@ -21,10 +21,11 @@ namespace ev2 {
  * 
  */
 struct MID {
-    int32_t v = -1;
+    MID() = default;
 
     bool is_valid() const noexcept {return v != -1;}
 
+    int32_t v = -1;
 private:
     friend bool operator==(const MID& a, const MID& b) noexcept {
         return a.v == b.v;
@@ -48,9 +49,22 @@ namespace ev2 {
 
 class ResourceManager {
 public:
-    explicit ResourceManager(const std::filesystem::path& asset_path) : asset_path{asset_path} {}
+    explicit ResourceManager(const std::filesystem::path& asset_path) : asset_path{asset_path}, model_lookup{} {}
 
+
+    /**
+     * @brief Get the model object reference id, or load object if not available
+     * 
+     * @param filename 
+     * @return MID 
+     */
+    MID get_model(const std::filesystem::path& filename);
+    
+    
     std::filesystem::path asset_path;
+
+private:
+    std::unordered_map<std::string, MID> model_lookup;
     std::unordered_map<MID, std::shared_ptr<Model>> models;
 };
 

@@ -2,7 +2,7 @@
 
 namespace ev2 {
 
-void Drawable::draw(const Program& prog) {
+void Drawable::draw(const Program& prog, int32_t material_override) {
     vb.bind();
     if (cull_mode == gl::CullMode::NONE) {
         glDisable(GL_CULL_FACE);
@@ -20,7 +20,7 @@ void Drawable::draw(const Program& prog) {
             // TODO does this go here?
             int loc = prog.getUniformInfo("materialId").Location;
             if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1ui(loc, m.material_id + material_offset));
+                GL_CHECKED_CALL(glUniform1ui(loc, material_override > -1 ? material_override : m.material_id + material_offset));
             }
 
             vb.buffers[vb.getIndexed()].Bind(); // bind index buffer (again, @Windows)
@@ -33,7 +33,7 @@ void Drawable::draw(const Program& prog) {
             // TODO does this go here?
             int loc = prog.getUniformInfo("materialId").Location;
             if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1ui(loc, m.material_id + material_offset));
+                GL_CHECKED_CALL(glUniform1ui(loc, material_override > -1 ? material_override : m.material_id + material_offset));
             }
 
             glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
@@ -131,7 +131,7 @@ void Renderer::update_material(int32_t material_id, const MaterialData& material
 
 }
 
-int32_t Renderer::add_material(const MaterialData& material) {
+int32_t Renderer::create_material(const MaterialData& material) {
     if (next_free_mat < materials.size()) {
         int32_t mat_id = next_free_mat++;
         update_material(mat_id, material);
@@ -140,53 +140,80 @@ int32_t Renderer::add_material(const MaterialData& material) {
         return -1;
 }
 
-void Renderer::create_model(MID mid, std::shared_ptr<Model> model) {
+MID Renderer::create_model(std::shared_ptr<Model> model) {
     assert(model->bufferFormat == VertexFormat::Array);
 
     int32_t mat_offset = next_free_mat;
 
-    for (auto& mat : model->materials) {
-        add_material(MaterialData::from_material(mat));
+    for (auto mat = model->materials.begin(); mat != model->materials.end(); mat++) {
+        create_material(MaterialData::from_material(*mat));
     }
+
+    auto meshes = model->meshes;
+    // for (auto& m : meshes) {
+    //     m.material_id = m.material_id - 1;
+    // }
 
     std::shared_ptr<Drawable> d = std::make_shared<Drawable>(
         VertexBuffer::vbInitArrayVertexData(model->buffer),
-        model->meshes,
+        std::move(meshes),
         model->bmin,
         model->bmax,
         gl::CullMode::BACK,
         gl::FrontFacing::CCW
     );
     d->material_offset = mat_offset;
-    models.insert_or_assign(mid, d);
+
+    return create_model(d);
 }
 
-void Renderer::create_model(MID mid, std::shared_ptr<Drawable> d) {
-    models.insert_or_assign(mid, d);
+MID Renderer::create_model(std::shared_ptr<Drawable> d) {
+    MID nmid = {next_model_id++};
+    models.insert_or_assign(nmid, d);
+    return nmid;
 }
 
-IID Renderer::create_model_instance(MID mid) {
-    std::size_t id = model_instances.size();
-    
+IID Renderer::create_model_instance() {
+    int32_t id = next_instance_id++;
+    ModelInstance mi{};
+    model_instances.emplace(id, mi);
+
+    return {id};
+}
+
+void Renderer::set_instance_model(IID iid, MID mid) {
+    if (!iid.is_valid())
+        return;
     auto model = models.find(mid);
     if (model != models.end()) {
-        ModelInstance mi{};
-        mi.transform    = glm::identity<glm::mat4>();
-        mi.drawable     = (*model).second.get();
-        model_instances.push_back(mi);
-
-        return {id};
+        model_instances[iid.v].drawable = (*model).second.get();
     }
-
-    return {-1};
 }
 
-void Renderer::set_instance_transform(int32_t iid, const glm::mat4& transform) {
-    if (iid < 0 || iid >= model_instances.size())
+void Renderer::set_instance_material_override(IID iid, int32_t material_override) {
+    if (!iid.is_valid())
         return;
     
-    ModelInstance& mi = model_instances[iid];
-    mi.transform = transform;
+    auto mi = model_instances.find(iid.v);
+    if (mi != model_instances.end()) {
+        mi->second.material_override = material_override;
+    }
+}
+
+void Renderer::destroy_instance(IID iid) {
+    if (!iid.is_valid())
+        return;
+    model_instances.erase(iid.v);
+}
+
+void Renderer::set_instance_transform(IID iid, const glm::mat4& transform) {
+    if (!iid.is_valid())
+        return;
+    
+    auto mi = model_instances.find(iid.v);
+    if (mi != model_instances.end()) {
+        mi->second.transform = transform;
+    }
 }
 
 void Renderer::render(const Camera &camera) {
@@ -214,13 +241,16 @@ void Renderer::render(const Camera &camera) {
     // bind global shader UBO to shader
     globals_desc.bind_buffer(shader_globals);
 
-    for (auto &m : model_instances) {
-        const glm::mat3 G = glm::inverse(glm::transpose(glm::mat3(m.transform)));
+    for (auto &mPair : model_instances) {
+        auto& m = mPair.second;
+        if (m.drawable) {
+            const glm::mat3 G = glm::inverse(glm::transpose(glm::mat3(m.transform)));
 
-        ev2::gl::glUniform(m.transform, gp_m_location);
-        ev2::gl::glUniform(G, gp_g_location);
+            ev2::gl::glUniform(m.transform, gp_m_location);
+            ev2::gl::glUniform(G, gp_g_location);
 
-        m.drawable->draw(geometry_program); // TODO calculate material offset
+            m.drawable->draw(geometry_program, m.material_override);
+        }
     }
 
     g_buffer.unbind();
@@ -239,30 +269,8 @@ void Renderer::render(const Camera &camera) {
     globals_desc.bind_buffer(shader_globals);
     lighting_materials_desc.bind_buffer(lighting_materials);
 
-    // TODO material Array
-    // float metallic 0 1 0
-    // float subsurface 0 1 0
-    // float specular 0 1 .5
-    // float roughness 0 1 .5
-    // float specularTint 0 1 0
-    // float clearcoat 0 1 0
-    // float clearcoatGloss 0 1 1
-    // float anisotropic 0 1 0
-    // float sheen 0 1 0
-    // float sheenTint 0 1 .5
     gl::glUniform(glm::vec3{-50, 40, 0}, lighting_program.getUniformInfo("lightPos").Location);
     gl::glUniform(glm::vec3{400, 400, 400}, lighting_program.getUniformInfo("lightColor").Location);
-
-    gl::glUniform(.0f, lighting_program.getUniformInfo("metallic").Location);
-    gl::glUniform(.0f, lighting_program.getUniformInfo("subsurface").Location);
-    gl::glUniform(0.5f, lighting_program.getUniformInfo("specular").Location);
-    gl::glUniform(0.5f, lighting_program.getUniformInfo("roughness").Location);
-    gl::glUniform(.0f, lighting_program.getUniformInfo("specularTint").Location);
-    gl::glUniform(.0f, lighting_program.getUniformInfo("clearcoat").Location);
-    gl::glUniform(1.0f, lighting_program.getUniformInfo("clearcoatGloss").Location);
-    gl::glUniform(.0f, lighting_program.getUniformInfo("anisotropic").Location);
-    gl::glUniform(.0f, lighting_program.getUniformInfo("sheen").Location);
-    gl::glUniform(.0f, lighting_program.getUniformInfo("sheenTint").Location);
 
 
     if (lp_p_location >= 0) {

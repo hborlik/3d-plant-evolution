@@ -298,7 +298,7 @@ void Program::applyMaterial(const Material& material) const {
 
     loc = getUniformInfo("shininess").Location;
     if (loc != -1) {
-        GL_CHECKED_CALL(ev2::gl::glUniform(material.shininess, loc));
+        GL_CHECKED_CALL(ev2::gl::glUniformf(material.shininess, loc));
     }
 
 }

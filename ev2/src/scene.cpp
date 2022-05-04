@@ -20,4 +20,20 @@ void Node::remove_child(Ref<Node> node) {
     }
 }
 
+void Node::update(float dt) {
+    on_process(dt);
+
+    for (auto& c : children) {
+        c->update(dt);
+    }
+}
+
+Scene::Scene(std::shared_ptr<ResourceManager> RM) : resource_manager{std::move(RM)} {
+    root = make_referenced<Node>("root");
+}
+
+void Scene::update(float dt) {
+    root->update(dt);
+}
+
 } // namespace ev2

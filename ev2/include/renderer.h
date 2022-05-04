@@ -33,6 +33,7 @@ struct LID {
 
 struct Light {
     glm::vec3 color;
+    glm::vec3 position;
 };
 
 /**
@@ -58,7 +59,7 @@ struct Drawable {
 
     int32_t material_offset = 0;
 
-    void draw(const Program& prog);
+    void draw(const Program& prog, int32_t material_override);
 };
 
 struct MaterialData {
@@ -83,8 +84,9 @@ struct MaterialData {
 };
 
 struct ModelInstance {
-    glm::mat4   transform;
-    Drawable*   drawable;
+    glm::mat4   transform = glm::identity<glm::mat4>();
+    Drawable*   drawable = nullptr;
+    int32_t     material_override = -1;
 };
 
 class Renderer : public Singleton<Renderer> {
@@ -92,14 +94,26 @@ public:
     Renderer(uint32_t width, uint32_t height, const std::filesystem::path& asset_path);
 
     void update_material(int32_t material_id, const MaterialData& material);
-    int32_t add_material(const MaterialData& material);
+    int32_t create_material(const MaterialData& material);
 
-    void create_model(MID mid, std::shared_ptr<Model> model);
-    void create_model(MID mid, std::shared_ptr<Drawable> d);
+    LID create_light(const Light& light);
 
-    IID create_model_instance(MID mid);
-    void destroy_instance(MID mid);
-    void set_instance_transform(int32_t iid, const glm::mat4& transform);
+    MID create_model(std::shared_ptr<Model> model);
+    MID create_model(std::shared_ptr<Drawable> d);
+
+    IID create_model_instance();
+    void set_instance_model(IID iid, MID mid);
+    void set_instance_transform(IID iid, const glm::mat4& transform);
+
+    /**
+     * @brief Set the instance material override id. Note: this will set materials for all shapes in model
+     * 
+     * @param iid instance id
+     * @param material_override id of material to use when rendering, -1 for model defaults
+     */
+    void set_instance_material_override(IID iid, int32_t material_override);
+    
+    void destroy_instance(IID iid);
 
     void render(const Camera &camera);
 
@@ -111,8 +125,12 @@ public:
 
 private:
     std::unordered_map<MID, std::shared_ptr<Drawable>> models;
+    uint32_t next_model_id = 1;
+
     std::vector<MaterialData> materials;
-    std::vector<ModelInstance> model_instances;
+
+    std::unordered_map<int32_t, ModelInstance> model_instances;
+    uint32_t next_instance_id = 100;
 
     int next_free_mat = 1;
 

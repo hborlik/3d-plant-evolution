@@ -10,18 +10,13 @@ in vec3 vert_normal;
 in vec3 vert_color;
 in vec2 tex_coord;
 
-uniform vec3 ambient;
 uniform vec3 diffuse;
-uniform vec3 specular;
-uniform vec3 transmittance;
-uniform vec3 emission;
-uniform float shininess;
 uniform uint  materialId;
 
 void main() {
     gPosition = frag_pos;
     gNormal = normalize(vert_normal);
     gAlbedoSpec.rgb = diffuse;
-    gAlbedoSpec.a = shininess;
+    gAlbedoSpec.a = 0;
     gMaterialTex = materialId;
 }

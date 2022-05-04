@@ -16,6 +16,7 @@
 #include <Sphere.h>
 #include <renderer.h>
 #include <scene.h>
+#include <visual_nodes.h>
 
 
 namespace fs = std::filesystem;
@@ -37,11 +38,11 @@ struct Plant {
 class TestApp : public ev2::Application {
 public:
     TestApp() : RM{std::make_unique<ev2::ResourceManager>(asset_path)},
-                scene{std::make_unique<ev2::Scene>()} {}
+                scene{std::make_unique<ev2::Scene>(RM)} {}
     
     TestApp(const fs::path& asset_path) :   asset_path{asset_path}, 
                                             RM{std::make_unique<ev2::ResourceManager>(asset_path)}, 
-                                            scene{std::make_unique<ev2::Scene>()} {}
+                                            scene{std::make_unique<ev2::Scene>(RM)} {}
 
     fs::path asset_path = fs::path("asset");
 
@@ -77,10 +78,6 @@ public:
         }
     }
 
-    std::shared_ptr<ev2::Model> cube;
-    std::shared_ptr<ev2::Model> house;
-    std::shared_ptr<ev2::Model> ground_cube;
-
     uint32_t width = 800, height = 600;
 
     void load_shaders() {
@@ -88,34 +85,35 @@ public:
 
     }
 
-    void load_models() {
+    void initialize() {
         Sphere supershape(1.0f , 20, 20);
-        cube =  supershape.getModel();
-        house = ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
-        ground_cube = ev2::loadObj("cube.obj", asset_path / "models");
-        ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
-        ground_cube->materials[0].shininess = 0.02;
+        // cube =  supershape.getModel();
 
-        // ev2::Renderer::get_singleton().create_model({1}, cube);
-        ev2::Renderer::get_singleton().create_model({2}, house);
-        ev2::Renderer::get_singleton().create_model({3}, ground_cube);
 
-        ev2::Renderer::get_singleton().create_model_instance({2});
+        ev2::MID hid = RM->get_model( fs::path("models") / "rungholt" / "house.obj");
+        ev2::MID ground = RM->get_model( fs::path("models") / "cube.obj");
+
+        // ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
+        // ground_cube->materials[0].shininess = 0.02;
+
+        auto h_node = scene->create_node<ev2::VisualInstance>("house");
+        h_node->set_model(hid);
+        h_node->transform.position -= glm::vec3{0, 5, 0};
+        auto g_node = scene->create_node<ev2::VisualInstance>("ground");
+        g_node->set_model(ground);
+        g_node->set_material_override(1);
+        g_node->transform.scale = glm::vec3{1000, 0.1, 1000};
     }
 
     void updateShape(float dt, Sphere geometry) {
-        cube = geometry.getModel();
-                //ev2::loadObj("house.obj", asset_path / "models" / "rungholt");
+        // cube = geometry.getModel();
     }
 
 
     int run() {
-        // glClearColor(.72f, .84f, 1.06f, 1.0f);
-        // // Enable z-buffer test.
-        // glEnable(GL_DEPTH_TEST);
-
         float dt = 0.05f;
         while(ev2::window::frame()) {
+            scene->update(dt);
             render(dt);
             dt = float(ev2::window::getFrameTime());
         }
@@ -290,7 +288,7 @@ int main(int argc, char *argv[]) {
     ev2::window::setApplication(app.get());
 
     app->load_shaders();
-    app->load_models();
+    app->initialize();
 
     return app->run();;
 }

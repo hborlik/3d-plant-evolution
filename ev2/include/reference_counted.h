@@ -11,6 +11,22 @@
 
 namespace ev2 {
 
+class ReferenceCountedBase {
+public:
+    virtual ~ReferenceCountedBase() = default;
+
+    uint32_t count = 0;
+
+    void decrement() {
+        count--;
+        // TODO offload deletion to a cleanup thread?
+        if (count == 0)
+            delete this;
+    }
+
+    void increment() noexcept {count++;}
+};
+
 template<typename T>
 class ReferenceCounted;
 
@@ -18,7 +34,7 @@ template<typename T>
 struct Ref {
 
     Ref() = default;
-    Ref(ReferenceCounted<T>* obj);
+    Ref(T* obj);
     ~Ref();
 
     Ref(const Ref<T>&) noexcept;
@@ -43,23 +59,20 @@ struct Ref {
     void clear();
 
 private:
-    ReferenceCounted<T>* object = nullptr;
-};
-
-template<typename T>
-class ReferenceCounted {
-    uint32_t count = 0;
-
-    void decrement() {
-        count--;
-        // TODO offload deletion to a cleanup thread?
-        if (count == 0)
-            delete this;
+    template<typename B>
+    friend Ref<B> ref_cast(const Ref<T>& ref_a) {
+        B *obj = dynamic_cast<B*>(ref_a.object);
+        return Ref<B>{obj};
     }
 
-    void increment() {count++;}
+    T* object = nullptr;
+};
 
-    friend class Ref<T>;
+template<typename B, typename T>
+Ref<B> ref_cast(const Ref<T>& ref_a);
+
+template<typename T>
+class ReferenceCounted : public ReferenceCountedBase {
 public:
     ReferenceCounted() = default;
     virtual ~ReferenceCounted() = default;
@@ -101,7 +114,7 @@ Ref<T>& Ref<T>::operator=(const Ref<T>& o) noexcept {
 }
 
 template<typename T>
-Ref<T>::Ref(ReferenceCounted<T>* obj) : object{obj} {
+Ref<T>::Ref(T* obj) : object{obj} {
     if (object)
         object->increment();
 }
@@ -121,8 +134,8 @@ void Ref<T>::clear() {
 
 template<typename T, typename... Args>
 Ref<T> make_referenced(Args&&... args) {
-    ReferenceCounted<T>* container = new T(std::forward(args)...);
-    return Ref<T>{container};
+    T *obj = new T(std::forward<Args&&>(args)...);
+    return Ref<T>{obj};
 }
 
 }
