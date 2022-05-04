@@ -65,6 +65,7 @@ public:
         Orbital
     } camera_type;
 
+    uint32_t width = 800, height = 600;
 
     ev2::Camera& getActiveCam() {
         switch(camera_type) {
@@ -78,14 +79,9 @@ public:
         }
     }
 
-    uint32_t width = 800, height = 600;
-
-    void load_shaders() {
-        ev2::Renderer::intitalize(width, height, asset_path);
-
-    }
 
     void initialize() {
+
         Sphere supershape(1.0f , 20, 20);
         // cube =  supershape.getModel();
 
@@ -113,8 +109,8 @@ public:
     int run() {
         float dt = 0.05f;
         while(ev2::window::frame()) {
-            scene->update(dt);
-            render(dt);
+            update(dt);
+            ev2::Renderer::get_singleton().render(getActiveCam());
             dt = float(ev2::window::getFrameTime());
         }
         ev2::Renderer::shutdown();
@@ -127,8 +123,9 @@ public:
         ev2::Renderer::get_singleton().set_wireframe(enabled);
     }
 
-    void render(float dt) {
+    void update(float dt) {
         // first update scene
+        scene->update(dt);
 
         if (mouse_down || ev2::window::getMouseCaptured()) {
             mouse_delta = ev2::window::getCursorPosition() - mouse_p;
@@ -143,16 +140,16 @@ public:
 
         boom = cam_t * glm::vec4(boom, 1.0f);
 
-        cam_orbital.setPosition(boom);
-        cam_orbital.setRotation(glm::quatLookAt(-glm::normalize(boom), glm::vec3{0, 1, 0}));
+        cam_orbital.set_position(boom);
+        cam_orbital.set_rotation(glm::quatLookAt(-glm::normalize(boom), glm::vec3{0, 1, 0}));
 
-        cam_first_person.setRotation(glm::rotate(glm::rotate(glm::identity<glm::quat>(), (float)cam_x, glm::vec3{0, 1, 0}), (float)cam_y, glm::vec3{1, 0, 0}));
+        cam_first_person.set_rotation(glm::rotate(glm::rotate(glm::identity<glm::quat>(), (float)cam_x, glm::vec3{0, 1, 0}), (float)cam_y, glm::vec3{1, 0, 0}));
         if (camera_type == FirstPerson && glm::length(move_input) > 0.0f) {
             glm::vec2 input = glm::normalize(move_input);
-            glm::vec3 cam_forward = glm::normalize(cam_first_person.getForward() * glm::vec3{1, 0, 1});
-            glm::vec3 cam_right = glm::normalize(cam_first_person.getRight() * glm::vec3{1, 0, 1});
-            cam_first_person.setPosition(
-                cam_first_person.getPosition() * glm::vec3{1, 0, 1} + 
+            glm::vec3 cam_forward = glm::normalize(cam_first_person.get_forward() * glm::vec3{1, 0, 1});
+            glm::vec3 cam_right = glm::normalize(cam_first_person.get_right() * glm::vec3{1, 0, 1});
+            cam_first_person.set_position(
+                cam_first_person.get_position() * glm::vec3{1, 0, 1} + 
                 glm::vec3{0, 2, 0} + 
                 cam_forward * 10.0f * dt * input.y + 
                 cam_right * 10.0f * dt * input.x
@@ -161,16 +158,16 @@ public:
 
         // render scene
 
-        ev2::Renderer::get_singleton().render(getActiveCam());
+        
 
         // glViewport(0, 0, width, height);
         // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // prog.use();
 
-        // prog.setShaderParameter("P", getActiveCam().getProjection());
-        // prog.setShaderParameter("V", getActiveCam().getView());
-        // prog.setShaderParameter("CameraPos", getActiveCam().getPosition());
+        // prog.setShaderParameter("P", getActiveCam().get_projection());
+        // prog.setShaderParameter("V", getActiveCam().get_view());
+        // prog.setShaderParameter("CameraPos", getActiveCam().get_position());
 
         // glm::mat4 M = glm::translate(glm::identity<glm::mat4>(), glm::vec3{0, 3, -5}) * glm::rotate(glm::identity<glm::mat4>(), glm::radians(90.0f), glm::vec3{0, 0, 1});
         // glm::mat3 G = glm::inverse(glm::transpose(glm::mat3(M)));
@@ -268,9 +265,9 @@ public:
         this->height = height;
         float aspect = width/(float)height;
         auto p = glm::perspective(glm::radians(50.0f), aspect, 0.1f, 200.0f);
-        cam_orbital.setProjection(p);
-        cam_fly.setProjection(p);
-        cam_first_person.setProjection(p);
+        cam_orbital.set_projection(p);
+        cam_fly.set_projection(p);
+        cam_first_person.set_projection(p);
         if (ev2::Renderer::is_initialized())
             ev2::Renderer::get_singleton().set_resolution(width, height);
     }
@@ -281,13 +278,14 @@ public:
 int main(int argc, char *argv[]) {
     ev2::Args args{argc, argv};
 
-    ev2::EV2_init(args);
+    fs::path asset_path = fs::path("asset");
+
+    ev2::EV2_init(args, asset_path);
     ev2::window::setWindowTitle("Plant Game");
 
-    std::unique_ptr<TestApp> app = std::make_unique<TestApp>();
+    std::unique_ptr<TestApp> app = std::make_unique<TestApp>(asset_path);
     ev2::window::setApplication(app.get());
 
-    app->load_shaders();
     app->initialize();
 
     return app->run();;

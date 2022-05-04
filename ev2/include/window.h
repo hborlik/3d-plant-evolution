@@ -28,6 +28,8 @@ void setApplication(Application* app);
 void setMouseCaptured(bool captured);
 bool getMouseCaptured();
 
+glm::ivec2 getDefaultWindowSize();
+
 glm::vec2 getCursorPosition();
 double getFrameTime();
 bool frame();

@@ -17,7 +17,7 @@ namespace ev2 {
 
 class Camera {
 public:
-    Frustum extractFrustum() const noexcept {
+    Frustum extract_frustum() const noexcept {
         using namespace glm;
         const mat4& comp = composite;
         Frustum f{};
@@ -71,7 +71,7 @@ public:
      * @brief Force internal View and Projection * View matrices to be updated.
      * 
      */
-    void forceUpdateInternal() const {
+    void force_update_internal() const {
         using namespace glm;
         view = inverse(translate(identity<glm::mat4>(), position) * mat4_cast(rotation));
         composite = projection * view;
@@ -83,27 +83,27 @@ public:
      * 
      * @return glm::mat4 
      */
-    glm::mat4 getView() const {
+    glm::mat4 get_view() const {
         if (dirty)
-            forceUpdateInternal();
+            force_update_internal();
         return view;
     }
 
-    glm::mat4 getProjection() const {return projection;}
-    glm::vec3 getPosition() const {return position;}
-    glm::quat getRotation() const {return rotation;}
+    glm::mat4 get_projection() const {return projection;}
+    glm::vec3 get_position() const {return position;}
+    glm::quat get_rotation() const {return rotation;}
 
-    void setProjection(const glm::mat4& p) {
+    void set_projection(const glm::mat4& p) {
         projection = p;
         dirty = true;
     }
 
-    void setPosition(const glm::vec3& p) {
+    void set_position(const glm::vec3& p) {
         position = p;
         dirty = true;
     }
 
-    void setRotation(const glm::quat& q) {
+    void set_rotation(const glm::quat& q) {
         rotation = q;
         dirty = true;
     }
@@ -119,11 +119,15 @@ public:
         position += dir;
     }
 
-    glm::vec3 getForward() const {
+    glm::vec3 get_forward() const {
         return -glm::mat4_cast(rotation)[2];
     }
 
-    glm::vec3 getRight() const {
+    glm::vec3 get_up() const {
+        return glm::mat4_cast(rotation)[1];
+    }
+
+    glm::vec3 get_right() const {
         return glm::mat4_cast(rotation)[0];
     }
 

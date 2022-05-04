@@ -269,7 +269,8 @@ public:
         // for debugging in 4.3 and later
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
-        window_ptr = glfwCreateWindow(defaultWidth
+        window_ptr = glfwCreateWindow(
+            defaultWidth
             , defaultHeight
             , "window"
             , NULL
@@ -504,6 +505,12 @@ void setMouseCaptured(bool captured) {
 
 bool getMouseCaptured() {
     return static_context->getMouseCaptured();
+}
+
+glm::ivec2 getDefaultWindowSize() {
+    int32_t width = static_context->defaultWidth;
+    int32_t height = static_context->defaultHeight;
+    return {width, height};
 }
 
 glm::vec2 getCursorPosition() {

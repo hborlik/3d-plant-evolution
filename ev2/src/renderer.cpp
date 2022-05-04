@@ -219,9 +219,9 @@ void Renderer::set_instance_transform(IID iid, const glm::mat4& transform) {
 void Renderer::render(const Camera &camera) {
 
     // update globals buffer with frame info
-    globals_desc.setShaderParameter("P", camera.getProjection(), shader_globals);
-    globals_desc.setShaderParameter("View", camera.getView(), shader_globals);
-    globals_desc.setShaderParameter("CameraPos", camera.getPosition(), shader_globals);
+    globals_desc.setShaderParameter("P", camera.get_projection(), shader_globals);
+    globals_desc.setShaderParameter("View", camera.get_view(), shader_globals);
+    globals_desc.setShaderParameter("CameraPos", camera.get_position(), shader_globals);
 
     // render all geometry to g buffer
     g_buffer.bind();

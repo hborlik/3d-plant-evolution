@@ -29,6 +29,22 @@ private:
     IID iid{};
 };
 
+class CameraNode : public Node {
+public:
+    CameraNode(const std::string &name) : Node{name} {}
+
+    void on_init() override;
+    void on_ready() override;
+    void on_process(float delta) override;
+    void on_destroy() override;
+
+    void set_fov(const glm::vec3& color);
+
+private:
+    Camera camera{};
+    float fov = 60.0f;
+};
+
 class LightInstance : public Node {
 public:
     LightInstance(const std::string &name) : Node{name} {}

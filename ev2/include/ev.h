@@ -12,6 +12,7 @@
 
 #include <string>
 #include <exception>
+#include <filesystem>
 #include <map>
 
 #define EV2_CHECK_THROW(expr, message) if(!(expr)) throw ev2::engine_exception{"[" + std::string{__FILE__} + ":" + std::to_string(__LINE__) + "]:" + message}
@@ -43,7 +44,7 @@ struct Args {
     std::map<std::string, std::string> args;
 };
 
-void EV2_init(const Args& args);
+void EV2_init(const Args& args, const std::filesystem::path& asset_path);
 
 } // ev2
 
