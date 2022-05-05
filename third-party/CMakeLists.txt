@@ -6,25 +6,35 @@ set(GLFW3_VERSION "3.3")
 
 include(ExternalProject)
 
-ExternalProject_Add(GLM_UTIL
-    PREFIX glm
-    GIT_REPOSITORY https://github.com/g-truc/glm.git
-    GIT_TAG ${GLM_VERSION}
-    INSTALL_COMMAND ""
-    UPDATE_COMMAND ""
-    LOG_DOWNLOAD ON
+CPMAddPackage(
+    NAME glm
+    GITHUB_REPOSITORY g-truc/glm
+    GIT_TAG 0.9.9.8
 )
-ExternalProject_Get_Property(GLM_UTIL SOURCE_DIR)
-ExternalProject_Get_Property(GLM_UTIL BINARY_DIR)
-set(GLM_INCLUDE_DIR ${SOURCE_DIR})
-set(GLM_BINARY_DIR ${BINARY_DIR})
-message(STATUS "GLM Source Dir: ${SOURCE_DIR}")
-message(STATUS "GLM Binary Dir: ${BINARY_DIR}")
+if(glm_ADDED)
+    # add_library(glm INTERFACE IMPORTED)
+    target_include_directories(glm INTERFACE ${glm_SOURCE_DIR})
+endif()
 
-add_library(glm INTERFACE)
-add_dependencies(glm INTERFACE GLM_UTIL)
-target_link_libraries(glm INTERFACE ${GLM_BINARY_DIR}/glm/libglm_static.a)
-target_include_directories(glm INTERFACE ${GLM_INCLUDE_DIR})
+# ExternalProject_Add(GLM_UTIL
+#     PREFIX glm
+#     GIT_REPOSITORY https://github.com/g-truc/glm.git
+#     GIT_TAG ${GLM_VERSION}
+#     INSTALL_COMMAND ""
+#     UPDATE_COMMAND ""
+#     LOG_DOWNLOAD ON
+# )
+# ExternalProject_Get_Property(GLM_UTIL SOURCE_DIR)
+# ExternalProject_Get_Property(GLM_UTIL BINARY_DIR)
+# set(GLM_INCLUDE_DIR ${SOURCE_DIR})
+# set(GLM_BINARY_DIR ${BINARY_DIR})
+# message(STATUS "GLM Source Dir: ${SOURCE_DIR}")
+# message(STATUS "GLM Binary Dir: ${BINARY_DIR}")
+
+# add_library(glm INTERFACE)
+# add_dependencies(glm INTERFACE GLM_UTIL)
+# target_link_libraries(glm INTERFACE ${GLM_BINARY_DIR}/glm/libglm_static.a)
+# target_include_directories(glm INTERFACE ${GLM_INCLUDE_DIR})
 
 # glfw3
 
