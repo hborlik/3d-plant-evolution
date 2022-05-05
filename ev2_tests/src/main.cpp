@@ -3,6 +3,7 @@
 #include <filesystem>
 
 #include <tests.h>
+#include <tree.h>
 
 #include <ev.h>
 #include <ev_gl.h>
