@@ -69,7 +69,7 @@ void DirectionalLightNode::on_process(float delta) {
 }
 
 void DirectionalLightNode::on_destroy() {
-
+    ev2::Renderer::get_singleton().destroy_light(lid);
 }
 
 }

@@ -102,7 +102,7 @@ public:
         h_node->transform.position -= glm::vec3{0, 5, 0};
 
         auto lh_node = scene->create_node<ev2::VisualInstance>("building");
-        lh_node->transform.position = glm::vec3{50, 0, 50};
+        lh_node->transform.position = glm::vec3{50, 1, -20};
         lh_node->set_model(building0);
 
         auto g_node = scene->create_node<ev2::VisualInstance>("ground");
@@ -116,7 +116,7 @@ public:
         cam_first_person = scene->create_node<ev2::CameraNode>("FP");
 
         tree = scene->create_node<TreeNode>("Tree");
-        tree->transform.position = glm::vec3{-50, 0, 0};
+        tree->transform.position = glm::vec3{50, 0, 0};
     }
 
     void updateShape(float dt, Sphere geometry) {

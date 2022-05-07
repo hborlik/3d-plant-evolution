@@ -171,7 +171,7 @@ void Renderer::set_light_position(LID lid, const glm::vec3& position) {
         {
             auto mi = directional_lights.find(lid._v);
             if (mi != directional_lights.end()) {
-                mi->second.direction = glm::normalize(-position);
+                mi->second.direction = glm::normalize(position);
             }
         }
         break;

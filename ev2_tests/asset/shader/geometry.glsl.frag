@@ -10,13 +10,12 @@ in vec3 vert_normal;
 in vec3 vert_color;
 in vec2 tex_coord;
 
-uniform vec3 diffuse;
-uniform uint  materialId;
+uniform uint materialId;
 
 void main() {
     gPosition = frag_pos;
     gNormal = normalize(vert_normal);
-    gAlbedoSpec.rgb = diffuse;
+    gAlbedoSpec.rgb = vert_color;
     gAlbedoSpec.a = 0;
     gMaterialTex = materialId;
 }
