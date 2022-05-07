@@ -3,7 +3,7 @@
 namespace ev2 {
 
 void Drawable::draw(const Program& prog, int32_t material_override) {
-    vb.bind();
+    vertex_buffer.bind();
     if (cull_mode == gl::CullMode::NONE) {
         glDisable(GL_CULL_FACE);
     } else {
@@ -12,7 +12,7 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
     }
     glFrontFace((GLenum)front_facing);
     // TODO: support for multiple index buffers
-    if (vb.getIndexed() != -1) {
+    if (vertex_buffer.getIndexed() != -1) {
         // draw indexed arrays
         for (auto& m : meshes) {
             // prog.applyMaterial(materials[m.material_id]);
@@ -23,7 +23,7 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
                 GL_CHECKED_CALL(glUniform1ui(loc, material_override > -1 ? material_override : m.material_id + material_offset));
             }
 
-            vb.buffers[vb.getIndexed()].Bind(); // bind index buffer (again, @Windows)
+            vertex_buffer.buffers[vertex_buffer.getIndexed()].Bind(); // bind index buffer (again, @Windows)
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {
@@ -39,14 +39,14 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
             glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
         }
     }
-    vb.unbind();
+    vertex_buffer.unbind();
 }
 
 Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path& asset_path) : 
     models{},
     model_instances{},
     geometry_program{"Geometry Program"},
-    lighting_program{"Lighting Program"},
+    directional_lighting_program{"Lighting Program"},
     g_buffer{gl::FBOTarget::RW},
     sst_vb{VertexBuffer::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
@@ -90,20 +90,20 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     gp_g_location = geometry_program.getUniformInfo("G").Location;
 
 
-    lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
-    lighting_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "disney.glsl.frag", prep);
-    lighting_program.link();
+    directional_lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
+    directional_lighting_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "directional.glsl.frag", prep);
+    directional_lighting_program.link();
 
-    lp_p_location = lighting_program.getUniformInfo("gPosition").Location;
-    lp_n_location = lighting_program.getUniformInfo("gNormal").Location;
-    lp_as_location = lighting_program.getUniformInfo("gAlbedoSpec").Location;
-    lp_mt_location = lighting_program.getUniformInfo("gMaterialTex").Location;
+    lp_p_location = directional_lighting_program.getUniformInfo("gPosition").Location;
+    lp_n_location = directional_lighting_program.getUniformInfo("gNormal").Location;
+    lp_as_location = directional_lighting_program.getUniformInfo("gAlbedoSpec").Location;
+    lp_mt_location = directional_lighting_program.getUniformInfo("gMaterialTex").Location;
 
     // program block inputs
     globals_desc = geometry_program.getUniformBlockInfo("Globals");
     shader_globals.Allocate(globals_desc.block_size);
 
-    lighting_materials_desc = lighting_program.getUniformBlockInfo("MaterialsInfo");
+    lighting_materials_desc = directional_lighting_program.getUniformBlockInfo("MaterialsInfo");
     lighting_materials.Allocate(lighting_materials_desc.block_size);
 
     materials = std::vector<MaterialData>(100, MaterialData{});
@@ -138,6 +138,51 @@ int32_t Renderer::create_material(const MaterialData& material) {
         return mat_id;
     } else
         return -1;
+}
+
+LID Renderer::create_light() {
+    uint32_t nlid = next_light_id++;
+    Light l{};
+    point_lights.insert_or_assign(nlid, l);
+    return {LID::Point, nlid};
+}
+
+LID Renderer::create_directional_light() {
+    uint32_t nlid = next_light_id++;
+    DirectionalLight l{};
+    directional_lights.insert_or_assign(nlid, l);
+    return {LID::Directional, nlid};
+}
+
+void Renderer::set_light_position(LID lid, const glm::vec3& position) {
+    if (!lid.is_valid())
+        return;
+    
+    switch(lid._type) {
+        case LID::Point:
+        {
+            auto mi = point_lights.find(lid._v);
+            if (mi != point_lights.end()) {
+                mi->second.color = position;
+            }
+        }
+        break;
+        case LID::Directional:
+        {
+            auto mi = directional_lights.find(lid._v);
+            if (mi != directional_lights.end()) {
+                mi->second.direction = glm::normalize(-position);
+            }
+        }
+        break;
+    };
+}
+
+void Renderer::destroy_light(LID lid) {
+    if (!lid.is_valid())
+        return;
+    directional_lights.erase(lid._v);
+    point_lights.erase(lid._v);
 }
 
 MID Renderer::create_model(std::shared_ptr<Model> model) {
@@ -260,17 +305,20 @@ void Renderer::render(const Camera &camera) {
 
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-
     glClear(GL_COLOR_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
+
+    glDisable(GL_DEPTH_TEST); // overdraw
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
-    lighting_program.use();
+    // add all lighting contributions
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_ONE, GL_ONE);
+    glBlendEquation(GL_FUNC_ADD);
+
+    // setup lighting program
+    directional_lighting_program.use();
     globals_desc.bind_buffer(shader_globals);
     lighting_materials_desc.bind_buffer(lighting_materials);
-
-    gl::glUniform(glm::vec3{-50, 40, 0}, lighting_program.getUniformInfo("lightPos").Location);
-    gl::glUniform(glm::vec3{400, 400, 400}, lighting_program.getUniformInfo("lightColor").Location);
 
 
     if (lp_p_location >= 0) {
@@ -297,9 +345,17 @@ void Renderer::render(const Camera &camera) {
         gl::glUniformSampler(3, lp_mt_location);
     }
 
-    draw_screen_space_triangle();
+    for (auto& litr : directional_lights) {
+        auto& l = litr.second;
+        gl::glUniform(glm::normalize(l.direction), directional_lighting_program.getUniformInfo("lightDir").Location);
+        gl::glUniform(l.color, directional_lighting_program.getUniformInfo("lightColor").Location);
+        gl::glUniform(l.ambient, directional_lighting_program.getUniformInfo("lightAmbient").Location);
+        
+        draw_screen_space_triangle();
+    }
 
-    lighting_program.unbind();
+
+    directional_lighting_program.unbind();
 }
 
 void Renderer::set_wireframe(bool enable) {

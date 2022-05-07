@@ -35,9 +35,7 @@ void CameraNode::on_ready() {
 }
 
 void CameraNode::on_process(float dt) {
-    auto tr = get_transform();
-    camera.set_position(glm::vec3(tr[3]));
-    camera.set_rotation(glm::quat_cast(tr));
+    update_internal();
 }
 
 void CameraNode::on_destroy() {
@@ -49,8 +47,29 @@ void CameraNode::set_active() {
 }
 
 void CameraNode::update_internal() {
-    auto p = glm::perspective(glm::radians(fov), aspect, near, far);
+    float r_aspect = ev2::Renderer::get_singleton().get_aspect_ratio();
+    auto p = glm::perspective(glm::radians(fov), aspect * r_aspect, near, far);
     camera.set_projection(p);
+
+    auto tr = get_transform();
+    camera.set_position(glm::vec3(tr[3]));
+    camera.set_rotation(glm::quat_cast(tr));
+}
+
+void DirectionalLightNode::on_init() {
+    lid = ev2::Renderer::get_singleton().create_directional_light();
+}
+
+void DirectionalLightNode::on_ready() {
+
+}
+
+void DirectionalLightNode::on_process(float delta) {
+    ev2::Renderer::get_singleton().set_light_position(lid, glm::vec3(get_transform()[3]));
+}
+
+void DirectionalLightNode::on_destroy() {
+
 }
 
 }

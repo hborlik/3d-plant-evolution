@@ -9,6 +9,10 @@
 
 #include <stdint.h>
 
+#include <type_traits>
+#include <utility>
+#include <cstddef>
+
 namespace ev2 {
 
 class ReferenceCountedBase {
@@ -33,43 +37,113 @@ class ReferenceCounted;
 template<typename T>
 struct Ref {
 
-    Ref() = default;
-    Ref(T* obj);
-    ~Ref();
+    template<typename _Yp, typename _Res = void>
+	using _Assignable = typename
+        std::enable_if<std::is_convertible<_Yp*, T*>::value, _Res>::type;
 
-    Ref(const Ref<T>&) noexcept;
-    Ref(Ref<T>&&) noexcept;
+    Ref() noexcept = default;
 
-    Ref<T>& operator=(const Ref<T>& o) noexcept;
+    Ref(nullptr_t) noexcept : Ref() {}
+
+    explicit Ref(T* obj) : _ref{obj} {
+        if (_ref)
+            _ref->increment();
+    }
+
+    template<typename _Yp, typename = _Assignable<_Yp>>
+    explicit Ref(_Yp* obj) : _ref{obj} {
+        if (_ref)
+            _ref->increment();
+    }
+
+    Ref(const Ref<T>& o) noexcept {
+        *this = o;
+    }
+
+    template<typename _Yp, typename = _Assignable<_Yp>>
+    Ref(const Ref<_Yp>& o) noexcept {
+        *this = o;
+    }
+
+    Ref(Ref<T>&& o) noexcept {
+        _ref = o._ref;
+        o._ref = nullptr;
+    }
+
+    template<typename _Yp, typename = _Assignable<_Yp>>
+    Ref(Ref<_Yp>&& o) noexcept {
+        _ref = o._ref;
+        o._ref = nullptr;
+    }
+
+    ~Ref() {
+        if (_ref)
+            _ref->decrement();
+    }
 
     T& operator*() const noexcept {
         return *this->operator->();
     }
 
     T* operator->() const noexcept {
-        return dynamic_cast<T*>(object);
+        return _ref;
     }
 
     T* get() noexcept {
         return this->operator->();
     }
 
-    bool operator==(const Ref<T>& o) noexcept {return o.object == object;}
+    bool operator==(const Ref<T>& o) noexcept {return o._ref == _ref;}
 
     void clear();
 
-private:
-    template<typename B>
-    friend Ref<B> ref_cast(const Ref<T>& ref_a) {
-        B *obj = dynamic_cast<B*>(ref_a.object);
+    Ref<T>& operator=(const Ref<T>& o) noexcept
+	{
+        if (_ref)
+            _ref->decrement();
+        _ref = o._ref;
+        if (_ref)
+            _ref->increment();
+        return *this;
+	}
+
+    template<typename _Yp>
+	_Assignable<_Yp, Ref<T>&>
+	operator=(const Ref<_Yp>& o) noexcept
+	{
+        if (_ref)
+            _ref->decrement();
+        _ref = o._ref;
+        if (_ref)
+            _ref->increment();
+        return *this;
+	}
+
+    Ref<T>& operator=(Ref<T>&& __r) noexcept
+	{
+        Ref(std::move(__r)).swap(*this);
+        return *this;
+	}
+
+    template<typename _Yp>
+	_Assignable<_Yp, Ref<T>&>
+	operator=(Ref<_Yp>&& __r) noexcept
+	{
+        Ref(std::move(__r)).swap(*this);
+        return *this;
+	}
+
+    template<class B> Ref<B> ref_cast() {
+        B *obj = dynamic_cast<B*>(_ref);
         return Ref<B>{obj};
     }
 
-    T* object = nullptr;
-};
+    void swap(Ref<T>& r) noexcept {
+        std::swap(r._ref, _ref);
+    }
 
-template<typename B, typename T>
-Ref<B> ref_cast(const Ref<T>& ref_a);
+    T* _ref = nullptr;
+};
 
 template<typename T>
 class ReferenceCounted : public ReferenceCountedBase {
@@ -81,55 +155,17 @@ public:
     ReferenceCounted<T> operator=(const ReferenceCounted<T>& o) = delete;
     ReferenceCounted<T> operator=(ReferenceCounted<T>&& o) = delete;
 
-    Ref<T> get_ref() noexcept;
+    Ref<T> get_ref() noexcept {return {this};}
 
     uint32_t get_ref_count() const noexcept {return count;}
 
 };
 
 template<typename T>
-Ref<T> ReferenceCounted<T>::get_ref() noexcept {
-    return {this};
-}
-
-template<typename T>
-Ref<T>::Ref(const Ref<T>& o) noexcept {
-    *this = o;
-}
-
-template<typename T>
-Ref<T>::Ref(Ref<T>&& o) noexcept {
-    object = o.object;
-    o.object = nullptr;
-}
-
-template<typename T>
-Ref<T>& Ref<T>::operator=(const Ref<T>& o) noexcept {
-    if (object)
-        object->decrement();
-    object = o.object;
-    if (object)
-        object->increment();
-    return *this;
-}
-
-template<typename T>
-Ref<T>::Ref(T* obj) : object{obj} {
-    if (object)
-        object->increment();
-}
-
-template<typename T>
-Ref<T>::~Ref() {
-    if (object)
-        object->decrement();
-}
-
-template<typename T>
 void Ref<T>::clear() {
-    if (object)
-        object->decrement();
-    object = nullptr;
+    if (_ref)
+        _ref->decrement();
+    _ref = nullptr;
 }
 
 template<typename T, typename... Args>

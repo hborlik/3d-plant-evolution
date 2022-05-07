@@ -50,7 +50,8 @@ template<typename T>
 Ref<T> Scene::create_node(const std::string& name) {
     Ref<T> node = make_referenced<T>(name);
     node->scene = this;
-    root->add_child(ref_cast<Node>(node));
+    Ref<Node> nnode = node;
+    root->add_child(nnode);
     node->on_init();
     return node;
 }

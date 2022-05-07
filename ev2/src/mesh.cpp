@@ -10,17 +10,17 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& verti
     vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, vertices});
     vb.buffers[vb.buffers.size() - 1].Bind();
     glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
+    glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
 
     vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, normals});
     vb.buffers[vb.buffers.size() - 1].Bind();
     glEnableVertexAttribArray(gl::NORMAL_BINDING_LOCATION);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(sizeof(float) * 3));
+    glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(sizeof(float) * 3));
 
     vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, vertex_colors});
     vb.buffers[vb.buffers.size() - 1].Bind();
     glEnableVertexAttribArray(gl::COLOR_BINDING_LOCATION);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(sizeof(float) * 6));
+    glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(sizeof(float) * 6));
 
     vb.buffers[vb.buffers.size() - 1].Unbind();
 
@@ -154,6 +154,60 @@ VertexBuffer VertexBuffer::vbInitArrayVertexDataInstanced(const std::vector<floa
     glVertexAttribDivisor(7, 1);
 
     vb.buffers[vb.buffers.size() - 1].Unbind();
+
+    glBindVertexArray(0);
+
+    return std::move(vb);
+}
+
+VertexBuffer VertexBuffer::vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout) {
+    VertexBuffer vb;
+    // pos(3float), normal(3float), color(3float), texcoord(2float)
+    glGenVertexArrays(1, &vb.gl_vao);
+    glBindVertexArray(vb.gl_vao);
+
+    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers[vb.buffers.size() - 1].Bind();
+
+    uint32_t offset = 0;
+    for (const auto& l : layout.attributes) {
+        glEnableVertexAttribArray(l.location);
+        glVertexAttribPointer(l.location, l.count, (GLenum)l.type, GL_FALSE, layout.stride, (void*)offset);
+
+        offset += l.count * l.element_size;
+    }
+
+    vb.buffers[vb.buffers.size() - 1].Unbind();
+
+    glBindVertexArray(0);
+
+    return std::move(vb);
+}
+
+VertexBuffer VertexBuffer::vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout) {
+    VertexBuffer vb;
+    // pos(3float), normal(3float), color(3float), texcoord(2float)
+    glGenVertexArrays(1, &vb.gl_vao);
+    glBindVertexArray(vb.gl_vao);
+
+    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers.push_back(Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
+
+    vb.indexed = vb.buffers.size() - 1; // location of index buffer
+
+    vb.buffers[0].Bind();
+    vb.buffers[1].Bind();
+
+    uint32_t offset = 0;
+    for (const auto& l : layout.attributes) {
+        glEnableVertexAttribArray(l.location);
+        glVertexAttribPointer(l.location, l.count, (GLenum)l.type, GL_FALSE, layout.stride, (void*)offset);
+
+        offset += l.count * l.element_size;
+    }
+
+    vb.buffers[0].Unbind();
+    vb.buffers[1].Unbind();
 
     glBindVertexArray(0);
 

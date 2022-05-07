@@ -79,6 +79,7 @@ std::string ShaderPreprocessor::preprocess(const std::string& input_source) cons
             auto inc = shader_includes.find(filename);
             if (inc != shader_includes.end()) {
                 result << (*inc).second;
+                result << "\n";
             } else {
                 throw shader_error{"Preprocessor", filename + " include not found"};
             }

@@ -15,6 +15,54 @@
 
 namespace ev2 {
 
+enum class VertexAttributeType {
+    Vertex = 0,
+    Normal,
+    Color,
+    Texcoord
+};
+
+struct VertexLayout {
+    struct Attribute {
+        uint32_t location = 0;
+        gl::DataType type = gl::DataType::FLOAT;
+        uint16_t count = 0;
+        uint16_t element_size = 0;
+    };
+
+    VertexLayout& add_attribute(VertexAttributeType type) {
+        switch(type) {
+            case VertexAttributeType::Vertex:
+                attributes.push_back(Attribute{gl::VERTEX_BINDING_LOCATION, gl::DataType::FLOAT, 3, sizeof(float)});
+                break;
+            case VertexAttributeType::Normal:
+                attributes.push_back(Attribute{gl::NORMAL_BINDING_LOCATION, gl::DataType::FLOAT, 3, sizeof(float)});
+                break;
+            case VertexAttributeType::Color:
+                attributes.push_back(Attribute{gl::COLOR_BINDING_LOCATION, gl::DataType::FLOAT, 3, sizeof(float)});
+                break;
+            case VertexAttributeType::Texcoord:
+                attributes.push_back(Attribute{gl::TEXCOORD_BINDING_LOCATION, gl::DataType::FLOAT, 2, sizeof(float)});
+                break;
+            default:
+                break;
+        }
+        return *this;
+    }
+
+    VertexLayout& finalize() {
+        uint32_t total_size = 0;
+        for (auto& l : attributes) {
+            total_size += l.element_size * l.count;
+        }
+        stride = total_size;
+        return *this;
+    }
+
+    std::vector<Attribute> attributes;
+    uint32_t stride = 0;
+};
+
 enum class VertexFormat {
     Array = 0,
     Indexed
@@ -67,6 +115,9 @@ public:
      * @return VertexBuffer 
      */
     static VertexBuffer vbInitArrayVertexDataInstanced(const std::vector<float>& buffer);
+
+    static VertexBuffer vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout);
+    static VertexBuffer vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout);
 
     std::vector<Buffer> buffers;
 

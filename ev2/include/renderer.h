@@ -26,14 +26,24 @@ namespace ev2 {
  * 
  */
 struct LID {
-    int32_t v = -1;
+    enum LightType {
+        Point,
+        Directional
+    } _type;
+    int32_t _v = -1;
 
-    bool is_valid() const noexcept {return v != -1;}
+    bool is_valid() const noexcept {return _v != -1;}
 };
 
 struct Light {
     glm::vec3 color;
     glm::vec3 position;
+};
+
+struct DirectionalLight {
+    glm::vec3 color     = {1, 1, 1};
+    glm::vec3 ambient   = {0.05, 0.05, 0.05};
+    glm::vec3 direction = {0, -1, 0};
 };
 
 /**
@@ -48,8 +58,8 @@ struct IID {
 
 struct Drawable {
     Drawable(VertexBuffer&& vb, std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
-        vb{std::move(vb)}, meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
-    VertexBuffer vb;
+        vertex_buffer{std::move(vb)}, meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
+    VertexBuffer vertex_buffer;
     std::vector<Mesh> meshes;
 
     glm::vec3 bmin, bmax;
@@ -96,7 +106,10 @@ public:
     void update_material(int32_t material_id, const MaterialData& material);
     int32_t create_material(const MaterialData& material);
 
-    LID create_light(const Light& light);
+    LID create_light();
+    LID create_directional_light();
+    void set_light_position(LID lid, const glm::vec3& position);
+    void destroy_light(LID lid);
 
     MID create_model(std::shared_ptr<Model> model);
     MID create_model(std::shared_ptr<Drawable> d);
@@ -120,6 +133,7 @@ public:
     void set_wireframe(bool enable);
 
     void set_resolution(uint32_t width, uint32_t height);
+    float get_aspect_ratio() const noexcept {return width / (float)height;}
 
     void draw_screen_space_triangle();
 
@@ -134,13 +148,15 @@ private:
 
     int next_free_mat = 1;
 
-    std::vector<Light> point_lights;
+    std::unordered_map<uint32_t, Light> point_lights;
+    std::unordered_map<uint32_t, DirectionalLight> directional_lights;
+    uint32_t next_light_id = 1000;
 
     Program geometry_program;
     int gp_m_location;
     int gp_g_location;
 
-    Program lighting_program;
+    Program directional_lighting_program;
     int lp_p_location, lp_n_location, lp_as_location, lp_mt_location;
 
     FBO g_buffer;

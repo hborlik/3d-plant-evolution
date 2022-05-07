@@ -45,7 +45,7 @@ public:
     void set_near_clip(float near) noexcept {this->near = near; update_internal();}
     float get_near_clip() noexcept {return near;}
 
-    void set_far_clip(float far) noexcept {this->far = far;update_internal();}
+    void set_far_clip(float far) noexcept {this->far = far; update_internal();}
     float get_far_clip() noexcept {return far;}
 
     const Camera& get_camera() const noexcept {return camera;}
@@ -60,9 +60,10 @@ private:
     float aspect = 1.0f;
 };
 
-class LightInstance : public Node {
+
+class PointLightNode : public Node {
 public:
-    LightInstance(const std::string &name) : Node{name} {}
+    PointLightNode(const std::string &name) : Node{name} {}
 
     void on_init() override;
     void on_ready() override;
@@ -70,6 +71,22 @@ public:
     void on_destroy() override;
 
     void set_color(const glm::vec3& color);
+
+private:
+    LID lid{};
+};
+
+class DirectionalLightNode : public Node {
+public:
+    DirectionalLightNode(const std::string &name) : Node{name} {}
+
+    void on_init() override;
+    void on_ready() override;
+    void on_process(float delta) override;
+    void on_destroy() override;
+
+    void set_color(const glm::vec3& color);
+    void set_ambient(const glm::vec3& color);
 
 private:
     LID lid{};

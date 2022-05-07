@@ -47,9 +47,11 @@ public:
 
     fs::path asset_path = fs::path("asset");
 
-    ev2::Camera cam_orbital{};
-    ev2::Camera cam_fly{};
-    ev2::Camera cam_first_person{};
+    ev2::Ref<ev2::CameraNode> cam_orbital{};
+    ev2::Ref<ev2::CameraNode> cam_fly{};
+    ev2::Ref<ev2::CameraNode> cam_first_person{};
+
+    ev2::Ref<ev2::Node> tree{};
 
     std::shared_ptr<ev2::ResourceManager> RM;
     std::unique_ptr<ev2::Scene> scene;
@@ -66,9 +68,7 @@ public:
         Orbital
     } camera_type;
 
-    uint32_t width = 800, height = 600;
-
-    ev2::Camera& getActiveCam() {
+    ev2::Ref<ev2::CameraNode> getActiveCam() {
         switch(camera_type) {
             case Orbital:
                 return cam_orbital;
@@ -89,17 +89,34 @@ public:
 
         ev2::MID hid = RM->get_model( fs::path("models") / "rungholt" / "house.obj");
         ev2::MID ground = RM->get_model( fs::path("models") / "cube.obj");
+        // ev2::MID building0 = RM->get_model( fs::path("models") / "low_poly_houses.obj");
 
         // ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         // ground_cube->materials[0].shininess = 0.02;
 
+        auto light = scene->create_node<ev2::DirectionalLightNode>("directional_light");
+        light->transform.position = glm::vec3{10, 100, 0};
+
         auto h_node = scene->create_node<ev2::VisualInstance>("house");
         h_node->set_model(hid);
         h_node->transform.position -= glm::vec3{0, 5, 0};
+
+        // auto lh_node = scene->create_node<ev2::VisualInstance>("building");
+        // lh_node->transform.position = glm::vec3{50, 0, 50};
+        // lh_node->set_model(building0);
+
         auto g_node = scene->create_node<ev2::VisualInstance>("ground");
         g_node->set_model(ground);
         g_node->set_material_override(1);
         g_node->transform.scale = glm::vec3{1000, 0.1, 1000};
+        g_node->transform.position = glm::vec3{0, 0.4, 0};
+
+        cam_orbital      = scene->create_node<ev2::CameraNode>("Orbital");
+        cam_fly          = scene->create_node<ev2::CameraNode>("Fly");
+        cam_first_person = scene->create_node<ev2::CameraNode>("FP");
+
+        tree = scene->create_node<TreeNode>("Tree");
+        tree->transform.position = glm::vec3{-50, 0, 0};
     }
 
     void updateShape(float dt, Sphere geometry) {
@@ -111,7 +128,7 @@ public:
         float dt = 0.05f;
         while(ev2::window::frame()) {
             update(dt);
-            ev2::Renderer::get_singleton().render(getActiveCam());
+            ev2::Renderer::get_singleton().render(getActiveCam()->get_camera());
             dt = float(ev2::window::getFrameTime());
         }
         ev2::Renderer::shutdown();
@@ -141,78 +158,21 @@ public:
 
         boom = cam_t * glm::vec4(boom, 1.0f);
 
-        cam_orbital.set_position(boom);
-        cam_orbital.set_rotation(glm::quatLookAt(-glm::normalize(boom), glm::vec3{0, 1, 0}));
+        cam_orbital->transform.position = boom;
+        cam_orbital->transform.rotation = glm::quatLookAt(-glm::normalize(boom), glm::vec3{0, 1, 0});
 
-        cam_first_person.set_rotation(glm::rotate(glm::rotate(glm::identity<glm::quat>(), (float)cam_x, glm::vec3{0, 1, 0}), (float)cam_y, glm::vec3{1, 0, 0}));
+        cam_first_person->transform.rotation = glm::rotate(glm::rotate(glm::identity<glm::quat>(), (float)cam_x, glm::vec3{0, 1, 0}), (float)cam_y, glm::vec3{1, 0, 0});
         if (camera_type == FirstPerson && glm::length(move_input) > 0.0f) {
             glm::vec2 input = glm::normalize(move_input);
-            glm::vec3 cam_forward = glm::normalize(cam_first_person.get_forward() * glm::vec3{1, 0, 1});
-            glm::vec3 cam_right = glm::normalize(cam_first_person.get_right() * glm::vec3{1, 0, 1});
-            cam_first_person.set_position(
-                cam_first_person.get_position() * glm::vec3{1, 0, 1} + 
+            glm::vec3 cam_forward = glm::normalize(cam_first_person->get_camera().get_forward() * glm::vec3{1, 0, 1});
+            glm::vec3 cam_right = glm::normalize(cam_first_person->get_camera().get_right() * glm::vec3{1, 0, 1});
+            cam_first_person->transform.position = glm::vec3(
+                cam_first_person->transform.position * glm::vec3{1, 0, 1} + 
                 glm::vec3{0, 2, 0} + 
                 cam_forward * 10.0f * dt * input.y + 
                 cam_right * 10.0f * dt * input.x
             ); // force camera movement on y plane
         }
-
-        // render scene
-
-        
-
-        // glViewport(0, 0, width, height);
-        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // prog.use();
-
-        // prog.setShaderParameter("P", getActiveCam().get_projection());
-        // prog.setShaderParameter("V", getActiveCam().get_view());
-        // prog.setShaderParameter("CameraPos", getActiveCam().get_position());
-
-        // glm::mat4 M = glm::translate(glm::identity<glm::mat4>(), glm::vec3{0, 3, -5}) * glm::rotate(glm::identity<glm::mat4>(), glm::radians(90.0f), glm::vec3{0, 0, 1});
-        // glm::mat3 G = glm::inverse(glm::transpose(glm::mat3(M)));
-        // //glm::mat4 Trans = glm::translate( glm::mat4(1.0f), glm::vec3(0, -1, -1));
-        // //glm::mat4 RotX = glm::rotate( glm::mat4(1.0f), rotX, vec3(1, 0, 0));
-        // //glm::mat4 RotY = glm::rotate( glm::mat4(1.0f), rotY, vec3(0, 1, 0));
-        // glm::mat4 ScaleS = glm::scale(glm::mat4(1.0f), glm::vec3(0.1, 0.1, 0.1));        
-        // M = M*ScaleS;
-        // ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
-        // ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
-
-        // cube->draw(prog);
-
-        // for (auto& p : plants) {
-        //     updateShape(dt, p.geometry);
-        //     M = glm::translate(glm::identity<glm::mat4>(), p.position) * glm::mat4_cast(p.rot);
-        //     G = glm::inverse(glm::transpose(glm::mat3(M)));
-        //     glm::mat4 ScaleS = glm::scale(glm::mat4(1.0f), glm::vec3(0.1, 0.1, 0.1));        
-        //     M = M*ScaleS;            
-        //     ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
-        //     ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
-        //     cube->materials[0].diffuse = p.color;
-        //     cube->materials[0].ambient = p.color;
-        //     cube->materials[0].emission = p.color * 0.9f;
-            
-        //     cube->draw(prog);
-        // }
-
-        // // house
-        // M = glm::translate(glm::identity<glm::mat4>(), {40, -17, 40});
-        // M = M * glm::scale(glm::identity<glm::mat4>(), glm::vec3(2, 2, 2));
-        // G = glm::inverse(glm::transpose(glm::mat3(M)));
-
-        // ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
-        // ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
-        // house->draw(prog);
-
-        // // ground cube
-        // M = glm::translate(glm::identity<glm::mat4>(), {0, -5, 0}) * glm::scale(glm::identity<glm::mat4>(), {300, 0.2, 300});
-        // G = glm::inverse(glm::transpose(glm::mat3(M)));
-        
-        // ev2::gl::glUniform(M, prog.getUniformInfo("M").Location);
-        // ev2::gl::glUniform(G, prog.getUniformInfo("G").Location);
-        // ground_cube->draw(prog);
     }
 
     void onKey(ev2::input::Key::Enum key, ev2::input::Modifier mods, bool down) override {
@@ -262,13 +222,6 @@ public:
     }
 
     void onWindowSizeChange(int32_t width, int32_t height) override {
-        this->width = width;
-        this->height = height;
-        float aspect = width/(float)height;
-        auto p = glm::perspective(glm::radians(50.0f), aspect, 0.1f, 200.0f);
-        cam_orbital.set_projection(p);
-        cam_fly.set_projection(p);
-        cam_first_person.set_projection(p);
         if (ev2::Renderer::is_initialized())
             ev2::Renderer::get_singleton().set_resolution(width, height);
     }
