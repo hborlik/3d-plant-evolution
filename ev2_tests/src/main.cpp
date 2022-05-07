@@ -89,7 +89,7 @@ public:
 
         ev2::MID hid = RM->get_model( fs::path("models") / "rungholt" / "house.obj");
         ev2::MID ground = RM->get_model( fs::path("models") / "cube.obj");
-        // ev2::MID building0 = RM->get_model( fs::path("models") / "low_poly_houses.obj");
+        ev2::MID building0 = RM->get_model( fs::path("models") / "low_poly_houses.obj");
 
         // ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         // ground_cube->materials[0].shininess = 0.02;
@@ -101,9 +101,9 @@ public:
         h_node->set_model(hid);
         h_node->transform.position -= glm::vec3{0, 5, 0};
 
-        // auto lh_node = scene->create_node<ev2::VisualInstance>("building");
-        // lh_node->transform.position = glm::vec3{50, 0, 50};
-        // lh_node->set_model(building0);
+        auto lh_node = scene->create_node<ev2::VisualInstance>("building");
+        lh_node->transform.position = glm::vec3{50, 0, 50};
+        lh_node->set_model(building0);
 
         auto g_node = scene->create_node<ev2::VisualInstance>("ground");
         g_node->set_model(ground);
