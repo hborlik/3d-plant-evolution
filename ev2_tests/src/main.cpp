@@ -64,7 +64,6 @@ public:
 
     enum CameraMode : uint8_t {
         FirstPerson = 0,
-        Fly,
         Orbital
     } camera_type;
 
@@ -74,9 +73,8 @@ public:
                 return cam_orbital;
             case FirstPerson:
                 return cam_first_person;
-            case Fly:
             default:
-                return cam_fly;
+                return cam_orbital;
         }
     }
 
@@ -112,7 +110,6 @@ public:
         g_node->transform.position = glm::vec3{0, 0.4, 0};
 
         cam_orbital      = scene->create_node<ev2::CameraNode>("Orbital");
-        cam_fly          = scene->create_node<ev2::CameraNode>("Fly");
         cam_first_person = scene->create_node<ev2::CameraNode>("FP");
 
         tree = scene->create_node<TreeNode>("Tree");

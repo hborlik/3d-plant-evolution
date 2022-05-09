@@ -2,6 +2,166 @@
 
 #include <skinning.hpp>
 
+/**
+ * @brief Monopodial tree-like structures of Honda
+ *  based on pg. 56 of Algorithmic Botany
+ * 
+ */
+namespace monopodial {
+
+using namespace ptree;
+
+constexpr uint32_t S_A      = ptree::TurtleCommands::S_A;
+constexpr uint32_t S_B      = S_A + 1;
+constexpr uint32_t S_C      = S_B + 1;
+
+// example a
+// constexpr const float R_1   = 0.9f;             /* contraction ratio for the trunk */
+// constexpr const float R_2   = 0.6f;             /* contraction ratio for the branches */
+// constexpr const float a_0   = degToRad(45);     /* branching angle from the trunk */
+// constexpr const float a_2   = degToRad(45);     /* branching angle for the lateral axes */
+// constexpr const float d     = degToRad(137.5f); /* divergence angle */
+// constexpr const float w_r   = 0.707f;           /* width decrease rate */
+
+// // example b
+// constexpr const float R_1   = 0.9f;             /* contraction ratio for the trunk */
+// constexpr const float R_2   = 0.9f;             /* contraction ratio for the branches */
+// constexpr const float a_0   = degToRad(45);     /* branching angle from the trunk */
+// constexpr const float a_2   = degToRad(45);     /* branching angle for the lateral axes */
+// constexpr const float d     = degToRad(137.5f); /* divergence angle */
+// constexpr const float w_r   = 0.707f;           /* width decrease rate */
+
+// // example c
+// constexpr const float R_1   = 0.9f;             /* contraction ratio for the trunk */
+// constexpr const float R_2   = 0.8f;             /* contraction ratio for the branches */
+// constexpr const float a_0   = degToRad(45);     /* branching angle from the trunk */
+// constexpr const float a_2   = degToRad(45);     /* branching angle for the lateral axes */
+// constexpr const float d     = degToRad(137.5f); /* divergence angle */
+// constexpr const float w_r   = 0.707f;           /* width decrease rate */
+
+// example c
+// constexpr const float R_1   = 0.9f;             /* contraction ratio for the trunk */
+// constexpr const float R_2   = 0.7f;             /* contraction ratio for the branches */
+// constexpr const float a_0   = degToRad(30);     /* branching angle from the trunk */
+// constexpr const float a_2   = degToRad(-30);     /* branching angle for the lateral axes */
+// constexpr const float d     = degToRad(137.5f); /* divergence angle */
+// constexpr const float w_r   = 0.707f;           /* width decrease rate */
+
+const std::map<std::string, float> DefaultParams = {
+    {"R_1", 0.9f},
+    {"R_2", 0.7f},
+    {"a_0", ptree::degToRad(30)},
+    {"a_2", ptree::degToRad(-30)},
+    {"d",   ptree::degToRad(137.5f)},
+    {"w_r", 0.707f}
+};
+
+constexpr Symbol<TreeSymbol> Axiom = {S_A, {2, 0.5}};
+
+struct MonopodialProduction : public Production<TreeSymbol> {
+
+    const float R_1   = 0.9f;             /* contraction ratio for the trunk */
+    const float R_2   = 0.7f;             /* contraction ratio for the branches */
+    const float a_0   = ptree::degToRad(30);     /* branching angle from the trunk */
+    const float a_2   = ptree::degToRad(-30);     /* branching angle for the lateral axes */
+    const float d     = ptree::degToRad(137.5f); /* divergence angle */
+    const float w_r   = 0.707f;           /* width decrease rate */
+
+    MonopodialProduction() = default;
+
+    MonopodialProduction(float p, uint32_t sym) : Production<TreeSymbol>{p, sym} {}
+
+    MonopodialProduction(const std::map<std::string, float> &param, float p, uint32_t sym) : Production<TreeSymbol>{p, sym},
+        R_1{param.at("R_1")},
+        R_2{param.at("R_2")},
+        a_0{param.at("a_0")}, 
+        a_2{param.at("a_2")},
+        d{param.at("d")},
+        w_r{param.at("w_r")}
+    {
+    }
+
+    bool matches(const SymbolN<TreeSymbol>& sym) const override {
+        return sym.center()->RepSym == this->A;
+    }
+};
+
+
+struct P_1 : public MonopodialProduction {
+
+    P_1() : MonopodialProduction{1.0f, S_A} {}
+    P_1(const std::map<std::string, float> &param) : MonopodialProduction{param, 1.0f, S_A} {}
+
+    SymbolString<TreeSymbol> translate(const SymbolN<TreeSymbol>& sym) const override {
+        const TreeSymbol& value = sym.center()->value;
+        float L = value.l;
+        float W = value.w;
+        SymbolString<TreeSymbol> ret{};
+        if (matches(sym)) {
+            // !(w) F(l) [ &(a0) B(l * R_2, w * w_r) ] /(d) A(l * R_1, w * w_r)
+            ret.push_back({TurtleCommands::SetWidth, {W}});
+            ret.push_back({TurtleCommands::S_forward, {L}});
+            ret.push_back({TurtleCommands::S_push});
+            ret.push_back({TurtleCommands::S_pitch, {a_0}});
+            ret.push_back({S_B, {L * R_2, W * w_r}});
+            ret.push_back({TurtleCommands::S_pop});
+            ret.push_back({TurtleCommands::S_roll, {d}});
+            ret.push_back({S_A, {L * R_1, W * w_r}});
+        }
+        return ret;
+    }
+};
+
+struct P_2 : public MonopodialProduction {
+    P_2() : MonopodialProduction{1.0f, S_B} {}
+    P_2(const std::map<std::string, float> &param) : MonopodialProduction{param, 1.0f, S_B} {}
+
+    SymbolString<TreeSymbol> translate(const SymbolN<TreeSymbol>& sym) const override {
+        const TreeSymbol& value = sym.center()->value;
+        float L = value.l;
+        float W = value.w;
+        SymbolString<TreeSymbol> ret{};
+        if (matches(sym)) {
+            // !(w) F(L) [ -(a_2) $ C(l * R_2, w * w_r) ] C(l * R_1, w * w_r)
+            ret.push_back({TurtleCommands::SetWidth, {W}});
+            ret.push_back({TurtleCommands::S_forward, {L}});
+            ret.push_back({TurtleCommands::S_push});
+            ret.push_back({TurtleCommands::S_yaw, {-a_2}});
+            ret.push_back({TurtleCommands::S_Dollar});
+            ret.push_back({S_C, {L * R_2, W * w_r}});
+            ret.push_back({TurtleCommands::S_pop});
+            ret.push_back({S_C, {L * R_1, W * w_r}});
+        }
+        return ret;
+    }
+};
+
+struct P_3 : public MonopodialProduction {
+    P_3() : MonopodialProduction{1.0f, S_C} {}
+    P_3(const std::map<std::string, float> &param) : MonopodialProduction{param, 1.0f, S_C} {}
+
+    SymbolString<TreeSymbol> translate(const SymbolN<TreeSymbol>& sym) const override {
+        const TreeSymbol& value = sym.center()->value;
+        float L = value.l;
+        float W = value.w;
+        SymbolString<TreeSymbol> ret{};
+        if (matches(sym)) {
+            // !(w) F(L) [ +(a_2) $ B(l * R_2, w * w_r) ] B(l * R_1, w * w_r)
+            ret.push_back({TurtleCommands::SetWidth, {W}});
+            ret.push_back({TurtleCommands::S_forward, {L}});
+            ret.push_back({TurtleCommands::S_push});
+            ret.push_back({TurtleCommands::S_yaw, {a_2}});
+            ret.push_back({TurtleCommands::S_Dollar});
+            ret.push_back({S_B, {L * R_2, W * w_r}});
+            ret.push_back({TurtleCommands::S_pop});
+            ret.push_back({S_B, {L * R_1, W * w_r}});
+        }
+        return ret;
+    }
+};
+
+}
+
 TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
     buffer_layout.add_attribute(ev2::VertexAttributeType::Vertex)
         .add_attribute(ev2::VertexAttributeType::Normal)
@@ -14,6 +174,8 @@ TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
         glm::vec3{}, // TODO
         ev2::gl::CullMode::BACK,
         ev2::gl::FrontFacing::CCW);
+
+    params = monopodial::DefaultParams;
 }
 
 void TreeNode::on_init() {
@@ -26,22 +188,42 @@ void TreeNode::on_init() {
 }
 
 void TreeNode::generate(int iterations) {
-    tree_skeleton = ptree::CreateSkeleton(iterations);
+    using namespace monopodial;
+    LSystemTr<TreeSymbol> mlsys{};
 
-    std::vector<ptree::Vertex> vertices;
-    std::vector<uint32_t> indices;
-    ptree::Skin_GO(4, tree_skeleton, vertices, indices, true);
+    P_1 p1{params};
+    P_2 p2{params};
+    P_3 p3{params};
 
-    std::vector<Vertex> g_vertices(vertices.size());
-    for (int i =0; i < vertices.size(); ++i) {
-        auto& sv = vertices[i];
-        g_vertices[i].position = sv.pos;
-        g_vertices[i].normal = sv.normal;
+    mlsys.add_rule(&p1);
+    mlsys.add_rule(&p2);
+    mlsys.add_rule(&p3);
+
+    SymbolString<TreeSymbol> str{Axiom};
+
+    for (int i = 0; i < iterations; ++i) {
+        str = mlsys.evaluate(str);
     }
 
-    model->vertex_buffer.buffers[0].CopyData(g_vertices);
-    model->vertex_buffer.buffers[model->vertex_buffer.getIndexed()].CopyData(indices);
+    if (tree.from_symbol_string(str)) {
+        // tree.simple_skeleton(5);
+        tree_skeleton = tree.to_skeleton();
 
-    model->meshes.clear();
-    model->meshes.push_back(ev2::Mesh{0, indices.size(), 2});
+        std::vector<ptree::Vertex> vertices;
+        std::vector<uint32_t> indices;
+        ptree::Skin_GO(4, tree_skeleton, vertices, indices, true);
+
+        std::vector<PNVertex> g_vertices(vertices.size());
+        for (int i =0; i < vertices.size(); ++i) {
+            auto& sv = vertices[i];
+            g_vertices[i].position = sv.pos;
+            g_vertices[i].normal = sv.normal;
+        }
+
+        model->vertex_buffer.buffers[0].CopyData(g_vertices);
+        model->vertex_buffer.buffers[model->vertex_buffer.getIndexed()].CopyData(indices);
+
+        model->meshes.clear();
+        model->meshes.push_back(ev2::Mesh{0, indices.size(), 2});
+    }
 }

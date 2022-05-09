@@ -109,8 +109,8 @@ vec3 BRDF( vec3 L, vec3 V, vec3 N, vec3 X, vec3 Y, vec3 baseColor, in MaterialDa
     float NdotH = dot(N,H);
     float LdotH = dot(L,H);
 
-    // vec3 Cdlin = mon2lin(baseColor + mat.diffuse);
-    vec3 Cdlin = baseColor + mat.diffuse;
+    vec3 Cdlin = mon2lin(baseColor + mat.diffuse);
+    // vec3 Cdlin = baseColor + mat.diffuse;
     float Cdlum = .3*Cdlin[0] + .6*Cdlin[1]  + .1*Cdlin[2]; // luminance approx.
 
     vec3 Ctint = Cdlum > 0 ? Cdlin/Cdlum : vec3(1); // normalize lum. to isolate hue+sat
