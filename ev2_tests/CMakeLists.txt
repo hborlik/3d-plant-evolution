@@ -9,17 +9,16 @@ target_include_directories(ev2_tests PRIVATE
 )
 
 # Set where the ImGui files are stored
-set(IMGUI_PATH  "C:/Git/imgui")
+# set(IMGUI_PATH  "C:/Git/imgui")
     
 # Compile as static library 
-file(GLOB IMGUI_SOURCES ${IMGUI_PATH}/*.cpp) 
-add_library("ImGui" STATIC ${IMGUI_SOURCES})
-target_include_directories("ImGui" PUBLIC ${IMGUI_PATH})
+# file(GLOB IMGUI_SOURCES ${IMGUI_PATH}/*.cpp) 
+# add_library("ImGui" STATIC ${IMGUI_SOURCES})
+# target_include_directories("ImGui" PUBLIC ${IMGUI_PATH})
 
 target_link_libraries(ev2_tests 
     ev2
     ptree
-    ImGui
 )
 
 set_target_properties(ev2_tests PROPERTIES 
