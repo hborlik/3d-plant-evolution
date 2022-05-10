@@ -178,6 +178,30 @@ void Renderer::set_light_position(LID lid, const glm::vec3& position) {
     };
 }
 
+void Renderer::set_light_color(LID lid, const glm::vec3& color) {
+    if (!lid.is_valid())
+        return;
+    
+    switch(lid._type) {
+        case LID::Point:
+        {
+            auto mi = point_lights.find(lid._v);
+            if (mi != point_lights.end()) {
+                mi->second.color = color;
+            }
+        }
+        break;
+        case LID::Directional:
+        {
+            auto mi = directional_lights.find(lid._v);
+            if (mi != directional_lights.end()) {
+                mi->second.color = color;
+            }
+        }
+        break;
+    };
+}
+
 void Renderer::destroy_light(LID lid) {
     if (!lid.is_valid())
         return;

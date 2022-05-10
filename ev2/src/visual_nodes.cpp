@@ -72,4 +72,12 @@ void DirectionalLightNode::on_destroy() {
     ev2::Renderer::get_singleton().destroy_light(lid);
 }
 
+void DirectionalLightNode::set_color(const glm::vec3& color) {
+    ev2::Renderer::get_singleton().set_light_color(lid, color);
+}
+
+void DirectionalLightNode::set_ambient(const glm::vec3& color) {
+    
+}
+
 }

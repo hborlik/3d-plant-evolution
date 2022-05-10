@@ -202,6 +202,7 @@ void imgui(GLFWwindow * window) {
 
         auto light = scene->create_node<ev2::DirectionalLightNode>("directional_light");
         light->transform.position = glm::vec3{10, 100, 0};
+        light->set_color(glm::vec3{10, 10, 10});
 
         auto h_node = scene->create_node<ev2::VisualInstance>("house");
         h_node->set_model(hid);
@@ -216,12 +217,12 @@ void imgui(GLFWwindow * window) {
         auto tree_bark = RM->create_material("bark");
         tree_bark.first->diffuse = glm::vec3{0.59,0.44,0.09};
         tree_bark.first->metallic = 0;
-        RM->push_material_changed("bark");
+        // RM->push_material_changed("bark");
 
         auto ground_material = RM->create_material("ground_mat");
         ground_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
         ground_material.first->sheen = 0.2;
-        RM->push_material_changed("ground_mat");
+        // RM->push_material_changed("ground_mat");
 
         auto g_node = scene->create_node<ev2::VisualInstance>("ground");
         g_node->set_model(ground);

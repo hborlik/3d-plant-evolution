@@ -122,6 +122,7 @@ public:
     LID create_light();
     LID create_directional_light();
     void set_light_position(LID lid, const glm::vec3& position);
+    void set_light_color(LID lid, const glm::vec3& color);
     void destroy_light(LID lid);
 
     MID create_model(std::shared_ptr<Model> model);
