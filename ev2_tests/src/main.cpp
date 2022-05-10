@@ -7,7 +7,11 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+//#define DR_MP3_IMPLEMENTATION
+//#include "../extras/dr_mp3.h"   /* Enables MP3 decoding. */
 
+#define MINIAUDIO_IMPLEMENTATION
+#include <miniaudio.h> 
 
 #include <ev.h>
 #include <ev_gl.h>
@@ -110,7 +114,7 @@ void imgui(GLFWwindow * window) {
             static float fieldDegree2 = 45.0f;
             static float fieldDegree3 = 135.5f;
             
-            static int counter = 0;
+            static int counter = 5;
             std::map<std::string, float> GUIParams = {
                     {"R_1", fieldA},
                     {"R_2", fieldB},
@@ -297,7 +301,7 @@ void imgui(GLFWwindow * window) {
             imgui(window);
             dt = float(ev2::window::getFrameTime());
         }
-        ev2::Renderer::shutdown();
+        ev2::Renderer::shutdown();      
         return 0;
     }
 
@@ -409,9 +413,64 @@ void imgui(GLFWwindow * window) {
     void on_drop_file(const std::string& path) override {}
 };
 
+//Callback for miniaudio.
+void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
+{
+    ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
+    if (pDecoder == NULL) {
+        return;
+    }
 
+    /* Reading PCM frames will loop based on what we specified when called ma_data_source_set_looping(). */
+    ma_data_source_read_pcm_frames(pDecoder, pOutput, frameCount, NULL);
+
+    (void)pInput;
+}
+
+int initAudio(fs::path asset_path) {
+    ma_result result;
+    ma_decoder decoder;
+    ma_device_config deviceConfig;
+    ma_device device;
+    const char* filePath = "";
+
+    filePath = (asset_path / "stickerbrush.mp3").generic_string().c_str();
+    if (filePath == "") {
+        printf("No input file.\n");
+        return -1;
+    }
+    printf(filePath);
+    result = ma_decoder_init_file(filePath, NULL, &decoder);
+    if (result != MA_SUCCESS) {
+        return -2;
+    }
+
+    ma_data_source_set_looping(&decoder, MA_TRUE);
+
+    deviceConfig = ma_device_config_init(ma_device_type_playback);
+    deviceConfig.playback.format   = decoder.outputFormat;
+    deviceConfig.playback.channels = decoder.outputChannels;
+    deviceConfig.sampleRate        = decoder.outputSampleRate;
+    deviceConfig.dataCallback      = data_callback;
+    deviceConfig.pUserData         = &decoder;
+
+    if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
+        printf("Failed to open playback device.\n");
+        ma_decoder_uninit(&decoder);
+        return -3;
+    }
+
+    if (ma_device_start(&device) != MA_SUCCESS) {
+        printf("Failed to start playback device.\n");
+        ma_device_uninit(&device);
+        ma_decoder_uninit(&decoder);
+        return -4;
+    }
+}
 
 int main(int argc, char *argv[]) {
+
+
 
     ev2::Args args{argc, argv};
 
@@ -422,8 +481,8 @@ int main(int argc, char *argv[]) {
 
     std::unique_ptr<TestApp> app = std::make_unique<TestApp>(asset_path);
     ev2::window::setApplication(app.get());
-
+    initAudio(asset_path);
     app->initialize();
-
     return app->run();;
+    //TODO: uninit audio device and decoder.
 }
