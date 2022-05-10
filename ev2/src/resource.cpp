@@ -735,7 +735,6 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
                 mat->displacement_texname = m.displacement_texname;
                 mat->alpha_texname = m.alpha_texname;
                 mat->reflection_texname = m.reflection_texname;
-                rm.push_material_changed(material_name);
             }
 
             auto n_mesh = Mesh {

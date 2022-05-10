@@ -15,39 +15,34 @@ constexpr uint32_t S_A      = ptree::TurtleCommands::S_A;
 constexpr uint32_t S_B      = S_A + 1;
 constexpr uint32_t S_C      = S_B + 1;
 
-// example a
-// constexpr const float R_1   = 0.9f;             /* contraction ratio for the trunk */
-// constexpr const float R_2   = 0.6f;             /* contraction ratio for the branches */
-// constexpr const float a_0   = degToRad(45);     /* branching angle from the trunk */
-// constexpr const float a_2   = degToRad(45);     /* branching angle for the lateral axes */
-// constexpr const float d     = degToRad(137.5f); /* divergence angle */
-// constexpr const float w_r   = 0.707f;           /* width decrease rate */
+const std::map<std::string, float> DefaultParamsA = {
+    {"R_1", 0.9f},
+    {"R_2", 0.6f},
+    {"a_0", ptree::degToRad(45)},
+    {"a_2", ptree::degToRad(45)},
+    {"d",   ptree::degToRad(137.5f)},
+    {"w_r", 0.707f}
+};
 
-// // example b
-// constexpr const float R_1   = 0.9f;             /* contraction ratio for the trunk */
-// constexpr const float R_2   = 0.9f;             /* contraction ratio for the branches */
-// constexpr const float a_0   = degToRad(45);     /* branching angle from the trunk */
-// constexpr const float a_2   = degToRad(45);     /* branching angle for the lateral axes */
-// constexpr const float d     = degToRad(137.5f); /* divergence angle */
-// constexpr const float w_r   = 0.707f;           /* width decrease rate */
+const std::map<std::string, float> DefaultParamsB = {
+    {"R_1", 0.9f},
+    {"R_2", 0.9f},
+    {"a_0", ptree::degToRad(45)},
+    {"a_2", ptree::degToRad(45)},
+    {"d",   ptree::degToRad(137.5f)},
+    {"w_r", 0.707f}
+};
 
-// // example c
-// constexpr const float R_1   = 0.9f;             /* contraction ratio for the trunk */
-// constexpr const float R_2   = 0.8f;             /* contraction ratio for the branches */
-// constexpr const float a_0   = degToRad(45);     /* branching angle from the trunk */
-// constexpr const float a_2   = degToRad(45);     /* branching angle for the lateral axes */
-// constexpr const float d     = degToRad(137.5f); /* divergence angle */
-// constexpr const float w_r   = 0.707f;           /* width decrease rate */
+const std::map<std::string, float> DefaultParamsC = {
+    {"R_1", 0.9f},
+    {"R_2", 0.8f},
+    {"a_0", ptree::degToRad(45)},
+    {"a_2", ptree::degToRad(45)},
+    {"d",   ptree::degToRad(137.5f)},
+    {"w_r", 0.707f}
+};
 
-// example c
-// constexpr const float R_1   = 0.9f;             /* contraction ratio for the trunk */
-// constexpr const float R_2   = 0.7f;             /* contraction ratio for the branches */
-// constexpr const float a_0   = degToRad(30);     /* branching angle from the trunk */
-// constexpr const float a_2   = degToRad(-30);     /* branching angle for the lateral axes */
-// constexpr const float d     = degToRad(137.5f); /* divergence angle */
-// constexpr const float w_r   = 0.707f;           /* width decrease rate */
-
-const std::map<std::string, float> DefaultParams = {
+const std::map<std::string, float> DefaultParamsD = {
     {"R_1", 0.9f},
     {"R_2", 0.7f},
     {"a_0", ptree::degToRad(30)},
@@ -175,7 +170,7 @@ TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
         ev2::gl::CullMode::BACK,
         ev2::gl::FrontFacing::CCW);
 
-    params = monopodial::DefaultParams;
+    params = monopodial::DefaultParamsA;
 }
 
 void TreeNode::on_init() {

@@ -108,12 +108,12 @@ public:
         auto tree_bark = RM->create_material("bark");
         tree_bark.first->diffuse = glm::vec3{0.59,0.44,0.09};
         tree_bark.first->metallic = 0;
-        RM->push_material_changed("bark");
+        // RM->push_material_changed("bark");
 
         auto ground_material = RM->create_material("ground_mat");
-        ground_material.first->diffuse = glm::vec3{0, 1, 0};
+        ground_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
         ground_material.first->sheen = 0.2;
-        RM->push_material_changed("ground_mat");
+        // RM->push_material_changed("ground_mat");
 
         auto g_node = scene->create_node<ev2::VisualInstance>("ground");
         g_node->set_model(ground);

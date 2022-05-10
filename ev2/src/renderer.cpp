@@ -263,19 +263,22 @@ void Renderer::render(const Camera &camera) {
     globals_desc.setShaderParameter("CameraPos", camera.get_position(), shader_globals);
 
     // render all geometry to g buffer
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+    glDisable(GL_DITHER);
+
+    geometry_program.use();
     g_buffer.bind();
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_BLEND);
 
     if (wireframe)
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     else
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
-    geometry_program.use();
+
 
     // bind global shader UBO to shader
     globals_desc.bind_buffer(shader_globals);
@@ -292,8 +295,8 @@ void Renderer::render(const Camera &camera) {
         }
     }
 
-    g_buffer.unbind();
     geometry_program.unbind();
+    g_buffer.unbind();
 
     // glFlush();
 
