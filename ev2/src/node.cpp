@@ -5,6 +5,8 @@
 namespace ev2 {
 
 void Node::add_child(Ref<Node> node) {
+    if (node.get() == this)
+        return;
     if (node->parent)
         node->parent->remove_child(node);
     children.push_back(node);

@@ -420,7 +420,7 @@ void Context::keyCb(GLFWwindow* _window, int32_t _key, int32_t _scancode, int32_
 void Context::charCb(GLFWwindow* _window, uint32_t _scancode)
 {
     if (static_context->application)
-        static_context->application->onChar(_scancode);
+        static_context->application->on_char(_scancode);
 }
 
 void Context::scrollCb(GLFWwindow* _window, double _dx, double _dy)
@@ -429,7 +429,7 @@ void Context::scrollCb(GLFWwindow* _window, double _dx, double _dy)
     glfwGetCursorPos(_window, &mx, &my);
     static_context->scroll_pos += _dy;
     if (static_context->application)
-        static_context->application->onScroll(
+        static_context->application->on_scroll(
             (int32_t) mx,
             (int32_t) my,
             (int32_t) static_context->scroll_pos
@@ -439,7 +439,7 @@ void Context::scrollCb(GLFWwindow* _window, double _dx, double _dy)
 void Context::cursorPosCb(GLFWwindow* _window, double _mx, double _my)
 {
     if (static_context->application)
-        static_context->application->cursorPos(
+        static_context->application->cursor_pos(
             (int32_t) _mx,
             (int32_t) _my,
             (int32_t) static_context->scroll_pos
@@ -452,7 +452,7 @@ void Context::mouseButtonCb(GLFWwindow* _window, int32_t _button, int32_t _actio
     double mx, my;
     glfwGetCursorPos(_window, &mx, &my);
     if (static_context->application)
-        static_context->application->onMouseButton(
+        static_context->application->on_mouse_button(
             (int32_t)mx,
             (int32_t)my,
             (int32_t)static_context->scroll_pos,
@@ -463,7 +463,7 @@ void Context::mouseButtonCb(GLFWwindow* _window, int32_t _button, int32_t _actio
 void Context::windowSizeCb(GLFWwindow* _window, int32_t _width, int32_t _height)
 {
     if (static_context->application)
-        static_context->application->onWindowSizeChange(_width, _height);
+        static_context->application->on_window_size_change(_width, _height);
 }
 
 void Context::dropFileCb(GLFWwindow* _window, int32_t _count, const char** _filePaths)
@@ -471,7 +471,7 @@ void Context::dropFileCb(GLFWwindow* _window, int32_t _count, const char** _file
     if (static_context->application)
         for (int32_t ii = 0; ii < _count; ++ii)
         {
-            static_context->application->onDropFile(_filePaths[ii]);
+            static_context->application->on_drop_file(_filePaths[ii]);
         }
 }
 
@@ -496,7 +496,7 @@ void setWindowTitle(const std::string& title) {
 
 void setApplication(Application* app) {
     static_context->application = app;
-    app->onWindowSizeChange(static_context->defaultWidth, static_context->defaultWidth);
+    app->on_window_size_change(static_context->defaultWidth, static_context->defaultWidth);
 }
 
 void setMouseCaptured(bool captured) {

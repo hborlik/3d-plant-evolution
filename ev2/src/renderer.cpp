@@ -267,17 +267,16 @@ void Renderer::render(const Camera &camera) {
     glDisable(GL_BLEND);
     glDisable(GL_DITHER);
 
-    geometry_program.use();
-    g_buffer.bind();
-    glViewport(0, 0, width, height);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     if (wireframe)
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     else
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
+    geometry_program.use();
+    g_buffer.bind();
+    glViewport(0, 0, width, height);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
     // bind global shader UBO to shader

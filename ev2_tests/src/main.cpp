@@ -48,6 +48,7 @@ public:
     fs::path asset_path = fs::path("asset");
 
     ev2::Ref<ev2::CameraNode> cam_orbital{};
+    ev2::Ref<ev2::Node> cam_orbital_root{};
     ev2::Ref<ev2::CameraNode> cam_fly{};
     ev2::Ref<ev2::CameraNode> cam_first_person{};
 
@@ -61,11 +62,12 @@ public:
     glm::vec2 move_input{};
     bool mouse_down = false;
     float cam_x = 0, cam_y = 0;
+    float cam_boom_length = 10.0f;
 
     enum CameraMode : uint8_t {
         FirstPerson = 0,
         Orbital
-    } camera_type;
+    } camera_type = Orbital;
 
     ev2::Ref<ev2::CameraNode> getActiveCam() {
         switch(camera_type) {
@@ -122,7 +124,10 @@ public:
         g_node->transform.position = glm::vec3{0, 0.4, 0};
 
         cam_orbital      = scene->create_node<ev2::CameraNode>("Orbital");
+        cam_orbital_root = scene->create_node<ev2::Node>("cam_orbital_root");
         cam_first_person = scene->create_node<ev2::CameraNode>("FP");
+
+        cam_orbital_root->add_child(cam_orbital);
 
         tree = scene->create_node<TreeNode>("Tree");
         tree->transform.position = glm::vec3{50, 0, 0};
@@ -163,7 +168,7 @@ public:
             cam_y = glm::clamp<float>(cam_y + mouse_delta.y * -.005f, glm::radians(-85.0f), glm::radians(85.0f));
         }
 
-        glm::vec3 boom = {0, 0, 70};
+        glm::vec3 boom = {0, 0, cam_boom_length};
         glm::mat4 cam_t = glm::rotate(glm::mat4{1.0f}, (float)cam_y, glm::vec3{1, 0, 0});
         cam_t = glm::rotate(glm::mat4{1.0f}, (float)cam_x, {0, 1, 0}) * cam_t;
 
@@ -184,6 +189,15 @@ public:
                 cam_right * 10.0f * dt * input.x
             ); // force camera movement on y plane
         }
+        else if (camera_type == Orbital && glm::length(move_input) > 0.0f) {
+            glm::vec2 input = glm::normalize(move_input);
+            glm::vec3 cam_forward = glm::normalize(cam_orbital->get_camera().get_forward() * glm::vec3{1, 0, 1});
+            glm::vec3 cam_right = glm::normalize(cam_orbital->get_camera().get_right() * glm::vec3{1, 0, 1});
+            cam_orbital_root->transform.position +=
+                cam_forward * 1.0f * cam_boom_length * dt * input.y + 
+                cam_right * 1.0f * cam_boom_length * dt * input.x
+            ; // camera movement on y plane
+        }
     }
 
     void onKey(ev2::input::Key::Enum key, ev2::input::Modifier mods, bool down) override {
@@ -198,7 +212,7 @@ public:
                 break;
             case ev2::input::Key::KeyF:
                 if (down)
-                    camera_type = CameraMode((camera_type + 1) % 3);
+                    camera_type = CameraMode((camera_type + 1) % 2);
                 break;
             case ev2::input::Key::KeyZ:
                 if (down)
@@ -221,23 +235,28 @@ public:
         }
     }
 
-    void onChar(uint32_t scancode) override {}
+    void on_char(uint32_t scancode) override {}
 
-    void onScroll(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {}
-
-    void cursorPos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {}
-
-    void onMouseButton(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos, ev2::input::MouseButton::Enum button, bool down) override {
-        mouse_down = down;
-        mouse_p = ev2::window::getCursorPosition();
+    void on_scroll(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {
+        static int32_t scroll_last = scroll_pos;
+        int32_t scroll_delta = scroll_pos - scroll_last;
+        scroll_last = scroll_pos;
+        cam_boom_length = glm::clamp(cam_boom_length - scroll_delta, 0.f, 200.f);
     }
 
-    void onWindowSizeChange(int32_t width, int32_t height) override {
+    void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {}
+
+    void on_mouse_button(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos, ev2::input::MouseButton::Enum button, bool down) override {
+        mouse_p = ev2::window::getCursorPosition();
+        mouse_down = down;
+    }
+
+    void on_window_size_change(int32_t width, int32_t height) override {
         if (ev2::Renderer::is_initialized())
             ev2::Renderer::get_singleton().set_resolution(width, height);
     }
 
-    void onDropFile(const std::string& path) override {}
+    void on_drop_file(const std::string& path) override {}
 };
 
 int main(int argc, char *argv[]) {
