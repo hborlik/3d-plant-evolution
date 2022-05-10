@@ -176,10 +176,15 @@ TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
 void TreeNode::on_init() {
     ev2::VisualInstance::on_init();
 
-    generate(12);
+    generate(5);
 
     tree_geometry = ev2::Renderer::get_singleton().create_model(model);
     set_model(tree_geometry);
+}
+
+void TreeNode::setParams(std::map<std::string, float> paramsNew, int iterations) {
+    params = paramsNew;
+    this->generate(iterations);
 }
 
 void TreeNode::generate(int iterations) {

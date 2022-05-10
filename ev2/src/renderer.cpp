@@ -297,7 +297,7 @@ void Renderer::render(const Camera &camera) {
     geometry_program.unbind();
     g_buffer.unbind();
 
-    // glFlush();
+    //glFlush();
 
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);

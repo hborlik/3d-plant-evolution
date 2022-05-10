@@ -650,7 +650,7 @@ MID ResourceManager::get_model(const std::filesystem::path& filename) {
     if (loaded_model) {
         MID id = ev2::Renderer::get_singleton().create_model(loaded_model);
         models.insert(std::make_pair(id, loaded_model));
-        model_lookup.insert(std::make_pair(filename, id));
+        model_lookup.insert(std::make_pair(filename.generic_string(), id));
         return id;
     } else {
         std::cerr << "Failed to load model " + filename.generic_string() << std::endl;

@@ -24,6 +24,7 @@ public:
     void on_init() override;
 
     void generate(int iterations);
+    void setParams(std::map<std::string, float> params, int iterations);
 
     ptree::Skeleton tree_skeleton;
     ptree::Tree tree;

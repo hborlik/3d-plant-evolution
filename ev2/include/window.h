@@ -25,6 +25,7 @@ namespace ev2::window {
 void init(const Args& args);
 void setWindowTitle(const std::string& title);
 void setApplication(Application* app);
+GLFWwindow* getContextWindow();
 void setMouseCaptured(bool captured);
 bool getMouseCaptured();
 
