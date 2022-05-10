@@ -240,6 +240,8 @@ public:
         glfwTerminate();
     }
 
+
+
     void init() {
         glfwSetErrorCallback(glfw_error_callback);
 
@@ -388,6 +390,8 @@ public:
 
     int defaultWidth, defaultHeight;
 
+    GLFWwindow* getWindow() {return window_ptr;}
+
 private:
     static void keyCb(GLFWwindow* _window, int32_t _key, int32_t _scancode, int32_t _action, int32_t _mods);
     static void charCb(GLFWwindow* _window, uint32_t _scancode);
@@ -497,6 +501,10 @@ void setWindowTitle(const std::string& title) {
 void setApplication(Application* app) {
     static_context->application = app;
     app->onWindowSizeChange(static_context->defaultWidth, static_context->defaultWidth);
+}
+
+GLFWwindow* getContextWindow() {
+    return static_context->getWindow();
 }
 
 void setMouseCaptured(bool captured) {
