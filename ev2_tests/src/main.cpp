@@ -51,7 +51,7 @@ public:
     ev2::Ref<ev2::CameraNode> cam_fly{};
     ev2::Ref<ev2::CameraNode> cam_first_person{};
 
-    ev2::Ref<ev2::Node> tree{};
+    ev2::Ref<TreeNode> tree{};
 
     std::shared_ptr<ev2::ResourceManager> RM;
     std::unique_ptr<ev2::Scene> scene;
@@ -97,15 +97,27 @@ public:
 
         auto h_node = scene->create_node<ev2::VisualInstance>("house");
         h_node->set_model(hid);
-        h_node->transform.position -= glm::vec3{0, 5, 0};
+        h_node->transform.position = glm::vec3{30, 0, 0};
+        h_node->transform.rotate({0.1, 0.5, 0});
+        h_node->transform.scale = glm::vec3{0.1, 0.1, 0.1};
 
         auto lh_node = scene->create_node<ev2::VisualInstance>("building");
         lh_node->transform.position = glm::vec3{50, 1, -20};
         lh_node->set_model(building0);
 
+        auto tree_bark = RM->create_material("bark");
+        tree_bark.first->diffuse = glm::vec3{0.59,0.44,0.09};
+        tree_bark.first->metallic = 0;
+        RM->push_material_changed("bark");
+
+        auto ground_material = RM->create_material("ground_mat");
+        ground_material.first->diffuse = glm::vec3{0, 1, 0};
+        ground_material.first->sheen = 0.2;
+        RM->push_material_changed("ground_mat");
+
         auto g_node = scene->create_node<ev2::VisualInstance>("ground");
         g_node->set_model(ground);
-        g_node->set_material_override(1);
+        g_node->set_material_override(ground_material.second);
         g_node->transform.scale = glm::vec3{1000, 0.1, 1000};
         g_node->transform.position = glm::vec3{0, 0.4, 0};
 
@@ -114,6 +126,7 @@ public:
 
         tree = scene->create_node<TreeNode>("Tree");
         tree->transform.position = glm::vec3{50, 0, 0};
+        tree->set_material_override(tree_bark.second);
     }
 
     void updateShape(float dt, Sphere geometry) {
@@ -125,6 +138,7 @@ public:
         float dt = 0.05f;
         while(ev2::window::frame()) {
             update(dt);
+            RM->pre_render();
             ev2::Renderer::get_singleton().render(getActiveCam()->get_camera());
             dt = float(ev2::window::getFrameTime());
         }

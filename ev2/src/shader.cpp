@@ -260,7 +260,7 @@ void Program::use() const {
     glUseProgram(gl_reference);
 }
 
-void Program::applyMaterial(const Material& material) const {
+// void Program::applyMaterial(const Material& material) const {
     // const auto& textureInputs = material->getTextureInputs();
     // for(uint32_t i = 0; i < textureInputs.size(); i++) { 
     //     if(textureInputs[i].texture) {
@@ -271,38 +271,7 @@ void Program::applyMaterial(const Material& material) const {
     //         glUniform1i(textureInputs[i].location, i);
     //     }
     // }
-
-    int loc = getUniformInfo("ambient").Location;
-    if (loc != -1) {
-        GL_CHECKED_CALL(ev2::gl::glUniform(material.ambient, loc));
-    }
-
-    loc = getUniformInfo("diffuse").Location;
-    if (loc != -1) {
-        GL_CHECKED_CALL(ev2::gl::glUniform(material.diffuse, loc));
-    }
-
-    loc = getUniformInfo("specular").Location;
-    if (loc != -1) {
-        GL_CHECKED_CALL(ev2::gl::glUniform(material.specular, loc));
-    }
-
-    loc = getUniformInfo("transmittance").Location;
-    if (loc != -1) {
-        GL_CHECKED_CALL(ev2::gl::glUniform(material.transmittance, loc));
-    }
-
-    loc = getUniformInfo("emission").Location;
-    if (loc != -1) {
-        GL_CHECKED_CALL(ev2::gl::glUniform(material.emission, loc));
-    }
-
-    loc = getUniformInfo("shininess").Location;
-    if (loc != -1) {
-        GL_CHECKED_CALL(ev2::gl::glUniformf(material.shininess, loc));
-    }
-
-}
+// }
 
 bool Program::isLinked() const {
     GLint status;

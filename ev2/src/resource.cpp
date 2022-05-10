@@ -7,7 +7,6 @@
 
 #include <glm/glm.hpp>
 
-#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 #include <buffer.h>
@@ -632,6 +631,14 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
 
 namespace ev2 {
 
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager& rm);
+
+void ResourceManager::pre_render() {
+    for (auto& m : materials) {
+        m.second.update_internal();
+    }
+}
+
 MID ResourceManager::get_model(const std::filesystem::path& filename) {
     auto itr = model_lookup.find(filename.generic_string());
     if (itr != model_lookup.end()) { // already loaded
@@ -639,7 +646,7 @@ MID ResourceManager::get_model(const std::filesystem::path& filename) {
     }
     auto base_dir = filename;
     base_dir.remove_filename();
-    std::shared_ptr<Model> loaded_model = loadObj(filename.filename().generic_string(), (asset_path / base_dir).generic_string());
+    std::shared_ptr<Model> loaded_model = loadObj(filename.filename().generic_string(), (asset_path / base_dir).generic_string(), *this);
     if (loaded_model) {
         MID id = ev2::Renderer::get_singleton().create_model(loaded_model);
         models.insert(std::make_pair(id, loaded_model));
@@ -651,7 +658,40 @@ MID ResourceManager::get_model(const std::filesystem::path& filename) {
     }
 }
 
-std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir) {
+std::pair<std::shared_ptr<Material>, int32_t> ResourceManager::create_material(const std::string& name) {
+    std::shared_ptr<Material> mat = std::make_shared<Material>(name);
+
+    auto ins = materials.try_emplace(name, MaterialInternal{-1, mat});
+    if (ins.second) {
+        int32_t id = ins.first->second.update_internal(); // create material in renderer
+        return std::make_pair(mat, id);
+    }
+    return std::make_pair<std::shared_ptr<Material>, int32_t>({}, -1);
+}
+
+std::shared_ptr<Material> ResourceManager::get_material(const std::string& name) {
+    return get_material_internal(name).material;
+}
+
+int32_t ResourceManager::get_material_id(const std::string& name) {
+    return get_material_internal(name).material_id;
+}
+
+void ResourceManager::push_material_changed(const std::string& name) {
+    auto mat = get_material_internal(name);
+    if (mat.material_id)
+        mat.update_internal();
+}
+
+int32_t ResourceManager::MaterialInternal::update_internal() {
+    if (material_id == -1)
+        material_id = Renderer::get_singleton().create_material(MaterialData::from_material(*material.get()));
+    else
+        Renderer::get_singleton().update_material(material_id, MaterialData::from_material(*material.get()));
+    return material_id;
+}
+
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager& rm) {
     glm::vec3 bmin, bmax;
     std::vector<DrawObject> drawObjects;
     std::vector<tinyobj::material_t> materials;
@@ -659,49 +699,55 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
     std::cout << base_dir / filename << std::endl;
     bool success = LoadObjAndConvert(bmin, bmax, &drawObjects, materials, buffer, (base_dir / filename).generic_string(), base_dir.generic_string());
     if (success) {
-        std::vector<Material> ev_materials(materials.size());
         std::vector<Mesh> ev_meshs(drawObjects.size());
 
-        size_t i = 0;
-        for (auto& m : materials) {
-            // copy materials
-            ev_materials[i++] = Material {
-                m.name
-                ,glm::vec3{m.ambient[0], m.ambient[1], m.ambient[2]}
-                ,glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]}
-                ,glm::vec3{m.specular[0], m.specular[1], m.specular[2]}
-                ,glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}
-                ,glm::vec3{m.emission[0], m.emission[1], m.emission[2]}
-                ,m.shininess
-                ,m.ior
-                ,m.dissolve
-                ,m.ambient_texname
-                ,m.diffuse_texname
-                ,m.specular_texname
-                ,m.specular_highlight_texname
-                ,m.bump_texname
-                ,m.displacement_texname
-                ,m.alpha_texname
-                ,m.reflection_texname
-            };
-        }
-
         // copy index information
-        i = 0;
+        size_t i = 0;
         for (auto& dObj : drawObjects) {
+            int mat_id_obj = dObj.material_id;
+            if (mat_id_obj == -1)
+                mat_id_obj = 0;
+            auto& m = materials[mat_id_obj];
+            // copy used materials
+            std::string material_name = filename.generic_string() + m.name;
+            int32_t mat_id = rm.get_material_id(material_name);
+            if (mat_id == -1) {
+                // create a new material
+                auto mat_id_pair = rm.create_material(material_name);
+                mat_id = mat_id_pair.second;
+                auto mat = mat_id_pair.first;
+                mat->diffuse = glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]};
+                mat->metallic = m.metallic;
+                mat->subsurface = glm::clamp(glm::length(glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}), 0.f, 1.f);
+                mat->specular = m.shininess;
+                mat->roughness = m.roughness;
+                mat->specularTint = 0;
+                mat->clearcoat = m.clearcoat_roughness;
+                mat->clearcoatGloss = m.clearcoat_thickness;
+                mat->anisotropic = m.anisotropy;
+                mat->sheen = m.sheen;
+                mat->sheenTint = 0.5f;
+                mat->ambient_texname = m.ambient_texname;
+                mat->diffuse_texname = m.diffuse_texname;
+                mat->specular_texname = m.specular_texname;
+                mat->specular_highlight_texname = m.specular_highlight_texname;
+                mat->bump_texname = m.bump_texname;
+                mat->displacement_texname = m.displacement_texname;
+                mat->alpha_texname = m.alpha_texname;
+                mat->reflection_texname = m.reflection_texname;
+                rm.push_material_changed(material_name);
+            }
+
             auto n_mesh = Mesh {
                 dObj.start * 3,
                 dObj.numTriangles * 3,
-                dObj.material_id
+                mat_id
             };
-            if (int(dObj.material_id) == -1)
-                n_mesh.material_id = 0;
             ev_meshs[i++] = n_mesh;
         }
 
         return std::make_unique<Model>(
             std::move(ev_meshs),
-            std::move(ev_materials),
             bmin,
             bmax,
             buffer,

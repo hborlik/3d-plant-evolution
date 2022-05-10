@@ -169,7 +169,7 @@ VertexBuffer VertexBuffer::vbInitArrayVertexSpec(const std::vector<float>& buffe
     vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
     vb.buffers[vb.buffers.size() - 1].Bind();
 
-    uint32_t offset = 0;
+    std::size_t offset = 0;
     for (const auto& l : layout.attributes) {
         glEnableVertexAttribArray(l.location);
         glVertexAttribPointer(l.location, l.count, (GLenum)l.type, GL_FALSE, layout.stride, (void*)offset);
@@ -198,7 +198,7 @@ VertexBuffer VertexBuffer::vbInitArrayVertexSpecIndexed(const std::vector<float>
     vb.buffers[0].Bind();
     vb.buffers[1].Bind();
 
-    uint32_t offset = 0;
+    std::size_t offset = 0;
     for (const auto& l : layout.attributes) {
         glEnableVertexAttribArray(l.location);
         glVertexAttribPointer(l.location, l.count, (GLenum)l.type, GL_FALSE, layout.stride, (void*)offset);

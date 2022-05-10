@@ -10,7 +10,6 @@
 #include <memory>
 
 #include <buffer.h>
-#include <material.h>
 #include <shader.h>
 
 namespace ev2 {
@@ -121,7 +120,7 @@ public:
 
     std::vector<Buffer> buffers;
 
-    int getIndexed() {return indexed;}
+    int get_indexed() {return indexed;}
 private:
     GLuint gl_vao = 0;
     int indexed = -1;
@@ -131,20 +130,6 @@ struct Mesh {
     size_t  start_index;
     size_t  num_elements;
     int32_t material_id;
-};
-
-class Model {
-public:
-    Model(std::vector<Mesh> meshes, std::vector<Material> materials, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
-        meshes{std::move(meshes)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
-    
-    std::vector<Mesh>       meshes;
-    std::vector<Material>   materials;
-    std::vector<float>      buffer;
-
-    glm::vec3 bmin, bmax;
-
-    VertexFormat bufferFormat;
 };
 
 }

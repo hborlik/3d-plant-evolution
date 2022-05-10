@@ -7,7 +7,7 @@
 #define GEOMETRY_SPHERE_H
 
 #include <vector>
-#include <mesh.h>
+#include <resource.h>
 
 class Sphere
 {

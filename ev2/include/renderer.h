@@ -72,6 +72,10 @@ struct Drawable {
     void draw(const Program& prog, int32_t material_override);
 };
 
+/**
+ * @brief material data as represented on gpu
+ * 
+ */
 struct MaterialData {
     glm::vec3 diffuse   = {0.5, 0.4, 0.0};
     float metallic       = 0;
@@ -88,7 +92,16 @@ struct MaterialData {
     static MaterialData from_material(const Material& mat) {
         MaterialData nMat{};
         nMat.diffuse = mat.diffuse;
-        nMat.specular = mat.shininess;
+        nMat.metallic = mat.metallic;
+        nMat.subsurface = mat.subsurface;
+        nMat.specular = mat.specular;
+        nMat.roughness = mat.roughness;
+        nMat.specularTint = mat.specularTint;
+        nMat.clearcoat = mat.clearcoat;
+        nMat.clearcoatGloss = mat.clearcoatGloss;
+        nMat.anisotropic = mat.anisotropic;
+        nMat.sheen = mat.sheen;
+        nMat.sheenTint = mat.sheenTint;
         return nMat;
     }
 };

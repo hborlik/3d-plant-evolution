@@ -11,7 +11,6 @@
 
 #include <glm/glm.hpp>
 
-#include <material.h>
 #include <mesh.h>
 
 namespace ev2 {
@@ -47,11 +46,61 @@ struct std::hash<ev2::MID> {
 
 namespace ev2 {
 
+struct Material {
+    const std::string name = "default";
+
+    glm::vec3 diffuse   = {1.00f,0.10f,0.85f};
+    float metallic       = 0;
+    float subsurface     = 0;
+    float specular       = .5f;
+    float roughness      = .5f;
+    float specularTint   = 0;
+    float clearcoat      = 0;
+    float clearcoatGloss = 1.f;
+    float anisotropic    = 0;
+    float sheen          = 0;
+    float sheenTint      = .5f;
+
+    std::string ambient_texname;             // map_Ka
+    std::string diffuse_texname;             // map_Kd
+    std::string specular_texname;            // map_Ks
+    std::string specular_highlight_texname;  // map_Ns
+    std::string bump_texname;                // map_bump, map_Bump, bump
+    std::string displacement_texname;        // disp
+    std::string alpha_texname;               // map_d
+    std::string reflection_texname;          // refl
+
+    Material() = default;
+    Material(std::string name) : name{std::move(name)} {}
+};
+
+class Model {
+public:
+    Model(std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
+        meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
+    
+    std::vector<Mesh>       meshes;
+    std::vector<float>      buffer;
+
+    glm::vec3 bmin, bmax;
+
+    VertexFormat bufferFormat;
+};
+
 class ResourceManager {
+private:
+    struct MaterialInternal {
+        int32_t update_internal();
+
+        int32_t material_id = -1;
+        std::shared_ptr<Material> material{};
+    };
+
 public:
     explicit ResourceManager(const std::filesystem::path& asset_path) : asset_path{asset_path}, model_lookup{} {}
 
-
+    void pre_render();
+    
     /**
      * @brief Get the model object reference id, or load object if not available
      * 
@@ -59,16 +108,30 @@ public:
      * @return MID 
      */
     MID get_model(const std::filesystem::path& filename);
-    
-    
+
+    std::pair<std::shared_ptr<Material>, int32_t> create_material(const std::string& name);
+    std::shared_ptr<Material> get_material(const std::string& name);
+    int32_t get_material_id(const std::string& name);
+    void push_material_changed(const std::string& name);
+
+private:
+    MaterialInternal get_material_internal(const std::string& name) {
+        auto itr = materials.find(name);
+        if (itr != materials.end()) {
+            return itr->second;
+        }
+        return {};
+    }
+
+public:
     std::filesystem::path asset_path;
 
 private:
     std::unordered_map<std::string, MID> model_lookup;
     std::unordered_map<MID, std::shared_ptr<Model>> models;
-};
 
-std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir);
+    std::unordered_map<std::string, MaterialInternal> materials;
+};
 
 
 

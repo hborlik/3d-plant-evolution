@@ -12,7 +12,7 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
     }
     glFrontFace((GLenum)front_facing);
     // TODO: support for multiple index buffers
-    if (vertex_buffer.getIndexed() != -1) {
+    if (vertex_buffer.get_indexed() != -1) {
         // draw indexed arrays
         for (auto& m : meshes) {
             // prog.applyMaterial(materials[m.material_id]);
@@ -23,7 +23,7 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
                 GL_CHECKED_CALL(glUniform1ui(loc, material_override > -1 ? material_override : m.material_id + material_offset));
             }
 
-            vertex_buffer.buffers[vertex_buffer.getIndexed()].Bind(); // bind index buffer (again, @Windows)
+            vertex_buffer.buffers[vertex_buffer.get_indexed()].Bind(); // bind index buffer (again, @Windows)
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {
@@ -188,12 +188,6 @@ void Renderer::destroy_light(LID lid) {
 MID Renderer::create_model(std::shared_ptr<Model> model) {
     assert(model->bufferFormat == VertexFormat::Array);
 
-    int32_t mat_offset = next_free_mat;
-
-    for (auto mat = model->materials.begin(); mat != model->materials.end(); mat++) {
-        create_material(MaterialData::from_material(*mat));
-    }
-
     auto meshes = model->meshes;
     // for (auto& m : meshes) {
     //     m.material_id = m.material_id - 1;
@@ -207,7 +201,7 @@ MID Renderer::create_model(std::shared_ptr<Model> model) {
         gl::CullMode::BACK,
         gl::FrontFacing::CCW
     );
-    d->material_offset = mat_offset;
+    d->material_offset = 0;
 
     return create_model(d);
 }

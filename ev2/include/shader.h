@@ -18,7 +18,6 @@
 #include <ev.h>
 #include <ev_gl.h>
 #include <buffer.h>
-#include <material.h>
 
 namespace ev2
 {
@@ -330,13 +329,13 @@ public:
 
     GLuint getHandle() const noexcept { return gl_reference; }
 
-    /**
-     * @brief Apply a material. The program must be set active with use()
-     * before calling this
-     *
-     * @param material
-     */
-    virtual void applyMaterial(const Material &material) const;
+    // /**
+    //  * @brief Apply a material. The program must be set active with use()
+    //  * before calling this
+    //  *
+    //  * @param material
+    //  */
+    // virtual void applyMaterial(const Material &material) const;
 
     /**
      * @brief point uniform block with name to binding location

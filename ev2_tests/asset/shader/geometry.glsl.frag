@@ -15,7 +15,7 @@ uniform uint materialId;
 void main() {
     gPosition = frag_pos;
     gNormal = normalize(vert_normal);
-    gAlbedoSpec.rgb = vert_color;
+    gAlbedoSpec.rgb = vec3(0);
     gAlbedoSpec.a = 0;
     gMaterialTex = materialId;
 }
