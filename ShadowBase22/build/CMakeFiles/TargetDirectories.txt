@@ -1,0 +1,3 @@
+C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build/CMakeFiles/shadow.dir
+C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build/CMakeFiles/edit_cache.dir
+C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build/CMakeFiles/rebuild_cache.dir

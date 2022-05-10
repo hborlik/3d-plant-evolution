@@ -1,0 +1,57 @@
+[
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\gcc.exe  @CMakeFiles/shadow.dir/includes_C.rsp -g -o CMakeFiles\\shadow.dir\\ext\\glad\\src\\glad.c.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\ext\\glad\\src\\glad.c\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/ext/glad/src/glad.c"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\ext\\tiny_obj_loader\\tiny_obj_loader.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\ext\\tiny_obj_loader\\tiny_obj_loader.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/ext/tiny_obj_loader/tiny_obj_loader.cpp"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\src\\Bezier.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\src\\Bezier.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/src/Bezier.cpp"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\src\\GLSL.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\src\\GLSL.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/src/GLSL.cpp"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\src\\MatrixStack.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\src\\MatrixStack.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/src/MatrixStack.cpp"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\src\\Program.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\src\\Program.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/src/Program.cpp"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\src\\Shape.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\src\\Shape.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/src/Shape.cpp"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\src\\Spline.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\src\\Spline.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/src/Spline.cpp"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\src\\Texture.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\src\\Texture.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/src/Texture.cpp"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\src\\WindowManager.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\src\\WindowManager.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/src/WindowManager.cpp"
+},
+{
+  "directory": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/build",
+  "command": "C:\\MinGW\\bin\\g++.exe  @CMakeFiles/shadow.dir/includes_CXX.rsp -g -std=c++17 -o CMakeFiles\\shadow.dir\\src\\main.cpp.obj -c \"C:\\Users\\jackj\\Downloads\\ShadowBase22 2\\ShadowBase22\\src\\main.cpp\"",
+  "file": "C:/Users/jackj/Downloads/ShadowBase22 2/ShadowBase22/src/main.cpp"
+}
+]

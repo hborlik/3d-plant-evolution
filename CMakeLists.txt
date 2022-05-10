@@ -9,6 +9,8 @@ add_subdirectory(ev2)
 add_subdirectory(ev2_tests)
 add_subdirectory(tests)
 add_subdirectory(p-tree)
+add_subdirectory(ShadowBase22)
+
 # add_subdirectory(testapp)
 # add_subdirectory(vfc_base2022v2)
 # add_subdirectory(SunnyBunnyBase2022)

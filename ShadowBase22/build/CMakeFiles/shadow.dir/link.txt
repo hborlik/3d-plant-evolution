@@ -1,0 +1,3 @@
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -E rm -f CMakeFiles\shadow.dir/objects.a
+C:\MinGW\bin\ar.exe cr CMakeFiles\shadow.dir/objects.a @CMakeFiles\shadow.dir\objects1.rsp
+C:\MinGW\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\shadow.dir/objects.a -Wl,--no-whole-archive -o shadow.exe -Wl,--out-implib,libshadow.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\shadow.dir\linklibs.rsp
