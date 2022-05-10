@@ -76,13 +76,13 @@ void FBO::resize_all(uint32_t width, uint32_t height) {
 bool FBO::check() {
     bind();
     // enable all drawbuffers
-    std::vector<gl::FBOAttachment> dbtgt(attachments.size());
+    std::vector<GLenum> dbtgt(attachments.size());
     int i = 0;
     for (auto &a : attachments) {
-        dbtgt[i++] = a.first;
+        dbtgt[i++] = (GLenum)a.first;
     }
 
-    GL_CHECKED_CALL(glDrawBuffers(dbtgt.size(), (GLenum*)dbtgt.data()));
+    GL_CHECKED_CALL(glDrawBuffers(dbtgt.size(), dbtgt.data()));
 
     GLenum err = glCheckFramebufferStatus((GLenum)target);
     if (err != GL_FRAMEBUFFER_COMPLETE) {
@@ -108,6 +108,7 @@ bool FBO::attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_
             return true;
         }
     }
+    std::cout << "Failed to attach FBO attachment" << std::endl;
     return false;
 }
 
