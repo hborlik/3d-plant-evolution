@@ -45,66 +45,6 @@ bool show_demo_window = true;
 bool show_another_window = false;
 ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-
-    void imgui(GLFWwindow * window) {
-        glfwPollEvents();
-
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
-
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-        {
-            static float f = 0.0f;
-            static int counter = 0;
-
-            ImGui::Begin("Hello, world!daasdasdasd");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-            ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-            if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-                counter++;
-            ImGui::SameLine();
-            static char str0[128] = "Hello, worldwqweqwdasdasd!";
-            ImGui::InputText("input text", str0, IM_ARRAYSIZE(str0));
-            ImGui::Text(str0);
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::End();
-        }
-
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
-        // Rendering
-        ImGui::Render();
-        int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
-        glViewport(0, 0, display_w, display_h);
-        //glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-        //glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        glfwSwapBuffers(window);
-    }
-
 class TestApp : public ev2::Application {
 public:
     TestApp() : RM{std::make_unique<ev2::ResourceManager>(asset_path)},
@@ -147,6 +87,101 @@ public:
         }
     }
 
+void imgui(GLFWwindow * window) {
+        glfwPollEvents();
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+        if (show_demo_window)
+            //ImGui::ShowDemoWindow(&show_demo_window);
+
+        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+        {
+            static float fieldA = 0.9f;
+            static float fieldB = 0.9f;
+            static float fieldC = 0.7f;
+            static float fieldDegree = 45.0f;
+            static float fieldDegree2 = 45.0f;
+            static float fieldDegree3 = 135.5f;
+            
+            static int counter = 0;
+            std::map<std::string, float> GUIParams = {
+                    {"R_1", fieldA},
+                    {"R_2", fieldB},
+                    {"a_0", ptree::degToRad(fieldDegree)},
+                    {"a_2", ptree::degToRad(fieldDegree2)},
+                    {"d",   ptree::degToRad(fieldDegree3)},
+                    {"w_r", fieldC}
+                };
+            ImGui::Begin("Stem editor.");                          // Create a window called "Hello, world!" and append into it.
+
+            ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
+            //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+            ImGui::Checkbox("Another Window", &show_another_window);
+
+            if (ImGui::SliderFloat("float", &fieldA, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("float2", &fieldB, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("float3", &fieldC, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("floatDegree1", &fieldDegree, 1.0f, 360.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("floatDegree2", &fieldDegree2, 1.0f, 360.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("floatDegree3", &fieldDegree3, 1.0f, 360.0f)) 
+                {
+                    GUIParams.find("R_1")->second = fieldA;
+                    GUIParams.find("R_2")->second = fieldB;
+                    GUIParams.find("a_0")->second = fieldDegree;
+                    GUIParams.find("a_2")->second = fieldDegree2;
+                    GUIParams.find("d")->second = fieldDegree3;
+                    GUIParams.find("w_r")->second = fieldC;
+                                                            
+                    tree->setParams(GUIParams, counter);
+                };            // Edit 1 float using a slider from 0.0f to 1.0f
+        
+
+            if (ImGui::Button("Increase iterations."))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+            {
+                counter++;
+                //tree->generate(counter + 1);
+                tree->setParams(GUIParams, counter);
+            }
+
+            if (ImGui::Button("Decrease iterations."))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+            {
+                counter--;
+                if (counter <= 0) {counter = 0;}
+                //tree->generate(counter + 1);
+                tree->setParams(GUIParams, counter);
+            }
+            ImGui::Text("P = %d", counter);
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::End();
+        }
+
+        // 3. Show another simple window.
+        if (show_another_window)
+        {
+            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+            ImGui::Text("Hello from another window!");
+            if (ImGui::Button("Close Me"))
+                show_another_window = false;
+            ImGui::End();
+        }
+        // Rendering
+        ImGui::Render();
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+        glViewport(0, 0, display_w, display_h);
+        //glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+        //glClear(GL_COLOR_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        glfwSwapBuffers(window);
+    }
+
 
     void initialize() {
 
@@ -177,12 +212,12 @@ public:
         auto tree_bark = RM->create_material("bark");
         tree_bark.first->diffuse = glm::vec3{0.59,0.44,0.09};
         tree_bark.first->metallic = 0;
-        // RM->push_material_changed("bark");
+        RM->push_material_changed("bark");
 
         auto ground_material = RM->create_material("ground_mat");
         ground_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
         ground_material.first->sheen = 0.2;
-        // RM->push_material_changed("ground_mat");
+        RM->push_material_changed("ground_mat");
 
         auto g_node = scene->create_node<ev2::VisualInstance>("ground");
         g_node->set_model(ground);
@@ -196,6 +231,7 @@ public:
         tree = scene->create_node<TreeNode>("Tree");
         tree->transform.position = glm::vec3{50, 0, 0};
         tree->set_material_override(tree_bark.second);
+        
         ev2::Ref<TreeNode> tree2 = scene->create_node<TreeNode>("Tree2");
         tree2->transform.position = glm::vec3{25, 0, 0};
         tree2->set_material_override(tree_bark.second);    
@@ -251,7 +287,8 @@ public:
 
 
         while(ev2::window::frame()) {
-            update(dt);
+            //Passing io to manage focus between app behavior and imgui behavior on mouse events.
+            update(dt, io);
             RM->pre_render();
             ev2::Renderer::get_singleton().render(getActiveCam()->get_camera());
             imgui(window);
@@ -267,11 +304,11 @@ public:
         ev2::Renderer::get_singleton().set_wireframe(enabled);
     }
 
-    void update(float dt) {
+    void update(float dt, ImGuiIO& io) {
         // first update scene
         scene->update(dt);
 
-        if (mouse_down || ev2::window::getMouseCaptured()) {
+        if ((mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) {
             mouse_delta = ev2::window::getCursorPosition() - mouse_p;
             mouse_p = ev2::window::getCursorPosition();
             cam_x += mouse_delta.x * -.005f;
