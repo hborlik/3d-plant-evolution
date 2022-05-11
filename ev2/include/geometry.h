@@ -57,6 +57,10 @@ struct Sphere {
 struct Plane {
     glm::vec4 p;
 
+    Plane(const glm::vec4& p) : p{p} {
+        normalize();
+    }
+
     inline void normalize() noexcept {
         p /= glm::length(glm::vec3(p));
     }
@@ -144,6 +148,37 @@ inline bool intersect(const Ray& ray, const Sphere& sph, SurfaceInteraction& hit
     };
     hit = h;
     return true;
+}
+
+/**
+ * @brief intersect ray and plane, ray direction and plane should be normalized
+ * 
+ * @param ray 
+ * @param p 
+ * @param hit 
+ * @return true 
+ * @return false 
+ */
+inline bool intersect(const Ray& ray, const Plane& p, SurfaceInteraction& hit) {
+    using namespace glm;
+    const float denom = dot(ray.direction, vec3(p.p));
+    if (denom == 0.0) // parallel
+        return false;
+    const float t = (p.p[3] - dot(ray.origin, vec3(p.p))) / denom;
+    if (t >= 0.01f) {
+        SurfaceInteraction h {
+            vec3(p.p),
+            {},
+            {},
+            {},
+            t,
+            ray.eval(t),
+            ray.direction
+        };
+        hit = h;
+        return true;
+    }
+    return false;
 }
 
 }
