@@ -22,6 +22,13 @@ void Physics::set_sphere_collider(CID cid, Sphere s) {
     }
 }
 
+Sphere& Physics::get_sphere_collider(CID cid) {
+    auto mi = sphere_colldiers.find(cid.v);
+    if (mi != sphere_colldiers.end()) {
+        return mi->second.sphere;
+    }
+}
+
 void Physics::destroy_sphere_collider(CID cid) {
     sphere_colldiers.erase(cid.v);
 }
@@ -47,6 +54,28 @@ std::optional<SurfaceInteraction> Physics::raycast_scene(const Ray& ray) {
         return {closest_hit};
     }
     return {};
+}
+
+// Collider
+
+void Collider::on_init() {
+    cid = Physics::get_singleton().create_sphere_collider(get_ref());
+}
+
+void Collider::on_ready() {
+
+}
+
+void Collider::on_process(float delta) {
+    get_shape().center = glm::vec3(get_transform()[3]);
+}
+
+void Collider::on_destroy() {
+
+}
+
+Sphere& Collider::get_shape() {
+    return Physics::get_singleton().get_sphere_collider(cid);
 }
 
 }

@@ -45,6 +45,11 @@ struct Ref {
 
     Ref(nullptr_t) noexcept : Ref() {}
 
+    explicit Ref(ReferenceCounted<T>* obj) : _ref{dynamic_cast<T*>(obj)} {
+        if (_ref)
+            _ref->increment();
+    }
+
     explicit Ref(T* obj) : _ref{obj} {
         if (_ref)
             _ref->increment();
@@ -133,6 +138,10 @@ struct Ref {
         return *this;
 	}
 
+    operator bool() const noexcept {
+        return _ref != nullptr;
+    }
+
     template<class B> Ref<B> ref_cast() {
         B *obj = dynamic_cast<B*>(_ref);
         return Ref<B>{obj};
@@ -155,7 +164,7 @@ public:
     ReferenceCounted<T> operator=(const ReferenceCounted<T>& o) = delete;
     ReferenceCounted<T> operator=(ReferenceCounted<T>&& o) = delete;
 
-    Ref<T> get_ref() noexcept {return {this};}
+    Ref<T> get_ref() noexcept {return Ref<T>{this};}
 
     uint32_t get_ref_count() const noexcept {return count;}
 

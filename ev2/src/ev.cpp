@@ -19,6 +19,7 @@
 
 #include <window.h>
 #include <renderer.h>
+#include <physics.h>
 
 using namespace ev2;
 
@@ -37,8 +38,14 @@ shader_error::shader_error(std::string shaderName, std::string errorString) noex
 
 void ev2::EV2_init(const Args& args, const std::filesystem::path& asset_path) {
     window::init(args);
-    glm::ivec2 screen_size = window::getDefaultWindowSize();
+    glm::ivec2 screen_size = window::getWindowSize();
     ev2::Renderer::intitalize(screen_size.x, screen_size.y, asset_path);
+    ev2::Physics::intitalize();
+}
+
+void ev2::EV2_shutdown() {
+    ev2::Physics::shutdown();
+    ev2::Renderer::shutdown();
 }
 
 bool ev2::isGLError() {

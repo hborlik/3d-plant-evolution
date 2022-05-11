@@ -29,4 +29,12 @@ void Node::update(float dt) {
     }
 }
 
+void Node::update_pre_render() {
+    pre_render();
+
+    for (auto& c : children) {
+        c->update_pre_render();
+    }
+}
+
 } // namespace ev2

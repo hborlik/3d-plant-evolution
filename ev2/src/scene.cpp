@@ -13,4 +13,8 @@ void Scene::update(float dt) {
     root->update(dt);
 }
 
+void Scene::update_pre_render() {
+    root->update_pre_render();
+}
+
 } // namespace ev2

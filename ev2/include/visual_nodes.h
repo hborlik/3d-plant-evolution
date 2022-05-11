@@ -22,6 +22,8 @@ public:
     void on_process(float delta) override;
     void on_destroy() override;
 
+    void pre_render() override;
+
     void set_model(MID model);
     void set_material_override(int32_t material_override);
 
@@ -37,18 +39,23 @@ public:
     void on_process(float dt) override;
     void on_destroy() override;
 
+    void pre_render() override;
+
     void set_active();
 
-    void set_fov(float fov) noexcept {this->fov = fov; update_internal();}
+    void set_fov(float fov) noexcept {this->fov = fov;}
     float get_fov() noexcept {return fov;}
 
-    void set_near_clip(float near) noexcept {this->near = near; update_internal();}
+    void set_near_clip(float near) noexcept {this->near = near;}
     float get_near_clip() noexcept {return near;}
 
-    void set_far_clip(float far) noexcept {this->far = far; update_internal();}
+    void set_far_clip(float far) noexcept {this->far = far;}
     float get_far_clip() noexcept {return far;}
 
-    const Camera& get_camera() const noexcept {return camera;}
+    const Camera& get_camera() noexcept {
+        update_internal();
+        return camera;
+    }
 
 
 private:
@@ -70,6 +77,8 @@ public:
     void on_process(float delta) override;
     void on_destroy() override;
 
+    void pre_render() override;
+
     void set_color(const glm::vec3& color);
 
 private:
@@ -84,6 +93,8 @@ public:
     void on_ready() override;
     void on_process(float delta) override;
     void on_destroy() override;
+
+    void pre_render() override;
 
     void set_color(const glm::vec3& color);
     void set_ambient(const glm::vec3& color);

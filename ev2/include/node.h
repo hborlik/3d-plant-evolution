@@ -79,6 +79,12 @@ public:
      */
     virtual void on_destroy() {}
 
+    /**
+     * @brief call just before scene is rendered. Used to push changes to rendering server
+     * 
+     */
+    virtual void pre_render() {};
+
     void add_child(Ref<Node> node);
     void remove_child(Ref<Node> node);
 
@@ -122,6 +128,7 @@ private:
     friend class Scene;
 
     void update(float dt);
+    void update_pre_render();
     
     const std::string name = "Node";
     std::list<Ref<Node>> children;

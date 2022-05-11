@@ -53,6 +53,8 @@ struct Args {
 
 void EV2_init(const Args& args, const std::filesystem::path& asset_path);
 
+void EV2_shutdown();
+
 } // ev2
 
 #endif // EV2_ENGINE_H
