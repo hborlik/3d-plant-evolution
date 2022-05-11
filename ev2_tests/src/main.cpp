@@ -39,9 +39,11 @@ struct Plant {
     glm::vec3 color;
     glm::quat rot;
     Sphere geometry;
-    Plant(glm::vec3 pos, glm::vec3 col, Sphere geo) {position = pos; color = col; geometry = geo; 
+    ev2::Ref<TreeNode> tree{};
+    Plant(glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn) {position = pos; color = col; geometry = geo; tree = treeIn; 
         rot = glm::quatLookAt(glm::vec3(randomFloatTo(2) - 1, 0, randomFloatTo(2) - 1), glm::vec3{0, 1, 0});
     }
+
 };
 
     // Our state
@@ -65,8 +67,7 @@ public:
     ev2::Ref<ev2::CameraNode> cam_fly{};
     ev2::Ref<ev2::CameraNode> cam_first_person{};
 
-    ev2::Ref<TreeNode> tree{};
-
+    std::map<ev2::Ref<ev2::Node>, Plant> plantMap;
     std::shared_ptr<ev2::ResourceManager> RM;
     std::unique_ptr<ev2::Scene> scene;
 
@@ -93,19 +94,7 @@ public:
         }
     }
 
-void imgui(GLFWwindow * window) {
-        glfwPollEvents();
-
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            //ImGui::ShowDemoWindow(&show_demo_window);
-
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+    void plantWindow(Plant somePlant) {
         {
             static float fieldA = 0.9f;
             static float fieldB = 0.9f;
@@ -127,7 +116,7 @@ void imgui(GLFWwindow * window) {
 
             ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
             //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
+            //ImGui::Checkbox("Breed Plant?", (childa));
 
             if (ImGui::SliderFloat("float", &fieldA, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
                 ImGui::SliderFloat("float2", &fieldB, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
@@ -143,7 +132,7 @@ void imgui(GLFWwindow * window) {
                     GUIParams.find("d")->second = fieldDegree3;
                     GUIParams.find("w_r")->second = fieldC;
                                                             
-                    tree->setParams(GUIParams, counter);
+                    somePlant.tree->setParams(GUIParams, counter);
                 };            // Edit 1 float using a slider from 0.0f to 1.0f
         
 
@@ -151,7 +140,7 @@ void imgui(GLFWwindow * window) {
             {
                 counter++;
                 //tree->generate(counter + 1);
-                tree->setParams(GUIParams, counter);
+                somePlant.tree->setParams(GUIParams, counter);
             }
 
             if (ImGui::Button("Decrease iterations."))                            // Buttons return true when clicked (most widgets return true when edited/activated)
@@ -159,7 +148,7 @@ void imgui(GLFWwindow * window) {
                 counter--;
                 if (counter <= 0) {counter = 0;}
                 //tree->generate(counter + 1);
-                tree->setParams(GUIParams, counter);
+                somePlant.tree->setParams(GUIParams, counter);
             }
             ImGui::Text("P = %d", counter);
 
@@ -176,7 +165,30 @@ void imgui(GLFWwindow * window) {
                 show_another_window = false;
             ImGui::End();
         }
-        // Rendering
+    }
+
+void imgui(GLFWwindow * window) {
+        glfwPollEvents();
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        //supershape.getModel();
+        // cube =  supershape.getModel();
+        
+        //Plant testPlant(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape);
+        //for (plant in plantlist)
+        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+        for (auto it=plantMap.begin(); it!=plantMap.end(); ++it)
+        {
+            if (show_demo_window)
+                plantWindow(it->second);
+        }
+   //ImGui::ShowDemoWindow(&show_demo_window);
+
+
+           // Rendering
         ImGui::Render();
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
@@ -188,10 +200,6 @@ void imgui(GLFWwindow * window) {
 
 
     void initialize() {
-
-        Sphere supershape(1.0f , 20, 20);
-        // cube =  supershape.getModel();
-
 
         ev2::MID hid = RM->get_model( fs::path("models") / "rungholt" / "house.obj");
         ev2::MID ground = RM->get_model( fs::path("models") / "cube.obj");
@@ -235,14 +243,17 @@ void imgui(GLFWwindow * window) {
         cam_first_person = scene->create_node<ev2::CameraNode>("FP");
 
         cam_orbital_root->add_child(cam_orbital);
+        ev2::Ref<TreeNode> tree{};
+        Sphere supershape(1.0f , 20, 20);
+        auto temp = scene->create_node<ev2::Node>("plant1");
+        plantMap.insert(temp, (Plant(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree)));
+        temp->transform.position = glm::vec3{50, 0, 0};
+        //temp->set_material_override(tree_bark.second);
 
-        tree = scene->create_node<TreeNode>("Tree");
-        tree->transform.position = glm::vec3{50, 0, 0};
-        tree->set_material_override(tree_bark.second);
-        
-        ev2::Ref<TreeNode> tree2 = scene->create_node<TreeNode>("Tree2");
-        tree2->transform.position = glm::vec3{25, 0, 0};
-        tree2->set_material_override(tree_bark.second);    
+        temp = scene->create_node<ev2::Node>("plant2");
+        plantMap.insert(temp, (Plant(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree)));
+        temp->transform.position = glm::vec3{50, 0, 0};
+        //temp->set_material_override(tree_bark.second);
     }
 
     void updateShape(float dt, Sphere geometry) {
@@ -252,28 +263,9 @@ void imgui(GLFWwindow * window) {
 
     int run() {
         float dt = 0.05f;
-    // Decide GL+GLSL versions
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-    // GL ES 2.0 + GLSL 100
-    const char* glsl_version = "#version 100";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-#elif defined(__APPLE__)
-    // GL 3.2 + GLSL 150
-    const char* glsl_version = "#version 150";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
-#else
-    // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+        const char* glsl_version = "#version 130";
     //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
     //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
-#endif
 
         GLFWwindow* window = ev2::window::getContextWindow();
         if (window == NULL)
@@ -472,7 +464,6 @@ int initAudio(fs::path asset_path) {
 int main(int argc, char *argv[]) {
 
 
-
     ev2::Args args{argc, argv};
 
     fs::path asset_path = fs::path("asset");
@@ -482,7 +473,7 @@ int main(int argc, char *argv[]) {
 
     std::unique_ptr<TestApp> app = std::make_unique<TestApp>(asset_path);
     ev2::window::setApplication(app.get());
-    initAudio(asset_path);
+    //initAudio(asset_path);
     app->initialize();
     return app->run();;
     //TODO: uninit audio device and decoder.
