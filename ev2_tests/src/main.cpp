@@ -251,28 +251,15 @@ void imgui(GLFWwindow * window) {
 
 
     int run() {
-        float dt = 0.05f;
-    // Decide GL+GLSL versions
 #if defined(IMGUI_IMPL_OPENGL_ES2)
-    // GL ES 2.0 + GLSL 100
-    const char* glsl_version = "#version 100";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+        // GL ES 2.0 + GLSL 100
+        const char* glsl_version = "#version 100";
 #elif defined(__APPLE__)
-    // GL 3.2 + GLSL 150
-    const char* glsl_version = "#version 150";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on Mac
+        // GL 3.2 + GLSL 150
+        const char* glsl_version = "#version 150";
 #else
-    // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+        // GL 3.0 + GLSL 130
+        const char* glsl_version = "#version 130";
 #endif
 
         GLFWwindow* window = ev2::window::getContextWindow();
@@ -294,9 +281,11 @@ void imgui(GLFWwindow * window) {
         ImGui_ImplOpenGL3_Init(glsl_version);
 
 
+        float dt = 0.05f;
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
             update(dt, io);
+            
             RM->pre_render();
             ev2::Renderer::get_singleton().render(getActiveCam()->get_camera());
             imgui(window);
