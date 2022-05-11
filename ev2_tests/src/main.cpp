@@ -35,12 +35,15 @@ float randomFloatTo(float limit) {
 }
 
 struct Plant {
+    bool selected = true;
+    int ID;
+    int iterations = 5;
     glm::vec3 position;
     glm::vec3 color;
     glm::quat rot;
     Sphere geometry;
     ev2::Ref<TreeNode> tree{};
-    Plant(glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn) {position = pos; color = col; geometry = geo; tree = treeIn; 
+    Plant(int IDin, glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn) {ID = IDin; position = pos; color = col; geometry = geo; tree = treeIn; 
         rot = glm::quatLookAt(glm::vec3(randomFloatTo(2) - 1, 0, randomFloatTo(2) - 1), glm::vec3{0, 1, 0});
     }
 
@@ -67,7 +70,7 @@ public:
     ev2::Ref<ev2::CameraNode> cam_fly{};
     ev2::Ref<ev2::CameraNode> cam_first_person{};
 
-    std::map<ev2::Ref<ev2::Node>, Plant> plantMap;
+    std::list<Plant> plantlist;
     std::shared_ptr<ev2::ResourceManager> RM;
     std::unique_ptr<ev2::Scene> scene;
 
@@ -94,67 +97,80 @@ public:
         }
     }
 
-    void plantWindow(Plant somePlant) {
-        {
-            static float fieldA = 0.9f;
-            static float fieldB = 0.9f;
-            static float fieldC = 0.7f;
-            static float fieldDegree = 45.0f;
-            static float fieldDegree2 = 45.0f;
-            static float fieldDegree3 = 135.5f;
-            
-            static int counter = 5;
-            std::map<std::string, float> GUIParams = {
-                    {"R_1", fieldA},
-                    {"R_2", fieldB},
-                    {"a_0", ptree::degToRad(fieldDegree)},
-                    {"a_2", ptree::degToRad(fieldDegree2)},
-                    {"d",   ptree::degToRad(fieldDegree3)},
-                    {"w_r", fieldC}
-                };
-            ImGui::Begin("Stem editor.");                          // Create a window called "Hello, world!" and append into it.
+    void plantWindow(Plant * somePlant) {
 
-            ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
-            //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            //ImGui::Checkbox("Breed Plant?", (childa));
-
-            if (ImGui::SliderFloat("float", &fieldA, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("float2", &fieldB, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("float3", &fieldC, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("floatDegree1", &fieldDegree, 1.0f, 360.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("floatDegree2", &fieldDegree2, 1.0f, 360.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("floatDegree3", &fieldDegree3, 1.0f, 360.0f)) 
-                {
-                    GUIParams.find("R_1")->second = fieldA;
-                    GUIParams.find("R_2")->second = fieldB;
-                    GUIParams.find("a_0")->second = fieldDegree;
-                    GUIParams.find("a_2")->second = fieldDegree2;
-                    GUIParams.find("d")->second = fieldDegree3;
-                    GUIParams.find("w_r")->second = fieldC;
-                                                            
-                    somePlant.tree->setParams(GUIParams, counter);
-                };            // Edit 1 float using a slider from 0.0f to 1.0f
+        std::map<std::string, float> GUIParams = somePlant->tree->getParams();
         
+        float fieldA = GUIParams.find("R_1")->second;
+        float fieldB = GUIParams.find("R_2")->second;
+        float fieldC = GUIParams.find("w_r")->second;
+        float fieldDegree = GUIParams.find("a_0")->second;
+        float fieldDegree2 = GUIParams.find("a_2")->second;
+        float fieldDegree3 = GUIParams.find("d")->second;
 
-            if (ImGui::Button("Increase iterations."))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-            {
-                counter++;
-                //tree->generate(counter + 1);
-                somePlant.tree->setParams(GUIParams, counter);
-            }
+        int counter = somePlant->iterations;
+        bool changed = false;
+        ImGui::Begin(std::to_string(somePlant->ID).c_str());                          // Create a window called "Hello, world!" and append into it.
 
-            if (ImGui::Button("Decrease iterations."))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-            {
-                counter--;
-                if (counter <= 0) {counter = 0;}
-                //tree->generate(counter + 1);
-                somePlant.tree->setParams(GUIParams, counter);
-            }
-            ImGui::Text("P = %d", counter);
+        ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
+        //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+        //ImGui::Checkbox("Breed Plant?", (childa));
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-            ImGui::End();
+        if (ImGui::SliderFloat("float", &fieldA, 0.001f, 2.0f))
+        {
+            GUIParams.find("R_1")->second = fieldA;
+            changed = true;
+        } 
+        if (ImGui::SliderFloat("float2", &fieldB, 0.001f, 2.0f))
+        {
+            GUIParams.find("R_2")->second = fieldB;
+            changed = true;
+        } 
+        if (ImGui::SliderFloat("float3", &fieldC, 0.001f, 2.0f))
+        {
+            GUIParams.find("w_r")->second = fieldC;
+            changed = true;
+        } 
+        if (ImGui::SliderFloat("floatDegree1", &fieldDegree, 1.0f, 360.0f))  
+        {
+            GUIParams.find("a_0")->second = fieldDegree;
+            changed = true;
+        } 
+        if (ImGui::SliderFloat("floatDegree2", &fieldDegree2, 1.0f, 360.0f))
+        {
+            GUIParams.find("a_2")->second = fieldDegree2;
+            changed = true;
+        } 
+        if (ImGui::SliderFloat("floatDegree3", &fieldDegree3, 1.0f, 360.0f))
+        {
+            GUIParams.find("d")->second = fieldDegree3;
+            changed = true;
+        } 
+        if (changed) 
+        {                                               
+            somePlant->tree->setParams(GUIParams, somePlant->iterations);
+            changed = false;           // Edit 1 float using a slider from 0.0f to 1.0f
         }
+
+        if (ImGui::Button("Increase iterations."))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+        {
+            somePlant->iterations++;
+            //tree->generate(counter + 1);
+            somePlant->tree->setParams(GUIParams, somePlant->iterations);
+        }
+
+        if (ImGui::Button("Decrease iterations."))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+        {
+            somePlant->iterations--;
+            if (somePlant->iterations <= 0) {somePlant->iterations = 0;}
+            //tree->generate(somePlant->iterations + 1);
+            somePlant->tree->setParams(GUIParams, somePlant->iterations);
+        }
+        ImGui::Text("P = %d", somePlant->iterations);
+
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::End();
+    
 
         // 3. Show another simple window.
         if (show_another_window)
@@ -180,10 +196,10 @@ void imgui(GLFWwindow * window) {
         //Plant testPlant(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape);
         //for (plant in plantlist)
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        for (auto it=plantMap.begin(); it!=plantMap.end(); ++it)
+        for (auto it=plantlist.begin(); it!=plantlist.end(); ++it)
         {
-            if (show_demo_window)
-                plantWindow(it->second);
+            if (it->selected)
+                plantWindow(&*it);
         }
    //ImGui::ShowDemoWindow(&show_demo_window);
 
@@ -243,16 +259,19 @@ void imgui(GLFWwindow * window) {
         cam_first_person = scene->create_node<ev2::CameraNode>("FP");
 
         cam_orbital_root->add_child(cam_orbital);
-        ev2::Ref<TreeNode> tree{};
+        ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
+        ev2::Ref<TreeNode> tree2 = scene->create_node<TreeNode>("Tree2");
+        tree->transform.position = glm::vec3{50, 0, 0};
+        tree2->transform.position = glm::vec3{25, 0, 0};
+
+        tree->set_material_override(tree_bark.second);
+        
+        tree2->set_material_override(tree_bark.second);    
         Sphere supershape(1.0f , 20, 20);
-        auto temp = scene->create_node<ev2::Node>("plant1");
-        plantMap.insert(temp, (Plant(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree)));
-        temp->transform.position = glm::vec3{50, 0, 0};
         //temp->set_material_override(tree_bark.second);
 
-        temp = scene->create_node<ev2::Node>("plant2");
-        plantMap.insert(temp, (Plant(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree)));
-        temp->transform.position = glm::vec3{50, 0, 0};
+        plantlist.push_back((Plant(0, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree)));
+        plantlist.push_back((Plant(1, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree2)));
         //temp->set_material_override(tree_bark.second);
     }
 

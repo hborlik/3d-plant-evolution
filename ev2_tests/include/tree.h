@@ -25,6 +25,7 @@ public:
 
     void generate(int iterations);
     void setParams(std::map<std::string, float> params, int iterations);
+    std::map<std::string, float> getParams() {return params;};
 
     ptree::Skeleton tree_skeleton;
     ptree::Tree tree;
