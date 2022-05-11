@@ -57,19 +57,19 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     // set up FBO textures
     material_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     material_tex->set_data2D(gl::TextureInternalFormat::R8UI, width, height, gl::PixelFormat::RED_INTEGER, gl::PixelType::UNSIGNED_BYTE, nullptr);
-    g_buffer.attach(material_tex, gl::FBOAttachment::COLOR3);
+    g_buffer.attach(material_tex, gl::FBOAttachment::COLOR3, 3);
 
     albedo_spec = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     albedo_spec->set_data2D(gl::TextureInternalFormat::RGBA, width, height, gl::PixelFormat::RGBA, gl::PixelType::UNSIGNED_BYTE, nullptr);
-    g_buffer.attach(albedo_spec, gl::FBOAttachment::COLOR2);
+    g_buffer.attach(albedo_spec, gl::FBOAttachment::COLOR2, 2);
 
     normals = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     normals->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
-    g_buffer.attach(normals, gl::FBOAttachment::COLOR1);
+    g_buffer.attach(normals, gl::FBOAttachment::COLOR1, 1);
 
     position = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     position->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
-    g_buffer.attach(position, gl::FBOAttachment::COLOR0);
+    g_buffer.attach(position, gl::FBOAttachment::COLOR0, 0);
 
     g_buffer.attach_renderbuffer(gl::RenderBufferInternalFormat::DEPTH_COMPONENT, width, height, gl::FBOAttachment::DEPTH);
 

@@ -185,7 +185,7 @@ public:
      * @return true 
      * @return false 
      */
-    bool attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_point);
+    bool attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_point, int location);
 
     bool attach_renderbuffer(gl::RenderBufferInternalFormat format, uint32_t width, uint32_t height, gl::FBOAttachment attachment_point);
 
@@ -195,7 +195,12 @@ private:
     gl::FBOTarget target;
     GLuint gl_reference = 0;
 
-    std::unordered_map<gl::FBOAttachment, std::shared_ptr<Texture>> attachments;
+    struct AttachmentBinding {
+        int location = -1;
+        std::shared_ptr<Texture> texture;
+    };
+
+    std::unordered_map<gl::FBOAttachment, AttachmentBinding> attachments;
     std::unordered_map<gl::FBOAttachment, RenderBuffer> rb_attachments;
 };
 

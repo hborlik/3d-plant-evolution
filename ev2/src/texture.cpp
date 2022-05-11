@@ -64,7 +64,7 @@ void Texture::set_data3D(gl::TextureInternalFormat internalFormat, uint32_t widt
 
 void FBO::resize_all(uint32_t width, uint32_t height) {
     for (auto& tex_at : attachments) {
-        auto &tex = tex_at.second;
+        auto &tex = tex_at.second.texture;
         tex->set_data2D(tex->get_internal_format(), width, height, tex->get_pixel_format(), tex->get_pixel_type(), nullptr);
     }
     for (auto& rb_at : rb_attachments) {
@@ -76,10 +76,14 @@ void FBO::resize_all(uint32_t width, uint32_t height) {
 bool FBO::check() {
     bind();
     // enable all drawbuffers
-    std::vector<GLenum> dbtgt(attachments.size());
+    int max_binding = 0;
+    for (auto &a : attachments) {
+        max_binding = max_binding > a.second.location ? max_binding : a.second.location;
+    }
+    std::vector<GLenum> dbtgt(max_binding + 1);
     int i = 0;
     for (auto &a : attachments) {
-        dbtgt[i++] = (GLenum)a.first;
+        dbtgt[a.second.location] = (GLenum)a.first;
     }
 
     GL_CHECKED_CALL(glDrawBuffers(dbtgt.size(), dbtgt.data()));
@@ -92,7 +96,7 @@ bool FBO::check() {
     return err == GL_FRAMEBUFFER_COMPLETE;
 }
 
-bool FBO::attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_point) {
+bool FBO::attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_point, int location) {
     if (attachments.find(attachment_point) != attachments.end())
         return false;
     if (texture && texture->type() == gl::TextureType::TEXTURE_2D) {
@@ -102,7 +106,7 @@ bool FBO::attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_
         glFramebufferTexture2D((GLenum)target, (GLenum)attachment_point, (GLenum)texture->type(), texture->get_handle(), 0);
         unbind();
         if (!isGLError()) {
-            attachments.insert(std::pair{attachment_point, texture});
+            attachments.insert(std::pair{attachment_point, AttachmentBinding{location, texture}});
             rb_attachments.erase(attachment_point);
 
             return true;
