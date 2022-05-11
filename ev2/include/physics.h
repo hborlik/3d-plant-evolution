@@ -28,24 +28,24 @@ struct CID {
 
 class Physics : public Singleton<Physics> {
 public:
-    CID create_sphere_collider(Ref<Object> owner);
-    void set_sphere_collider(CID cid, Sphere s);
-    Sphere& get_sphere_collider(CID cid);
-    void destroy_sphere_collider(CID cid);
+    CID create_collider(Ref<Object> owner);
+    void set_collider_shape(CID cid, Ref<Shape> shape);
+    Ref<Shape> get_collider(CID cid);
+    void destroy_collider(CID cid);
 
     void pre_render();
 
     std::optional<SurfaceInteraction> raycast_scene(const Ray& ray);
 
 private:
-    struct SphereInternal {
+    struct InternalCollider {
         Ref<Object> owner;
-        Sphere      sphere;
+        Ref<Shape>  shape;
     };
 
 private:
-    std::unordered_map<int32_t, SphereInternal> sphere_colldiers;
-    int32_t next_sphere_id = 100;
+    std::unordered_map<int32_t, InternalCollider> sphere_colldiers;
+    int32_t next_collider_id = 100;
 };
 
 class Collider : public Node {
@@ -57,8 +57,10 @@ public:
     void on_process(float delta) override;
     void on_destroy() override;
 
-    void set_shape(); // not implemented
-    Sphere& get_shape();
+    void pre_render() override;
+
+    void set_shape(Ref<Shape> shape);
+    Ref<Shape> get_shape();
 
 private:
     CID cid{};

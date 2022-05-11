@@ -142,8 +142,22 @@ public:
         return glm::mat4_cast(rotation)[0];
     }
 
+    Ray screen_pos_to_ray(glm::vec2 s_pos) const {
+        glm::vec2 s_pos_ndc = 2.f * (s_pos) - glm::vec2{1, 1};
+        s_pos_ndc.y *= -1;
+        glm::mat4 pv_inv = inv_pv();
+        glm::vec4 pos = pv_inv * glm::vec4{s_pos_ndc, -1, 1.0};
+
+        pos.x /= pos.w;
+        pos.y /= pos.w;
+        pos.z /= pos.w;
+
+        glm::vec3 c_pos = get_position();
+        return Ray{c_pos, glm::vec3(pos) - c_pos};
+    }
+
 private:
-    glm::vec3 position;
+    glm::vec3 position{};
     glm::quat rotation = glm::identity<glm::quat>();
 
     glm::mat4 projection = glm::identity<glm::mat4>();

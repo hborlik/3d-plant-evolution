@@ -68,6 +68,7 @@ public:
 
     ev2::Ref<TreeNode> tree{};
     ev2::Ref<ev2::Collider> tree_hit_sphere;
+    ev2::Ref<ev2::Collider> ground_plane;
 
     ev2::Ref<ev2::VisualInstance> marker{};
 
@@ -241,7 +242,6 @@ public:
         g_node->set_model(ground);
         g_node->set_material_override(ground_material.second);
         g_node->transform.scale = glm::vec3{1000, 0.1, 1000};
-        g_node->transform.position = glm::vec3{0, 0.4, 0};
 
         cam_orbital      = scene->create_node<ev2::CameraNode>("Orbital");
         cam_orbital_root = scene->create_node<ev2::Node>("cam_orbital_root");
@@ -253,9 +253,14 @@ public:
         tree->set_material_override(tree_bark.second);
 
         tree_hit_sphere = scene->create_node<ev2::Collider>("Tree_hit");
-        tree_hit_sphere->get_shape() = ev2::Sphere{{}, 2.0f};
+        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
         tree_hit_sphere->transform.position = glm::vec3{50, 0, 0};
         tree_hit_sphere->add_child(tree);
+
+        ground_plane = scene->create_node<ev2::Collider>("Ground Collider");
+        ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
+        ground_plane->add_child(g_node);
+        ground_plane->transform.position = glm::vec3{0, 0.4, 0};
         
         ev2::Ref<TreeNode> tree2 = scene->create_node<TreeNode>("Tree2");
         tree2->transform.position = glm::vec3{25, 0, 0};
@@ -360,8 +365,18 @@ public:
             ; // camera movement on y plane
         }
 
-        const ev2::Camera& cam = scene->get_active_camera()->get_camera();
-        marker->transform.position = cam.get_forward() * 5.0f + cam.get_position();
+        if (scene->get_active_camera()) {
+            const ev2::Camera& cam = scene->get_active_camera()->get_camera();
+            glm::vec2 scr_size = ev2::window::getWindowSize();
+            glm::vec2 s_pos = ev2::window::getCursorPosition() / scr_size;
+            
+            ev2::Ray cast = cam.screen_pos_to_ray(s_pos);
+
+            auto si = ev2::Physics::get_singleton().raycast_scene(cast);
+            if (si) {
+                marker->transform.position = si->point + glm::vec3{0, 3, 0};
+            }   
+        }
 
         // update scene
         scene->update(dt);
@@ -416,22 +431,7 @@ public:
     }
 
     void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {
-        glm::vec2 scr_size = ev2::window::getWindowSize();
-        glm::vec2 s_pos_ndc = 2.f * (glm::vec2{mouse_x, mouse_y} / scr_size) - glm::vec2{1, 1};
-        if (scene->get_active_camera()) {
-            const ev2::Camera& cam = scene->get_active_camera()->get_camera();
-            glm::mat4 pv_inv = cam.inv_pv();
-            glm::vec3 p_world_on_near = pv_inv * glm::vec4{s_pos_ndc, -1, 1.0};
-
-            ev2::Ray cast{cam.get_position(), p_world_on_near - cam.get_position()};
-
-            // marker->transform.position = cam.get_forward() * 5.0f + cam.get_position();
-
-            auto si = ev2::Physics::get_singleton().raycast_scene(cast);
-            if (si) {
-                std::cout << "Surface hit " << si->t << std::endl;
-            }   
-        }
+        
     }
 
     void on_mouse_button(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos, ev2::input::MouseButton::Enum button, bool down) override {
