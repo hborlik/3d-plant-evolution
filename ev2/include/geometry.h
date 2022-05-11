@@ -11,6 +11,8 @@
 
 #include <glm/glm.hpp>
 
+#include <ev.h>
+
 namespace ev2 {
 
 struct SurfaceInteraction
@@ -22,6 +24,7 @@ struct SurfaceInteraction
     glm::vec3 tan;
     glm::vec3 bi;
     glm::vec2 uv;
+    Ref<Object> hit;
 
     SurfaceInteraction() = default;
     SurfaceInteraction(glm::vec3 normal,

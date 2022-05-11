@@ -13,6 +13,7 @@
 #include <ev.h>
 #include <singleton.h>
 #include <geometry.h>
+#include <node.h>
 
 
 namespace ev2 {
@@ -28,8 +29,7 @@ struct CID {
 class Physics : public Singleton<Physics> {
 public:
     CID create_sphere_collider(Ref<Object> owner);
-    void set_sphere_collider_radius(CID cid, float r);
-    void set_sphere_collider_center(CID cid, const glm::vec3& c);
+    void set_sphere_collider(CID cid, Sphere s);
     void destroy_sphere_collider(CID cid);
 
     void pre_render();
@@ -44,6 +44,17 @@ private:
 
 private:
     std::unordered_map<int32_t, SphereInternal> sphere_colldiers;
+    int32_t next_sphere_id = 100;
+};
+
+class Collider : public Node {
+public:
+    explicit Collider(const std::string &name) : Node{name} {}
+
+    void on_init() override;
+    void on_ready() override;
+    void on_process(float delta) override;
+    void on_destroy() override;
 };
 
 }

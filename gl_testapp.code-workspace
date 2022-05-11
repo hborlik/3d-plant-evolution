@@ -112,7 +112,11 @@
 			"*.inc": "cpp",
 			"bitset": "cpp",
 			"regex": "cpp",
-			"*.def": "cpp"
+			"*.def": "cpp",
+			"forward_list": "cpp",
+			"source_location": "cpp",
+			"future": "cpp",
+			"typeindex": "cpp"
 		},
 		"cmake.buildDirectory": "${workspaceRoot}/build",
 		"glsllint.glslangValidatorPath": "../glslang-master-windows-x64-Release/bin/glslangValidator.exe"
