@@ -25,6 +25,7 @@
 #include <Sphere.h>
 #include <renderer.h>
 #include <scene.h>
+#include <physics.h>
 #include <visual_nodes.h>
 
 
@@ -66,6 +67,9 @@ public:
     ev2::Ref<ev2::CameraNode> cam_first_person{};
 
     ev2::Ref<TreeNode> tree{};
+    ev2::Ref<ev2::Collider> tree_hit_sphere;
+
+    ev2::Ref<ev2::VisualInstance> marker{};
 
     std::shared_ptr<ev2::ResourceManager> RM;
     std::unique_ptr<ev2::Scene> scene;
@@ -82,7 +86,7 @@ public:
         Orbital
     } camera_type = Orbital;
 
-    ev2::Ref<ev2::CameraNode> getActiveCam() {
+    ev2::Ref<ev2::CameraNode> getCameraNode() {
         switch(camera_type) {
             case Orbital:
                 return cam_orbital;
@@ -93,7 +97,7 @@ public:
         }
     }
 
-void imgui(GLFWwindow * window) {
+    void imgui(GLFWwindow * window) {
         glfwPollEvents();
 
         // Start the Dear ImGui frame
@@ -181,8 +185,6 @@ void imgui(GLFWwindow * window) {
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        //glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-        //glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
@@ -192,10 +194,21 @@ void imgui(GLFWwindow * window) {
         Sphere supershape(1.0f , 20, 20);
         // cube =  supershape.getModel();
 
+        auto highlight_material = RM->create_material("highlight");
+        highlight_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
+        highlight_material.first->sheen = 1.0;
+        highlight_material.first->metallic = 0.9;
+
 
         ev2::MID hid = RM->get_model( fs::path("models") / "rungholt" / "house.obj");
         ev2::MID ground = RM->get_model( fs::path("models") / "cube.obj");
         ev2::MID building0 = RM->get_model( fs::path("models") / "low_poly_houses.obj");
+
+        marker = scene->create_node<ev2::VisualInstance>("marker");
+        marker->set_model(ground);
+        marker->transform.scale = glm::vec3{0.5, 0.5, 0.5};
+        marker->transform.position = glm::vec3{0, 5, 0};
+        marker->set_material_override(highlight_material.second);
 
         // ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         // ground_cube->materials[0].shininess = 0.02;
@@ -237,8 +250,12 @@ void imgui(GLFWwindow * window) {
         cam_orbital_root->add_child(cam_orbital);
 
         tree = scene->create_node<TreeNode>("Tree");
-        tree->transform.position = glm::vec3{50, 0, 0};
         tree->set_material_override(tree_bark.second);
+
+        tree_hit_sphere = scene->create_node<ev2::Collider>("Tree_hit");
+        tree_hit_sphere->get_shape() = ev2::Sphere{{}, 2.0f};
+        tree_hit_sphere->transform.position = glm::vec3{50, 0, 0};
+        tree_hit_sphere->add_child(tree);
         
         ev2::Ref<TreeNode> tree2 = scene->create_node<TreeNode>("Tree2");
         tree2->transform.position = glm::vec3{25, 0, 0};
@@ -280,14 +297,16 @@ void imgui(GLFWwindow * window) {
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL3_Init(glsl_version);
 
+        scene->set_active_camera(getCameraNode());
 
         float dt = 0.05f;
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
             update(dt, io);
             
+            scene->update_pre_render();
             RM->pre_render();
-            ev2::Renderer::get_singleton().render(getActiveCam()->get_camera());
+            ev2::Renderer::get_singleton().render(scene->get_active_camera()->get_camera());
             imgui(window);
             dt = float(ev2::window::getFrameTime());
         }
@@ -302,8 +321,6 @@ void imgui(GLFWwindow * window) {
     }
 
     void update(float dt, ImGuiIO& io) {
-        // first update scene
-        scene->update(dt);
 
         if ((mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) {
             mouse_delta = ev2::window::getCursorPosition() - mouse_p;
@@ -342,41 +359,51 @@ void imgui(GLFWwindow * window) {
                 cam_right * 1.0f * cam_boom_length * dt * input.x
             ; // camera movement on y plane
         }
+
+        const ev2::Camera& cam = scene->get_active_camera()->get_camera();
+        marker->transform.position = cam.get_forward() * 5.0f + cam.get_position();
+
+        // update scene
+        scene->update(dt);
     }
 
     void onKey(ev2::input::Key::Enum key, ev2::input::Modifier mods, bool down) override {
-        switch (key) {
-            case ev2::input::Key::Tab:
-                if (down)
-                    ev2::window::setMouseCaptured(!ev2::window::getMouseCaptured());
-                break;
-            case ev2::input::Key::KeyP:
-                break;
-            case ev2::input::Key::Esc:
-                break;
-            case ev2::input::Key::KeyF:
-                if (down)
-                    camera_type = CameraMode((camera_type + 1) % 2);
-                break;
-            case ev2::input::Key::KeyZ:
-                if (down)
-                    toggleWireframe();
-                break;
-            case ev2::input::Key::KeyW:
-                move_input.y = down ? 1.0f : 0.0f;
-                break;
-            case ev2::input::Key::KeyS:
-                move_input.y = down ? -1.0f : 0.0f;
-                break;
-            case ev2::input::Key::KeyA:
-                move_input.x = down ? -1.0f : 0.0f;
-                break;
-            case ev2::input::Key::KeyD:
-                move_input.x = down ? 1.0f : 0.0f;
-                break;
-            default:
-                break;
-        }
+        ImGuiIO& io = ImGui::GetIO();
+        if (!io.WantCaptureMouse)
+            switch (key) {
+                case ev2::input::Key::Tab:
+                    if (down)
+                        ev2::window::setMouseCaptured(!ev2::window::getMouseCaptured());
+                    break;
+                case ev2::input::Key::KeyP:
+                    break;
+                case ev2::input::Key::Esc:
+                    break;
+                case ev2::input::Key::KeyF:
+                    if (down) {
+                        camera_type = CameraMode((camera_type + 1) % 2);
+                        scene->set_active_camera(getCameraNode());
+                    }
+                    break;
+                case ev2::input::Key::KeyZ:
+                    if (down)
+                        toggleWireframe();
+                    break;
+                case ev2::input::Key::KeyW:
+                    move_input.y = down ? 1.0f : 0.0f;
+                    break;
+                case ev2::input::Key::KeyS:
+                    move_input.y = down ? -1.0f : 0.0f;
+                    break;
+                case ev2::input::Key::KeyA:
+                    move_input.x = down ? -1.0f : 0.0f;
+                    break;
+                case ev2::input::Key::KeyD:
+                    move_input.x = down ? 1.0f : 0.0f;
+                    break;
+                default:
+                    break;
+            }
     }
 
     void on_char(uint32_t scancode) override {}
@@ -388,7 +415,24 @@ void imgui(GLFWwindow * window) {
         cam_boom_length = glm::clamp(cam_boom_length - scroll_delta, 0.f, 200.f);
     }
 
-    void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {}
+    void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {
+        glm::vec2 scr_size = ev2::window::getWindowSize();
+        glm::vec2 s_pos_ndc = 2.f * (glm::vec2{mouse_x, mouse_y} / scr_size) - glm::vec2{1, 1};
+        if (scene->get_active_camera()) {
+            const ev2::Camera& cam = scene->get_active_camera()->get_camera();
+            glm::mat4 pv_inv = cam.inv_pv();
+            glm::vec3 p_world_on_near = pv_inv * glm::vec4{s_pos_ndc, -1, 1.0};
+
+            ev2::Ray cast{cam.get_position(), p_world_on_near - cam.get_position()};
+
+            // marker->transform.position = cam.get_forward() * 5.0f + cam.get_position();
+
+            auto si = ev2::Physics::get_singleton().raycast_scene(cast);
+            if (si) {
+                std::cout << "Surface hit " << si->t << std::endl;
+            }   
+        }
+    }
 
     void on_mouse_button(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos, ev2::input::MouseButton::Enum button, bool down) override {
         mouse_p = ev2::window::getCursorPosition();
@@ -473,6 +517,8 @@ int main(int argc, char *argv[]) {
     ev2::window::setApplication(app.get());
     initAudio(asset_path);
     app->initialize();
-    return app->run();;
+    int rv = app->run();
+    ev2::EV2_shutdown();
+    return rv;
     //TODO: uninit audio device and decoder.
 }

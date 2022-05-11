@@ -255,11 +255,11 @@ public:
         float scale;
         glfwGetMonitorPhysicalSize(monitor, &width_mm, &height_mm);
         glfwGetMonitorContentScale(monitor, &scale, nullptr);
-        glfwGetMonitorWorkarea(monitor, nullptr, nullptr, &defaultWidth, &defaultHeight);
+        glfwGetMonitorWorkarea(monitor, nullptr, nullptr, &width, &height);
         if (width_mm == 0 || height_mm == 0) {
             std::clog << "glfwGetMonitorPhysicalSize failed!" << std::endl;
-            width_mm = defaultWidth;
-            height_mm = defaultHeight;
+            width_mm = width;
+            height_mm = height;
         }
 
         //request the highest possible version of OpenGL
@@ -272,8 +272,8 @@ public:
         glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
         window_ptr = glfwCreateWindow(
-            defaultWidth
-            , defaultHeight
+            width
+            , height
             , "window"
             , NULL
             , NULL
@@ -367,9 +367,11 @@ public:
         glfwSetWindowTitle(window_ptr, title.data());
     }
 
-    void setMouseCaptured(bool visible) {
-        if(visible) {
+    void setMouseCaptured(bool captured) {
+        if(captured) {
             glfwSetInputMode(window_ptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            if (glfwRawMouseMotionSupported())
+                glfwSetInputMode(window_ptr, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
         } else {
             glfwSetInputMode(window_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         }
@@ -385,10 +387,14 @@ public:
         return {x, y};
     }
 
+    glm::vec2 getScreenSize() const {
+        return {width, height};
+    }
+
     double scroll_pos = 0;
     Application* application = nullptr;
 
-    int defaultWidth, defaultHeight;
+    int width, height;
 
     GLFWwindow* getWindow() {return window_ptr;}
 
@@ -466,6 +472,9 @@ void Context::mouseButtonCb(GLFWwindow* _window, int32_t _button, int32_t _actio
 
 void Context::windowSizeCb(GLFWwindow* _window, int32_t _width, int32_t _height)
 {
+    static_context->width = _width;
+    static_context->height = _height;
+    
     if (static_context->application)
         static_context->application->on_window_size_change(_width, _height);
 }
@@ -500,7 +509,7 @@ void setWindowTitle(const std::string& title) {
 
 void setApplication(Application* app) {
     static_context->application = app;
-    app->on_window_size_change(static_context->defaultWidth, static_context->defaultWidth);
+    app->on_window_size_change(static_context->width, static_context->width);
 }
 
 GLFWwindow* getContextWindow() {
@@ -515,10 +524,8 @@ bool getMouseCaptured() {
     return static_context->getMouseCaptured();
 }
 
-glm::ivec2 getDefaultWindowSize() {
-    int32_t width = static_context->defaultWidth;
-    int32_t height = static_context->defaultHeight;
-    return {width, height};
+glm::vec2 getWindowSize() {
+    return static_context->getScreenSize();
 }
 
 glm::vec2 getCursorPosition() {
