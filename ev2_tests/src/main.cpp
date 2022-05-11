@@ -375,6 +375,7 @@ public:
             auto si = ev2::Physics::get_singleton().raycast_scene(cast);
             if (si) {
                 marker->transform.position = si->point + glm::vec3{0, 3, 0};
+                std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;
             }   
         }
 
