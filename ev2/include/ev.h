@@ -15,9 +15,16 @@
 #include <filesystem>
 #include <map>
 
+#include <reference_counted.h>
+
 #define EV2_CHECK_THROW(expr, message) if(!(expr)) throw ev2::engine_exception{"[" + std::string{__FILE__} + ":" + std::to_string(__LINE__) + "]:" + message}
 
 namespace ev2 {
+
+class Object : public ReferenceCounted<Object> {
+public:
+    virtual ~Object() = default;
+};
 
 class engine_exception : public std::exception {
 public:

@@ -57,7 +57,8 @@ struct Sphere {
 struct Plane {
     glm::vec4 p;
 
-    Plane(const glm::vec4& p) : p{p} {
+    Plane() noexcept = default;
+    Plane(const glm::vec4& p) noexcept : p{p} {
         normalize();
     }
 

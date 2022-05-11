@@ -16,6 +16,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <ev.h>
 #include <reference_counted.h>
 
 namespace ev2 {
@@ -47,7 +48,7 @@ struct Transform {
     }
 };
 
-class Node : public ReferenceCounted<Node> {
+class Node : public Object {
 public:
     Node() = default;
     explicit Node(const std::string& name) : name{name} {}
