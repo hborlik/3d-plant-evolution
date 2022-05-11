@@ -82,6 +82,8 @@ public:
     float cam_x = 0, cam_y = 0;
     float cam_boom_length = 10.0f;
 
+    bool show_material_editor = true;
+
     enum CameraMode : uint8_t {
         FirstPerson = 0,
         Orbital
@@ -98,6 +100,31 @@ public:
         }
     }
 
+    void show_material_editor_window() {
+        ImGui::Begin("Material Editor", &show_material_editor);
+        for (auto& mas : RM->get_materials_locations()) {
+            if (ImGui::CollapsingHeader(("Material " + std::to_string(mas.second.material_id) + " " + mas.first).c_str())) {
+                
+                if (ImGui::TreeNode("Color")) {
+                    ImGui::ColorPicker3("diffuse", glm::value_ptr(mas.second.material->diffuse), ImGuiColorEditFlags_InputRGB);
+                    ImGui::TreePop();
+                }
+                ImGui::DragFloat("metallic", &mas.second.material->metallic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("roughness", &mas.second.material->roughness, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("subsurface", &mas.second.material->subsurface, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("specular", &mas.second.material->specular, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("roughness", &mas.second.material->roughness, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("specularTint", &mas.second.material->specularTint, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("clearcoat", &mas.second.material->clearcoat, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("clearcoatGloss", &mas.second.material->clearcoatGloss, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("anisotropic", &mas.second.material->anisotropic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("sheen", &mas.second.material->sheen, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("sheenTint", &mas.second.material->sheenTint, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+            }
+        }
+        ImGui::End();
+    }
+ 
     void imgui(GLFWwindow * window) {
         glfwPollEvents();
 
@@ -106,9 +133,12 @@ public:
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        if (show_material_editor)
+            show_material_editor_window();
+
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window)
-            //ImGui::ShowDemoWindow(&show_demo_window);
+            ImGui::ShowDemoWindow(&show_demo_window);
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
         {
@@ -204,6 +234,7 @@ public:
         ev2::MID hid = RM->get_model( fs::path("models") / "rungholt" / "house.obj");
         ev2::MID ground = RM->get_model( fs::path("models") / "cube.obj");
         ev2::MID building0 = RM->get_model( fs::path("models") / "low_poly_houses.obj");
+        ev2::MID sphere = RM->get_model( fs::path("models") / "sphere.obj");
 
         marker = scene->create_node<ev2::VisualInstance>("marker");
         marker->set_model(ground);
@@ -232,6 +263,12 @@ public:
         tree_bark.first->diffuse = glm::vec3{0.59,0.44,0.09};
         tree_bark.first->metallic = 0;
         // RM->push_material_changed("bark");
+
+        auto sphere_node = scene->create_node<ev2::VisualInstance>("sphere");
+        sphere_node->transform.position = glm::vec3{50, 1, -30};
+        sphere_node->transform.scale = glm::vec3{0.05, 0.05, 0.05};
+        sphere_node->set_model(sphere);
+        sphere_node->set_material_override(tree_bark.second);
 
         auto ground_material = RM->create_material("ground_mat");
         ground_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
@@ -398,7 +435,7 @@ public:
                 case ev2::input::Key::KeyF:
                     if (down) {
                         camera_type = CameraMode((camera_type + 1) % 2);
-                        scene->set_active_camera(getCameraNode());
+                        getCameraNode()->set_active();
                     }
                     break;
                 case ev2::input::Key::KeyZ:

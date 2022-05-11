@@ -661,7 +661,7 @@ MID ResourceManager::get_model(const std::filesystem::path& filename) {
 std::pair<std::shared_ptr<Material>, int32_t> ResourceManager::create_material(const std::string& name) {
     std::shared_ptr<Material> mat = std::make_shared<Material>(name);
 
-    auto ins = materials.try_emplace(name, MaterialInternal{-1, mat});
+    auto ins = materials.try_emplace(name, MaterialLocation{-1, mat});
     if (ins.second) {
         int32_t id = ins.first->second.update_internal(); // create material in renderer
         return std::make_pair(mat, id);
@@ -683,7 +683,7 @@ void ResourceManager::push_material_changed(const std::string& name) {
         mat.update_internal();
 }
 
-int32_t ResourceManager::MaterialInternal::update_internal() {
+int32_t ResourceManager::MaterialLocation::update_internal() {
     if (material_id == -1)
         material_id = Renderer::get_singleton().create_material(MaterialData::from_material(*material.get()));
     else

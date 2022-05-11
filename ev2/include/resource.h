@@ -88,15 +88,14 @@ public:
 };
 
 class ResourceManager {
-private:
-    struct MaterialInternal {
+public:
+    struct MaterialLocation {
         int32_t update_internal();
 
         int32_t material_id = -1;
         std::shared_ptr<Material> material{};
     };
 
-public:
     explicit ResourceManager(const std::filesystem::path& asset_path) : asset_path{asset_path}, model_lookup{} {}
 
     void pre_render();
@@ -114,8 +113,10 @@ public:
     int32_t get_material_id(const std::string& name);
     void push_material_changed(const std::string& name);
 
+    const auto& get_materials_locations() const {return materials;}
+
 private:
-    MaterialInternal get_material_internal(const std::string& name) {
+    MaterialLocation get_material_internal(const std::string& name) {
         auto itr = materials.find(name);
         if (itr != materials.end()) {
             return itr->second;
@@ -130,7 +131,7 @@ private:
     std::unordered_map<std::string, MID> model_lookup;
     std::unordered_map<MID, std::shared_ptr<Model>> models;
 
-    std::unordered_map<std::string, MaterialInternal> materials;
+    std::unordered_map<std::string, MaterialLocation> materials;
 };
 
 
