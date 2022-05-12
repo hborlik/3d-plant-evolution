@@ -518,9 +518,20 @@ void imgui(GLFWwindow * window) {
                {
                     for (auto it=plantlist.begin(); it!=plantlist.end(); ++it)
                     {
-                        int hitID = std::stoi(si->hit.ref_cast<ev2::Node>()->get_path().substr(si->hit.ref_cast<ev2::Node>()->get_path().length() - 8));
+                        size_t i = 0;
+                        std::string path = si->hit.ref_cast<ev2::Node>()->get_path();
+                        int length = path.length();
+                        for ( i = 0; i < length; i++) 
+                            {
+                             if ( isdigit(path[i])) 
+                                break;
+                            }
+                        std::string subPath = path.substr(i, path.length() - i);
+                        int hitID = std::atoi(subPath.c_str());
                         if (it->ID == hitID) {
-                            std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;  
+                            std::cout << path << std::endl; 
+                            it->selected = true; 
+                            break;
                         }
                     }                   
                } 
