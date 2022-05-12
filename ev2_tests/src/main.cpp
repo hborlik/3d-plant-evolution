@@ -37,6 +37,7 @@ float randomFloatTo(float limit) {
 
 struct Plant {
     bool selected = false;
+    bool parent = false;
     int ID;
     int iterations = 10;
     glm::vec3 position;
@@ -45,6 +46,10 @@ struct Plant {
     Sphere geometry;
     ev2::Ref<TreeNode> tree{};
     ev2::Ref<ev2::Collider> tree_hit_sphere;
+    Plant() 
+    {
+        ID = NULL;
+    }
     Plant(int IDin, glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn, ev2::Ref<ev2::Collider> tree_hit_sphere_In) 
     {
         ID = IDin;
@@ -80,6 +85,9 @@ public:
     ev2::Ref<ev2::CameraNode> cam_first_person{};
 
     std::list<Plant> plantlist;
+    Plant parentAlpha;
+    Plant parentBeta;
+    Plant child;
     //ev2::Ref<TreeNode> tree{};
     ev2::Ref<ev2::Collider> ground_plane;
 
@@ -93,6 +101,7 @@ public:
     glm::vec2 move_input{};
     bool left_mouse_down = false;
     bool right_mouse_down = false;
+    bool placeChild = false;
     float cam_x = 0, cam_y = 0;
     float cam_boom_length = 10.0f;
 
@@ -142,63 +151,6 @@ public:
     void plantWindow(Plant * somePlant) {
 
         std::map<std::string, float> GUIParams = somePlant->tree->getParams();
- /*
-    void imgui(GLFWwindow * window) {
-        glfwPollEvents();
-
-        // Start the Dear ImGui frame
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        if (show_material_editor)
-            show_material_editor_window();
-
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
-
-        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-        {
-            static float fieldA = 0.9f;
-            static float fieldB = 0.9f;
-            static float fieldC = 0.7f;
-            static float fieldDegree = 45.0f;
-            static float fieldDegree2 = 45.0f;
-            static float fieldDegree3 = 135.5f;
-            
-            static int counter = 5;
-            std::map<std::string, float> GUIParams = {
-                    {"R_1", fieldA},
-                    {"R_2", fieldB},
-                    {"a_0", ptree::degToRad(fieldDegree)},
-                    {"a_2", ptree::degToRad(fieldDegree2)},
-                    {"d",   ptree::degToRad(fieldDegree3)},
-                    {"w_r", fieldC}
-                };
-            ImGui::Begin("Stem editor.");                          // Create a window called "Hello, world!" and append into it.
-
-            ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
-            //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            if (ImGui::SliderFloat("float", &fieldA, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("float2", &fieldB, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("float3", &fieldC, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("floatDegree1", &fieldDegree, 1.0f, 360.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("floatDegree2", &fieldDegree2, 1.0f, 360.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
-                ImGui::SliderFloat("floatDegree3", &fieldDegree3, 1.0f, 360.0f)) 
-                {
-                    GUIParams.find("R_1")->second = fieldA;
-                    GUIParams.find("R_2")->second = fieldB;
-                    GUIParams.find("a_0")->second = fieldDegree;
-                    GUIParams.find("a_2")->second = fieldDegree2;
-                    GUIParams.find("d")->second = fieldDegree3;
-                    GUIParams.find("w_r")->second = fieldC;
-                                                            
-                    tree->setParams(GUIParams, counter);
-                };            // Edit 1 float using a slider from 0.0f to 1.0f
-        */
         float fieldA = GUIParams.find("R_1")->second;
         float fieldB = GUIParams.find("R_2")->second;
         float fieldC = GUIParams.find("w_r")->second;
@@ -208,11 +160,35 @@ public:
 
         int counter = somePlant->iterations;
         bool changed = false;
+        
         ImGui::Begin(std::to_string(somePlant->ID).c_str(), &somePlant->selected);                          // Create a window called "Hello, world!" and append into it.
 
         ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
-        //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+        
+        if (ImGui::Checkbox("Make Parent", &somePlant->parent))
+        {
+            if (somePlant->parent)
+            {
+                if (parentAlpha.ID == NULL)
+                {
+                    parentAlpha = *somePlant;
+                } else if (parentBeta.ID == NULL)
+                {
+                    parentBeta = *somePlant;
+                } else
+                {
+                    somePlant->parent = false;
+                }
+            } else if (parentAlpha.ID == somePlant->ID)
+            {
+                parentAlpha.ID = NULL;
+            } else if (parentBeta.ID == somePlant->ID)
+            {
+                parentBeta.ID = NULL;
+            }
+        }
         //ImGui::Checkbox("Breed Plant?", (childa));
+        
 
         if (ImGui::SliderFloat("float", &fieldA, 0.001f, 2.0f))
         {
@@ -342,6 +318,9 @@ void imgui(GLFWwindow * window) {
 
     void initialize() {
         // cube =  supershape.getModel();
+        parentAlpha.ID = NULL;
+        parentBeta.ID = NULL;
+        
 
         auto highlight_material = RM->create_material("highlight");
         highlight_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
@@ -408,7 +387,7 @@ void imgui(GLFWwindow * window) {
         ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
         ground_plane->add_child(g_node);
         ground_plane->transform.position = glm::vec3{0, 0.4, 0};
-        for (int n = 0; n < 200; n++)
+        for (int n = 0; n < 2; n++)
         {
             initRandomPlant(tree_bark);
         }
@@ -473,6 +452,29 @@ void imgui(GLFWwindow * window) {
         ev2::Renderer::get_singleton().set_wireframe(enabled);
     }
 
+    void placePlant(Plant somePlant, glm::vec3 somePos) {
+        int unique_id = (int)randomFloatTo(9999999);
+        std::string unique_hit_tag = std::string("Tree_hit") += std::to_string(unique_id);
+        
+        ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
+        
+        Sphere supershape(1.0f, 20, 20);
+
+        std::map<std::string, float> params = somePlant.tree->getParams();
+        
+        ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
+        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
+        tree_hit_sphere->transform.position = somePos;
+        tree_hit_sphere->add_child(tree);
+
+
+        tree->set_material_override(-1);
+        tree->setParams(params, somePlant.iterations);
+
+        plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
+        placeChild = false;
+    }
+
     void update(float dt, ImGuiIO& io) {
 
         if ((right_mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) {
@@ -523,29 +525,33 @@ void imgui(GLFWwindow * window) {
                 ev2::Ray cast = cam.screen_pos_to_ray(s_pos);
                 auto si = ev2::Physics::get_singleton().raycast_scene(cast);
                 if (si) {
-                std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl; 
-
+                    std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl; 
+                        
                 if (strstr(si->hit.ref_cast<ev2::Node>()->get_path().c_str(), std::string("Tree").c_str()))
                 {
-                        for (auto it=plantlist.begin(); it!=plantlist.end(); ++it)
-                        {
-                            size_t i = 0;
-                            std::string path = si->hit.ref_cast<ev2::Node>()->get_path();
-                            int length = path.length();
-                            for ( i = 0; i < length; i++) 
-                                {
-                                if ( isdigit(path[i])) 
-                                    break;
-                                }
-                            std::string subPath = path.substr(i, path.length() - i);
-                            int hitID = std::atoi(subPath.c_str());
-                            if (it->ID == hitID) {
-                                std::cout << path << std::endl; 
-                                it->selected = true; 
+                    for (auto it=plantlist.begin(); it!=plantlist.end(); ++it)
+                    {
+                        size_t i = 0;
+                        std::string path = si->hit.ref_cast<ev2::Node>()->get_path();
+                        int length = path.length();
+                        for ( i = 0; i < length; i++) 
+                            {
+                            if ( isdigit(path[i])) 
                                 break;
                             }
-                        }                   
-                } 
+                        std::string subPath = path.substr(i, path.length() - i);
+                        int hitID = std::atoi(subPath.c_str());
+                        if (it->ID == hitID) {
+                            std::cout << path << std::endl;
+                            child = *it; 
+                            it->selected = true; 
+                            break;
+                        }
+                    }                   
+                } else if (placeChild == true)
+                    {
+                        placePlant(child, si->point);
+                    } 
                 marker->transform.position = si->point + glm::vec3{0, .25f, 0};
     //                if (si->hit.ref_cast<TreeNode>())
     //                    std::cout << si->hit.ref_cast<TreeNode>()->get_path() << std::endl;
@@ -592,6 +598,13 @@ void imgui(GLFWwindow * window) {
                     break;
                 case ev2::input::Key::KeyD:
                     move_input.x = down ? 1.0f : 0.0f;
+                    break;
+                case ev2::input::Key::Space:
+                    if (child.ID > 0)
+                    {
+                        placeChild = true;
+                    }
+                        
                     break;
                 default:
                     break;
