@@ -19,7 +19,7 @@ class Camera {
 public:
     Frustum extract_frustum() const noexcept {
         using namespace glm;
-        const mat4& comp = composite;
+        const mat4& comp = p_v;
         Frustum f{};
         auto& Left = f.left();
         auto& Right = f.right();
@@ -74,7 +74,7 @@ public:
     void force_update_internal() const {
         using namespace glm;
         view = inverse(translate(identity<glm::mat4>(), position) * mat4_cast(rotation));
-        composite = projection * view;
+        p_v = projection * view;
         dirty = false;
     }
 
@@ -87,6 +87,17 @@ public:
         if (dirty)
             force_update_internal();
         return view;
+    }
+
+    /**
+     * @brief get inverse Projection * View matrix
+     * 
+     * @return glm::mat4 
+     */
+    glm::mat4 inv_pv() const {
+        if (dirty)
+            force_update_internal();
+        return glm::inverse(p_v);
     }
 
     glm::mat4 get_projection() const {return projection;}
@@ -131,14 +142,28 @@ public:
         return glm::mat4_cast(rotation)[0];
     }
 
+    Ray screen_pos_to_ray(glm::vec2 s_pos) const {
+        glm::vec2 s_pos_ndc = 2.f * (s_pos) - glm::vec2{1, 1};
+        s_pos_ndc.y *= -1;
+        glm::mat4 pv_inv = inv_pv();
+        glm::vec4 pos = pv_inv * glm::vec4{s_pos_ndc, -1, 1.0};
+
+        pos.x /= pos.w;
+        pos.y /= pos.w;
+        pos.z /= pos.w;
+
+        glm::vec3 c_pos = get_position();
+        return Ray{c_pos, glm::vec3(pos) - c_pos};
+    }
+
 private:
-    glm::vec3 position;
-    glm::quat rotation;
+    glm::vec3 position{};
+    glm::quat rotation = glm::identity<glm::quat>();
 
-    glm::mat4 projection;
+    glm::mat4 projection = glm::identity<glm::mat4>();
 
-    mutable glm::mat4 view;
-    mutable glm::mat4 composite;
+    mutable glm::mat4 view = glm::identity<glm::mat4>();
+    mutable glm::mat4 p_v = glm::identity<glm::mat4>();
     mutable bool dirty = true;
 };
 

@@ -13,11 +13,15 @@ void VisualInstance::on_ready() {
 }
 
 void VisualInstance::on_process(float delta) {
-    Renderer::get_singleton().set_instance_transform(iid, get_transform());
+    
 }
 
 void VisualInstance::on_destroy() {
     Renderer::get_singleton().destroy_instance(iid);
+}
+
+void VisualInstance::pre_render() {
+    Renderer::get_singleton().set_instance_transform(iid, get_transform());
 }
 
 void VisualInstance::set_model(MID model) {
@@ -35,11 +39,15 @@ void CameraNode::on_ready() {
 }
 
 void CameraNode::on_process(float dt) {
-    update_internal();
+    
 }
 
 void CameraNode::on_destroy() {
     
+}
+
+void CameraNode::pre_render() {
+    update_internal();
 }
 
 void CameraNode::set_active() {
@@ -65,11 +73,15 @@ void DirectionalLightNode::on_ready() {
 }
 
 void DirectionalLightNode::on_process(float delta) {
-    ev2::Renderer::get_singleton().set_light_position(lid, glm::vec3(get_transform()[3]));
+    
 }
 
 void DirectionalLightNode::on_destroy() {
     ev2::Renderer::get_singleton().destroy_light(lid);
+}
+
+void DirectionalLightNode::pre_render() {
+    ev2::Renderer::get_singleton().set_light_position(lid, glm::vec3(get_transform()[3]));
 }
 
 void DirectionalLightNode::set_color(const glm::vec3& color) {

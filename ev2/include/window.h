@@ -29,7 +29,7 @@ GLFWwindow* getContextWindow();
 void setMouseCaptured(bool captured);
 bool getMouseCaptured();
 
-glm::ivec2 getDefaultWindowSize();
+glm::vec2 getWindowSize();
 
 glm::vec2 getCursorPosition();
 double getFrameTime();

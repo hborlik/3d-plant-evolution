@@ -25,6 +25,7 @@
 #include <Sphere.h>
 #include <renderer.h>
 #include <scene.h>
+#include <physics.h>
 #include <visual_nodes.h>
 
 
@@ -71,6 +72,12 @@ public:
     ev2::Ref<ev2::CameraNode> cam_first_person{};
 
     std::list<Plant> plantlist;
+    ev2::Ref<TreeNode> tree{};
+    ev2::Ref<ev2::Collider> tree_hit_sphere;
+    ev2::Ref<ev2::Collider> ground_plane;
+
+    ev2::Ref<ev2::VisualInstance> marker{};
+
     std::shared_ptr<ev2::ResourceManager> RM;
     std::unique_ptr<ev2::Scene> scene;
 
@@ -81,12 +88,14 @@ public:
     float cam_x = 0, cam_y = 0;
     float cam_boom_length = 10.0f;
 
+    bool show_material_editor = true;
+
     enum CameraMode : uint8_t {
         FirstPerson = 0,
         Orbital
     } camera_type = Orbital;
 
-    ev2::Ref<ev2::CameraNode> getActiveCam() {
+    ev2::Ref<ev2::CameraNode> getCameraNode() {
         switch(camera_type) {
             case Orbital:
                 return cam_orbital;
@@ -97,10 +106,91 @@ public:
         }
     }
 
+    void show_material_editor_window() {
+        ImGui::Begin("Material Editor", &show_material_editor);
+        for (auto& mas : RM->get_materials_locations()) {
+            if (ImGui::CollapsingHeader(("Material " + std::to_string(mas.second.material_id) + " " + mas.first).c_str())) {
+                
+                if (ImGui::TreeNode("Color")) {
+                    ImGui::ColorPicker3("diffuse", glm::value_ptr(mas.second.material->diffuse), ImGuiColorEditFlags_InputRGB);
+                    ImGui::TreePop();
+                }
+                ImGui::DragFloat("metallic", &mas.second.material->metallic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("roughness", &mas.second.material->roughness, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("subsurface", &mas.second.material->subsurface, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("specular", &mas.second.material->specular, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("roughness", &mas.second.material->roughness, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("specularTint", &mas.second.material->specularTint, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("clearcoat", &mas.second.material->clearcoat, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("clearcoatGloss", &mas.second.material->clearcoatGloss, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("anisotropic", &mas.second.material->anisotropic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("sheen", &mas.second.material->sheen, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+                ImGui::DragFloat("sheenTint", &mas.second.material->sheenTint, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
+            }
+        }
+        ImGui::End();
+    }
+
     void plantWindow(Plant * somePlant) {
 
         std::map<std::string, float> GUIParams = somePlant->tree->getParams();
-        
+ /*
+    void imgui(GLFWwindow * window) {
+        glfwPollEvents();
+
+        // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        if (show_material_editor)
+            show_material_editor_window();
+
+        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+        if (show_demo_window)
+            ImGui::ShowDemoWindow(&show_demo_window);
+
+        // 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+        {
+            static float fieldA = 0.9f;
+            static float fieldB = 0.9f;
+            static float fieldC = 0.7f;
+            static float fieldDegree = 45.0f;
+            static float fieldDegree2 = 45.0f;
+            static float fieldDegree3 = 135.5f;
+            
+            static int counter = 5;
+            std::map<std::string, float> GUIParams = {
+                    {"R_1", fieldA},
+                    {"R_2", fieldB},
+                    {"a_0", ptree::degToRad(fieldDegree)},
+                    {"a_2", ptree::degToRad(fieldDegree2)},
+                    {"d",   ptree::degToRad(fieldDegree3)},
+                    {"w_r", fieldC}
+                };
+            ImGui::Begin("Stem editor.");                          // Create a window called "Hello, world!" and append into it.
+
+            ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
+            //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+            ImGui::Checkbox("Another Window", &show_another_window);
+
+            if (ImGui::SliderFloat("float", &fieldA, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("float2", &fieldB, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("float3", &fieldC, 0.001f, 2.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("floatDegree1", &fieldDegree, 1.0f, 360.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("floatDegree2", &fieldDegree2, 1.0f, 360.0f) |           // Edit 1 float using a slider from 0.0f to 1.0f
+                ImGui::SliderFloat("floatDegree3", &fieldDegree3, 1.0f, 360.0f)) 
+                {
+                    GUIParams.find("R_1")->second = fieldA;
+                    GUIParams.find("R_2")->second = fieldB;
+                    GUIParams.find("a_0")->second = fieldDegree;
+                    GUIParams.find("a_2")->second = fieldDegree2;
+                    GUIParams.find("d")->second = fieldDegree3;
+                    GUIParams.find("w_r")->second = fieldC;
+                                                            
+                    tree->setParams(GUIParams, counter);
+                };            // Edit 1 float using a slider from 0.0f to 1.0f
+        */
         float fieldA = GUIParams.find("R_1")->second;
         float fieldB = GUIParams.find("R_2")->second;
         float fieldC = GUIParams.find("w_r")->second;
@@ -209,17 +299,31 @@ void imgui(GLFWwindow * window) {
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        //glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-        //glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
 
     void initialize() {
 
+        Sphere supershape(1.0f , 20, 20);
+        // cube =  supershape.getModel();
+
+        auto highlight_material = RM->create_material("highlight");
+        highlight_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
+        highlight_material.first->sheen = 1.0;
+        highlight_material.first->metallic = 0.9;
+
+
         ev2::MID hid = RM->get_model( fs::path("models") / "rungholt" / "house.obj");
         ev2::MID ground = RM->get_model( fs::path("models") / "cube.obj");
         ev2::MID building0 = RM->get_model( fs::path("models") / "low_poly_houses.obj");
+        ev2::MID sphere = RM->get_model( fs::path("models") / "sphere.obj");
+
+        marker = scene->create_node<ev2::VisualInstance>("marker");
+        marker->set_model(ground);
+        marker->transform.scale = glm::vec3{0.5, 0.5, 0.5};
+        marker->transform.position = glm::vec3{0, 5, 0};
+        marker->set_material_override(highlight_material.second);
 
         // ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         // ground_cube->materials[0].shininess = 0.02;
@@ -243,6 +347,12 @@ void imgui(GLFWwindow * window) {
         tree_bark.first->metallic = 0;
         // RM->push_material_changed("bark");
 
+        auto sphere_node = scene->create_node<ev2::VisualInstance>("sphere");
+        sphere_node->transform.position = glm::vec3{50, 1, -30};
+        sphere_node->transform.scale = glm::vec3{0.05, 0.05, 0.05};
+        sphere_node->set_model(sphere);
+        sphere_node->set_material_override(tree_bark.second);
+
         auto ground_material = RM->create_material("ground_mat");
         ground_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
         ground_material.first->sheen = 0.2;
@@ -252,7 +362,6 @@ void imgui(GLFWwindow * window) {
         g_node->set_model(ground);
         g_node->set_material_override(ground_material.second);
         g_node->transform.scale = glm::vec3{1000, 0.1, 1000};
-        g_node->transform.position = glm::vec3{0, 0.4, 0};
 
         cam_orbital      = scene->create_node<ev2::CameraNode>("Orbital");
         cam_orbital_root = scene->create_node<ev2::Node>("cam_orbital_root");
@@ -264,7 +373,19 @@ void imgui(GLFWwindow * window) {
         tree->transform.position = glm::vec3{50, 0, 0};
         tree2->transform.position = glm::vec3{25, 0, 0};
 
+
+        tree = scene->create_node<TreeNode>("Tree");
         tree->set_material_override(tree_bark.second);
+
+        tree_hit_sphere = scene->create_node<ev2::Collider>("Tree_hit");
+        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
+        tree_hit_sphere->transform.position = glm::vec3{50, 0, 0};
+        tree_hit_sphere->add_child(tree);
+
+        ground_plane = scene->create_node<ev2::Collider>("Ground Collider");
+        ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
+        ground_plane->add_child(g_node);
+        ground_plane->transform.position = glm::vec3{0, 0.4, 0};
         
         tree2->set_material_override(tree_bark.second);    
         Sphere supershape(1.0f , 20, 20);
@@ -281,10 +402,16 @@ void imgui(GLFWwindow * window) {
 
 
     int run() {
-        float dt = 0.05f;
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+        // GL ES 2.0 + GLSL 100
+        const char* glsl_version = "#version 100";
+#elif defined(__APPLE__)
+        // GL 3.2 + GLSL 150
+        const char* glsl_version = "#version 150";
+#else
+        // GL 3.0 + GLSL 130
         const char* glsl_version = "#version 130";
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+#endif
 
         GLFWwindow* window = ev2::window::getContextWindow();
         if (window == NULL)
@@ -304,12 +431,16 @@ void imgui(GLFWwindow * window) {
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL3_Init(glsl_version);
 
+        scene->set_active_camera(getCameraNode());
 
+        float dt = 0.05f;
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
             update(dt, io);
+            
+            scene->update_pre_render();
             RM->pre_render();
-            ev2::Renderer::get_singleton().render(getActiveCam()->get_camera());
+            ev2::Renderer::get_singleton().render(scene->get_active_camera()->get_camera());
             imgui(window);
             dt = float(ev2::window::getFrameTime());
         }
@@ -324,8 +455,6 @@ void imgui(GLFWwindow * window) {
     }
 
     void update(float dt, ImGuiIO& io) {
-        // first update scene
-        scene->update(dt);
 
         if ((mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) {
             mouse_delta = ev2::window::getCursorPosition() - mouse_p;
@@ -364,41 +493,62 @@ void imgui(GLFWwindow * window) {
                 cam_right * 1.0f * cam_boom_length * dt * input.x
             ; // camera movement on y plane
         }
+
+        if (scene->get_active_camera()) {
+            const ev2::Camera& cam = scene->get_active_camera()->get_camera();
+            glm::vec2 scr_size = ev2::window::getWindowSize();
+            glm::vec2 s_pos = ev2::window::getCursorPosition() / scr_size;
+            
+            ev2::Ray cast = cam.screen_pos_to_ray(s_pos);
+
+            auto si = ev2::Physics::get_singleton().raycast_scene(cast);
+            if (si) {
+                marker->transform.position = si->point + glm::vec3{0, 3, 0};
+                std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;
+            }   
+        }
+
+        // update scene
+        scene->update(dt);
     }
 
     void onKey(ev2::input::Key::Enum key, ev2::input::Modifier mods, bool down) override {
-        switch (key) {
-            case ev2::input::Key::Tab:
-                if (down)
-                    ev2::window::setMouseCaptured(!ev2::window::getMouseCaptured());
-                break;
-            case ev2::input::Key::KeyP:
-                break;
-            case ev2::input::Key::Esc:
-                break;
-            case ev2::input::Key::KeyF:
-                if (down)
-                    camera_type = CameraMode((camera_type + 1) % 2);
-                break;
-            case ev2::input::Key::KeyZ:
-                if (down)
-                    toggleWireframe();
-                break;
-            case ev2::input::Key::KeyW:
-                move_input.y = down ? 1.0f : 0.0f;
-                break;
-            case ev2::input::Key::KeyS:
-                move_input.y = down ? -1.0f : 0.0f;
-                break;
-            case ev2::input::Key::KeyA:
-                move_input.x = down ? -1.0f : 0.0f;
-                break;
-            case ev2::input::Key::KeyD:
-                move_input.x = down ? 1.0f : 0.0f;
-                break;
-            default:
-                break;
-        }
+        ImGuiIO& io = ImGui::GetIO();
+        if (!io.WantCaptureMouse)
+            switch (key) {
+                case ev2::input::Key::Tab:
+                    if (down)
+                        ev2::window::setMouseCaptured(!ev2::window::getMouseCaptured());
+                    break;
+                case ev2::input::Key::KeyP:
+                    break;
+                case ev2::input::Key::Esc:
+                    break;
+                case ev2::input::Key::KeyF:
+                    if (down) {
+                        camera_type = CameraMode((camera_type + 1) % 2);
+                        getCameraNode()->set_active();
+                    }
+                    break;
+                case ev2::input::Key::KeyZ:
+                    if (down)
+                        toggleWireframe();
+                    break;
+                case ev2::input::Key::KeyW:
+                    move_input.y = down ? 1.0f : 0.0f;
+                    break;
+                case ev2::input::Key::KeyS:
+                    move_input.y = down ? -1.0f : 0.0f;
+                    break;
+                case ev2::input::Key::KeyA:
+                    move_input.x = down ? -1.0f : 0.0f;
+                    break;
+                case ev2::input::Key::KeyD:
+                    move_input.x = down ? 1.0f : 0.0f;
+                    break;
+                default:
+                    break;
+            }
     }
 
     void on_char(uint32_t scancode) override {}
@@ -410,7 +560,9 @@ void imgui(GLFWwindow * window) {
         cam_boom_length = glm::clamp(cam_boom_length - scroll_delta, 0.f, 200.f);
     }
 
-    void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {}
+    void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {
+        
+    }
 
     void on_mouse_button(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos, ev2::input::MouseButton::Enum button, bool down) override {
         mouse_p = ev2::window::getCursorPosition();
@@ -494,6 +646,8 @@ int main(int argc, char *argv[]) {
     ev2::window::setApplication(app.get());
     //initAudio(asset_path);
     app->initialize();
-    return app->run();;
+    int rv = app->run();
+    ev2::EV2_shutdown();
+    return rv;
     //TODO: uninit audio device and decoder.
 }

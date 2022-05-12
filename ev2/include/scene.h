@@ -29,6 +29,8 @@ public:
 
     void update(float dt);
 
+    void update_pre_render();
+
     void add_node(Ref<Node> n, Ref<Node> parent);
 
     template<typename T>
