@@ -388,7 +388,6 @@ void imgui(GLFWwindow * window) {
         ground_plane->transform.position = glm::vec3{0, 0.4, 0};
         
         tree2->set_material_override(tree_bark.second);    
-        Sphere supershape(1.0f , 20, 20);
         //temp->set_material_override(tree_bark.second);
 
         plantlist.push_back((Plant(0, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree)));

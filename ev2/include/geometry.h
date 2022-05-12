@@ -112,7 +112,7 @@ struct Sphere : public Shape {
 struct Plane {
     glm::vec4 p = {0, 1, 0, 0};
 
-    Plane() noexcept = default;
+    Plane() {p = p;};
     Plane(const glm::vec4& p) noexcept : p{p} {
         normalize();
     }
@@ -165,7 +165,7 @@ struct Plane {
 struct PlaneShape : public Shape {
     Plane plane{};
 
-    PlaneShape() noexcept = default;
+    PlaneShape() {};
     PlaneShape(const glm::vec4& p) noexcept : plane{p} {
     }
 
@@ -210,7 +210,7 @@ public:
     const glm::vec3 pMin;
     const glm::vec3 pMax;
 
-    Bounds3() : pMin{-INFINITY}, pMax{INFINITY} {}
+    Bounds3() : pMin{(float)-INFINITY}, pMax{(float)INFINITY} {}
     Bounds3(glm::vec3 pMin, glm::vec3 pMax) : pMin{pMin}, pMax{pMax} {}
 
     glm::vec3 diagonal() const noexcept {return pMax - pMin;}
