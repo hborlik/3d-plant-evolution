@@ -414,7 +414,7 @@ void imgui(GLFWwindow * window) {
         ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
         ground_plane->add_child(g_node);
         ground_plane->transform.position = glm::vec3{0, 0.4, 0};
-        for (int n = 0; n < 5; n++)
+        for (int n = 0; n < 10; n++)
         {
             initRandomPlant(tree_bark);
         }
@@ -520,8 +520,9 @@ void imgui(GLFWwindow * window) {
         tree_hit_sphere->add_child(tree);
 
         tree->thickness = ((parentAlpha.tree->thickness + parentBeta.tree->thickness)/randomFloatRange(1.5f, 2.5f));
-        tree->c0 = ((parentAlpha.tree->c0 + parentBeta.tree->c0)/randomFloatRange(1.5f, 2.5f));
-        tree->c1 = ((parentAlpha.tree->c1 + parentBeta.tree->c1)/randomFloatRange(1.5f, 2.5f));
+
+        tree->c0 = glm::vec3(randomFloatRange(parentAlpha.tree->c0.r, parentBeta.tree->c0.r) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c0.g, parentBeta.tree->c0.g) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c0.b, parentBeta.tree->c0.b) + randomFloatRange(-.2f, .2f));
+        tree->c1 = glm::vec3(randomFloatRange(parentAlpha.tree->c1.r, parentBeta.tree->c1.r) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c1.g, parentBeta.tree->c1.g) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c1.b, parentBeta.tree->c1.b) + randomFloatRange(-.2f, .2f));
         tree->set_material_override(RM->get_material_id("bark"));
         tree->setParams(params, (parentAlpha.iterations + parentBeta.iterations)/2);
 
