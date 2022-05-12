@@ -9,6 +9,7 @@ uniform sampler2D texNoise;
 
 uniform float radius;
 uniform float bias;
+uniform uint nSamples;
 
 layout (std140, binding = 1) uniform Samples {
     vec3 samples[64];
@@ -26,7 +27,7 @@ void main() {
     mat3 TBN       = mat3(tangent, bitangent, normal);
 
     float occlusion = 0.0;
-    for(int i = 0; i < 64; ++i)
+    for(int i = 0; i < nSamples; ++i)
     {
         // get sample position
         vec3 samplePos = TBN * samples[i]; // from tangent to view-space
@@ -41,6 +42,6 @@ void main() {
         float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
         occlusion       += (sampleDepth > samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
     }
-    occlusion = 1.0 - (occlusion / 64);
+    occlusion = 1.0 - (occlusion / nSamples);
     FragColor = occlusion;
 }

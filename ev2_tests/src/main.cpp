@@ -600,7 +600,7 @@ void imgui(GLFWwindow * window) {
                     move_input.x = down ? 1.0f : 0.0f;
                     break;
                 case ev2::input::Key::Space:
-                    if (child.ID > 0)
+                    if (child.ID > 0 && down)
                     {
                         placeChild = true;
                     }

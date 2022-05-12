@@ -152,6 +152,10 @@ public:
 
     void draw_screen_space_triangle();
 
+    float ssao_radius = 0.5f;
+    float ssao_bias = 0.025f;
+    uint32_t ssao_kernel_samples = 32;
+
 private:
     std::unordered_map<MID, std::shared_ptr<Drawable>> models;
     uint32_t next_model_id = 1;
@@ -175,7 +179,7 @@ private:
     int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location;
 
     Program ssao_program;
-    int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias;
+    int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias, ssao_nSamples_loc;
 
     FBO g_buffer;
     FBO ssao_buffer;

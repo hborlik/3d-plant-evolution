@@ -77,8 +77,7 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
         sample  = glm::normalize(sample);
         sample *= randomFloats(generator);
         // bias samples towards the central pixel
-        // float scale = (float)i / 64.0;
-        float scale = glm::length(sample);
+        float scale = (float)i / 32.0;
         scale   = lerp(0.1f, 1.0f, scale * scale);
         sample *= scale;
         ssaoKernel.push_back(sample);
@@ -163,6 +162,7 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     ssao_tex_noise_loc = ssao_program.getUniformInfo("texNoise").Location;
     ssao_radius_loc = ssao_program.getUniformInfo("radius").Location;
     ssao_bias = ssao_program.getUniformInfo("bias").Location;
+    ssao_nSamples_loc = ssao_program.getUniformInfo("nSamples").Location;
 
     // program block inputs
     globals_desc = geometry_program.getUniformBlockInfo("Globals");
@@ -173,7 +173,8 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
 
     ssao_kernel_desc = ssao_program.getUniformBlockInfo("Samples");
     ssao_kernel_buffer.Allocate(ssao_kernel_desc.block_size);
-    ssao_kernel_buffer.CopyData(ssaoKernel);
+    auto tgt_layout = ssao_kernel_desc.getLayout("samples[0]");
+    ssao_kernel_buffer.SubData(ssaoKernel, tgt_layout.Offset, tgt_layout.ArrayStride);
 
     materials = std::vector<MaterialData>(100, MaterialData{});
     
@@ -406,7 +407,7 @@ void Renderer::render(const Camera &camera) {
     geometry_program.unbind();
     g_buffer.unbind();
 
-    glFlush();
+    // glFlush();
 
     // ssao pass
     ssao_program.use();
@@ -437,8 +438,9 @@ void Renderer::render(const Camera &camera) {
         gl::glUniformSampler(2, ssao_tex_noise_loc);
     }
 
-    gl::glUniformf(0.05f, ssao_bias);
-    gl::glUniformf(0.2f, ssao_radius_loc);
+    gl::glUniformf(ssao_bias, ssao_bias);
+    gl::glUniformf(ssao_radius, ssao_radius_loc);
+    gl::glUniformui(ssao_kernel_samples, ssao_nSamples_loc);
 
     ssao_kernel_desc.bind_buffer(ssao_kernel_buffer);
 
@@ -448,7 +450,7 @@ void Renderer::render(const Camera &camera) {
     ssao_buffer.unbind();
 
     // lighting pass
-    glFlush();
+    // glFlush();
 
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
