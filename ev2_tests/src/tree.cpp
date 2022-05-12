@@ -160,6 +160,7 @@ struct P_3 : public MonopodialProduction {
 TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
     buffer_layout.add_attribute(ev2::VertexAttributeType::Vertex)
         .add_attribute(ev2::VertexAttributeType::Normal)
+        .add_attribute(ev2::VertexAttributeType::Color)
         .finalize();
     
     model = std::make_shared<ev2::Drawable>(
@@ -169,6 +170,8 @@ TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
         glm::vec3{}, // TODO
         ev2::gl::CullMode::BACK,
         ev2::gl::FrontFacing::CCW);
+
+    model->vertex_color_weight = 1.0f;
 
     params = monopodial::DefaultParamsA;
 }
@@ -209,15 +212,18 @@ void TreeNode::generate(int iterations) {
         // tree.simple_skeleton(5);
         tree_skeleton = tree.to_skeleton();
 
+        ptree::DefaultColorizer dc{c0, c1, tree.max_joint_depth};
+
         std::vector<ptree::Vertex> vertices;
         std::vector<uint32_t> indices;
-        ptree::Skin_GO(4, tree_skeleton, vertices, indices, true, thickness);
+        ptree::Skin_GO(5, tree_skeleton, vertices, indices, true, thickness, &dc);
 
         std::vector<PNVertex> g_vertices(vertices.size());
         for (int i =0; i < vertices.size(); ++i) {
             auto& sv = vertices[i];
             g_vertices[i].position = sv.pos;
             g_vertices[i].normal = sv.normal;
+            g_vertices[i].color = sv.color;
         }
 
         model->vertex_buffer.buffers[0].CopyData(g_vertices);

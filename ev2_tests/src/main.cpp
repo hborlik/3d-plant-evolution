@@ -200,7 +200,11 @@ public:
             }
         }
         //ImGui::Checkbox("Breed Plant?", (childa));
-        
+        if (ImGui::TreeNode("Color")) {
+            changed |= ImGui::ColorPicker3("diffuse color 0", glm::value_ptr(somePlant->tree->c0), ImGuiColorEditFlags_InputRGB);
+            changed |= ImGui::ColorPicker3("diffuse color 1", glm::value_ptr(somePlant->tree->c1), ImGuiColorEditFlags_InputRGB);
+            ImGui::TreePop();
+        }
 
         if (ImGui::SliderFloat("R_1", &fieldA, 0.001f, 1.0f))
         {
@@ -315,11 +319,11 @@ void imgui(GLFWwindow * window) {
 
         std::map<std::string, float> params = {
             {"R_1", randomFloatRange(.6f, 1.f)},
-            {"R_2", randomFloatRange(0.f, 1.f)},
+            {"R_2", randomFloatRange(.6f, 1.f)},
             {"a_0", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
             {"a_2", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
             {"d",   ptree::degToRad(randomFloatRange(12.5f, 60.f))},
-            {"w_r", randomFloatRange(0.05f, 0.99f)}
+            {"w_r", randomFloatRange(0.6f, 0.89f)}
         };
         
         ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
@@ -328,6 +332,12 @@ void imgui(GLFWwindow * window) {
         tree_hit_sphere->add_child(tree);
         tree->set_material_override(tree_bark.second);
         tree->setParams(params, 10);
+        tree->thickness = randomFloatRange(0.5f, 2.0f);
+
+        tree->c0 = glm::vec3{randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f)};
+        tree->c1 = glm::vec3{randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f)};
+
+        tree->generate(10);
 
         plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
     }
@@ -374,7 +384,7 @@ void imgui(GLFWwindow * window) {
         lh_node->set_model(building0);
 
         auto tree_bark = RM->create_material("bark");
-        tree_bark.first->diffuse = glm::vec3{0.59,0.44,0.09};
+        tree_bark.first->diffuse = glm::vec3{0};
         tree_bark.first->metallic = 0;
         // RM->push_material_changed("bark");
 
@@ -686,10 +696,13 @@ void imgui(GLFWwindow * window) {
     void on_char(uint32_t scancode) override {}
 
     void on_scroll(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {
-        static int32_t scroll_last = scroll_pos;
-        int32_t scroll_delta = scroll_pos - scroll_last;
-        scroll_last = scroll_pos;
-        cam_boom_length = glm::clamp(cam_boom_length - scroll_delta, 0.f, 200.f);
+        auto& io = ImGui::GetIO();
+        if (!io.WantCaptureMouse) {
+            static int32_t scroll_last = scroll_pos;
+            int32_t scroll_delta = scroll_pos - scroll_last;
+            scroll_last = scroll_pos;
+            cam_boom_length = glm::clamp(cam_boom_length - scroll_delta, 0.f, 200.f);
+        }
     }
 
     void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {

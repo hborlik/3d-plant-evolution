@@ -68,6 +68,7 @@ struct Drawable {
     gl::FrontFacing front_facing = gl::FrontFacing::CCW;
 
     int32_t material_offset = 0;
+    float vertex_color_weight = 0.f;
 
     void draw(const Program& prog, int32_t material_override);
 };
@@ -128,6 +129,7 @@ public:
 
     MID create_model(std::shared_ptr<Model> model);
     MID create_model(std::shared_ptr<Drawable> d);
+    void set_model_vertex_color_diffuse_weight(MID mid, float weight);
 
     IID create_model_instance();
     void set_instance_model(IID iid, MID mid);

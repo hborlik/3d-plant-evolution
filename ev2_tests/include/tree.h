@@ -15,6 +15,7 @@
 struct PNVertex {
     glm::vec3 position;
     glm::vec3 normal;
+    glm::vec3 color;
 };
 
 class TreeNode : public ev2::VisualInstance {
@@ -25,9 +26,10 @@ public:
 
     void generate(int iterations);
     void setParams(std::map<std::string, float> params, int iterations);
-    std::map<std::string, float> getParams() {return params;};
+    std::map<std::string, float> getParams() {return params;}
 
     float thickness = 1.0f;
+    glm::vec3 c0, c1;
     ptree::Skeleton tree_skeleton;
     ptree::Tree tree;
     std::map<std::string, float> params;
