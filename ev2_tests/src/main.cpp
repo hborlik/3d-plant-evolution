@@ -620,15 +620,23 @@ void imgui(GLFWwindow * window) {
 
     void onKey(ev2::input::Key::Enum key, ev2::input::Modifier mods, bool down) override {
         ImGuiIO& io = ImGui::GetIO();
-        if (!io.WantCaptureMouse)
+        switch (key) {
+            case ev2::input::Key::Esc:
+                if (down) {
+                    show_settings_editor = true;
+                    show_material_editor = true;
+                }
+                break;
+            default:
+                break;
+        }
+        if (!io.WantCaptureMouse) {
             switch (key) {
                 case ev2::input::Key::Tab:
                     if (down)
                         ev2::window::setMouseCaptured(!ev2::window::getMouseCaptured());
                     break;
                 case ev2::input::Key::KeyP:
-                    break;
-                case ev2::input::Key::Esc:
                     break;
                 case ev2::input::Key::KeyF:
                     if (down) {
@@ -662,6 +670,9 @@ void imgui(GLFWwindow * window) {
                 default:
                     break;
             }
+        } else {
+            move_input = glm::vec2{};
+        }
     }
 
     void on_char(uint32_t scancode) override {}
