@@ -27,6 +27,7 @@ public:
     void setParams(std::map<std::string, float> params, int iterations);
     std::map<std::string, float> getParams() {return params;};
 
+    float thickness = 1.0f;
     ptree::Skeleton tree_skeleton;
     ptree::Tree tree;
     std::map<std::string, float> params;

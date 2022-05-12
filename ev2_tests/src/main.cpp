@@ -35,6 +35,10 @@ float randomFloatTo(float limit) {
     return static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/limit));
 }
 
+float randomFloatRange(float low, float high) {
+    return rand() / static_cast<float>(RAND_MAX) * (high - low) + low;
+}
+
 struct Plant {
     bool selected = false;
     bool parent = false;
@@ -162,9 +166,9 @@ public:
         float fieldA = GUIParams.find("R_1")->second;
         float fieldB = GUIParams.find("R_2")->second;
         float fieldC = GUIParams.find("w_r")->second;
-        float fieldDegree = GUIParams.find("a_0")->second;
-        float fieldDegree2 = GUIParams.find("a_2")->second;
-        float fieldDegree3 = GUIParams.find("d")->second;
+        float fieldDegree = ptree::radToDeg(GUIParams.find("a_0")->second);
+        float fieldDegree2 = ptree::radToDeg(GUIParams.find("a_2")->second);
+        float fieldDegree3 = ptree::radToDeg(GUIParams.find("d")->second);
 
         int counter = somePlant->iterations;
         bool changed = false;
@@ -198,36 +202,40 @@ public:
         //ImGui::Checkbox("Breed Plant?", (childa));
         
 
-        if (ImGui::SliderFloat("float", &fieldA, 0.001f, 2.0f))
+        if (ImGui::SliderFloat("R_1", &fieldA, 0.001f, 1.0f))
         {
             GUIParams.find("R_1")->second = fieldA;
             changed = true;
         } 
-        if (ImGui::SliderFloat("float2", &fieldB, 0.001f, 2.0f))
+        if (ImGui::SliderFloat("R_2", &fieldB, 0.001f, 2.0f))
         {
             GUIParams.find("R_2")->second = fieldB;
             changed = true;
         } 
-        if (ImGui::SliderFloat("float3", &fieldC, 0.001f, 2.0f))
+        if (ImGui::SliderFloat("w_r", &fieldC, 0.001f, 1.0f))
         {
             GUIParams.find("w_r")->second = fieldC;
             changed = true;
         } 
-        if (ImGui::SliderFloat("floatDegree1", &fieldDegree, 1.0f, 360.0f))  
+        if (ImGui::SliderFloat("a_0 (degrees)", &fieldDegree, .5f, 60.0f))  
         {
-            GUIParams.find("a_0")->second = fieldDegree;
+            GUIParams.find("a_0")->second = ptree::degToRad(fieldDegree);
             changed = true;
         } 
-        if (ImGui::SliderFloat("floatDegree2", &fieldDegree2, 1.0f, 360.0f))
+        if (ImGui::SliderFloat("a_2 (degrees)", &fieldDegree2, .5f, 60.0f))
         {
-            GUIParams.find("a_2")->second = fieldDegree2;
+            GUIParams.find("a_2")->second = ptree::degToRad(fieldDegree2);
             changed = true;
         } 
-        if (ImGui::SliderFloat("floatDegree3", &fieldDegree3, 1.0f, 360.0f))
+        if (ImGui::SliderFloat("d (degrees)", &fieldDegree3, 0.5f, 60.0f))
         {
-            GUIParams.find("d")->second = fieldDegree3;
+            GUIParams.find("d")->second = ptree::degToRad(fieldDegree3);
             changed = true;
-        } 
+        }
+        if (ImGui::SliderFloat("thickness", &(somePlant->tree->thickness), 0.2f, 10.0f))
+        {
+            changed = true;
+        }
         if (changed) 
         {                                               
             somePlant->tree->setParams(GUIParams, somePlant->iterations);
@@ -306,12 +314,12 @@ void imgui(GLFWwindow * window) {
         Sphere supershape(1.0f, 20, 20);
 
         std::map<std::string, float> params = {
-            {"R_1", randomFloatTo(1.5)},
-            {"R_2", randomFloatTo(1.5)},
-            {"a_0", ptree::degToRad(randomFloatTo(360))},
-            {"a_2", ptree::degToRad(randomFloatTo(360))},
-            {"d",   ptree::degToRad(randomFloatTo(360))},
-            {"w_r", randomFloatTo(1.5)}
+            {"R_1", randomFloatRange(.6f, 1.f)},
+            {"R_2", randomFloatRange(0.f, 1.f)},
+            {"a_0", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
+            {"a_2", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
+            {"d",   ptree::degToRad(randomFloatRange(12.5f, 60.f))},
+            {"w_r", randomFloatRange(0.05f, 0.99f)}
         };
         
         ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());

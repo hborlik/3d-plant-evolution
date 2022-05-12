@@ -211,7 +211,7 @@ void TreeNode::generate(int iterations) {
 
         std::vector<ptree::Vertex> vertices;
         std::vector<uint32_t> indices;
-        ptree::Skin_GO(4, tree_skeleton, vertices, indices, true);
+        ptree::Skin_GO(4, tree_skeleton, vertices, indices, true, thickness);
 
         std::vector<PNVertex> g_vertices(vertices.size());
         for (int i =0; i < vertices.size(); ++i) {
