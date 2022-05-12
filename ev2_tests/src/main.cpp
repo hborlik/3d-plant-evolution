@@ -491,7 +491,7 @@ void imgui(GLFWwindow * window) {
     }
 
     std::map<std::string, float> crossParams(std::map<std::string, float> paramsA, std::map<std::string, float> paramsB) {
-        float randomGeneWeight = randomFloatTo(1) + 1.f;
+        float randomGeneWeight = randomFloatRange(1.5f, 2.5f);
         std::map<std::string, float> retParams = {
             {"R_1", ((paramsA.find("R_1")->second + paramsB.find("R_1")->second)/randomGeneWeight)},
             {"R_2", ((paramsA.find("R_2")->second + paramsB.find("R_2")->second)/randomGeneWeight)},
@@ -519,8 +519,9 @@ void imgui(GLFWwindow * window) {
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
 
-
-        tree->set_material_override(-1);
+        tree->c0 = ((parentAlpha.tree->c0 + parentBeta.tree->c0)/randomFloatRange(1.5f, 2.5f));
+        tree->c1 = ((parentAlpha.tree->c1 + parentBeta.tree->c1)/randomFloatRange(1.5f, 2.5f));
+        tree->set_material_override(RM->get_material_id("bark"));
         tree->setParams(params, (parentAlpha.iterations + parentBeta.iterations)/2);
 
         plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
@@ -529,6 +530,7 @@ void imgui(GLFWwindow * window) {
 
 
     void placePlant(Plant somePlant, glm::vec3 somePos) {
+        
         int unique_id = (int)randomFloatTo(9999999);
         std::string unique_hit_tag = std::string("Tree_hit") += std::to_string(unique_id);
         
@@ -542,9 +544,10 @@ void imgui(GLFWwindow * window) {
         tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
+        tree->c0 = somePlant.tree->c0;
+        tree->c1 = somePlant.tree->c1;
 
-
-        tree->set_material_override(-1);
+        tree->set_material_override(RM->get_material_id("bark"));
         tree->setParams(params, somePlant.iterations);
 
         plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
