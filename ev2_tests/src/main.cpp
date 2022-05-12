@@ -38,7 +38,7 @@ float randomFloatTo(float limit) {
 struct Plant {
     bool selected = false;
     int ID;
-    int iterations = 5;
+    int iterations = 10;
     glm::vec3 position;
     glm::vec3 color;
     glm::quat rot;
@@ -91,7 +91,8 @@ public:
     glm::vec2 mouse_p{};
     glm::vec2 mouse_delta{};
     glm::vec2 move_input{};
-    bool mouse_down = false;
+    bool left_mouse_down = false;
+    bool right_mouse_down = false;
     float cam_x = 0, cam_y = 0;
     float cam_boom_length = 10.0f;
 
@@ -207,7 +208,7 @@ public:
 
         int counter = somePlant->iterations;
         bool changed = false;
-        ImGui::Begin(std::to_string(somePlant->ID).c_str());                          // Create a window called "Hello, world!" and append into it.
+        ImGui::Begin(std::to_string(somePlant->ID).c_str(), &somePlant->selected);                          // Create a window called "Hello, world!" and append into it.
 
         ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
         //ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
@@ -320,13 +321,21 @@ void imgui(GLFWwindow * window) {
         
         Sphere supershape(1.0f, 20, 20);
 
-        tree->transform.position = glm::vec3{randomFloatTo(50), 0, randomFloatTo(50)};
-
+        std::map<std::string, float> params = {
+            {"R_1", randomFloatTo(1.5)},
+            {"R_2", randomFloatTo(1.5)},
+            {"a_0", ptree::degToRad(randomFloatTo(360))},
+            {"a_2", ptree::degToRad(randomFloatTo(360))},
+            {"d",   ptree::degToRad(randomFloatTo(360))},
+            {"w_r", randomFloatTo(1.5)}
+        };
+        
         ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
         tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
-        tree_hit_sphere->transform.position = tree->transform.position;
+        tree_hit_sphere->transform.position = glm::vec3{randomFloatTo(500) - 250, 0, randomFloatTo(500) - 250};
         tree_hit_sphere->add_child(tree);
         tree->set_material_override(tree_bark.second);
+        tree->setParams(params, 10);
 
         plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
     }
@@ -399,7 +408,7 @@ void imgui(GLFWwindow * window) {
         ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
         ground_plane->add_child(g_node);
         ground_plane->transform.position = glm::vec3{0, 0.4, 0};
-        for (int n = 0; n < 10; n++)
+        for (int n = 0; n < 200; n++)
         {
             initRandomPlant(tree_bark);
         }
@@ -466,7 +475,7 @@ void imgui(GLFWwindow * window) {
 
     void update(float dt, ImGuiIO& io) {
 
-        if ((mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) {
+        if ((right_mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) {
             mouse_delta = ev2::window::getCursorPosition() - mouse_p;
             mouse_p = ev2::window::getCursorPosition();
             cam_x += mouse_delta.x * -.005f;
@@ -509,37 +518,41 @@ void imgui(GLFWwindow * window) {
             glm::vec2 scr_size = ev2::window::getWindowSize();
             glm::vec2 s_pos = ev2::window::getCursorPosition() / scr_size;
             
-            ev2::Ray cast = cam.screen_pos_to_ray(s_pos);
-            auto si = ev2::Physics::get_singleton().raycast_scene(cast);
-            if (si) {
-                //std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl; 
+            if ((left_mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) 
+                {
+                ev2::Ray cast = cam.screen_pos_to_ray(s_pos);
+                auto si = ev2::Physics::get_singleton().raycast_scene(cast);
+                if (si) {
+                std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl; 
 
-               if (strstr(si->hit.ref_cast<ev2::Node>()->get_path().c_str(), std::string("Tree").c_str()))
-               {
-                    for (auto it=plantlist.begin(); it!=plantlist.end(); ++it)
-                    {
-                        size_t i = 0;
-                        std::string path = si->hit.ref_cast<ev2::Node>()->get_path();
-                        int length = path.length();
-                        for ( i = 0; i < length; i++) 
-                            {
-                             if ( isdigit(path[i])) 
+                if (strstr(si->hit.ref_cast<ev2::Node>()->get_path().c_str(), std::string("Tree").c_str()))
+                {
+                        for (auto it=plantlist.begin(); it!=plantlist.end(); ++it)
+                        {
+                            size_t i = 0;
+                            std::string path = si->hit.ref_cast<ev2::Node>()->get_path();
+                            int length = path.length();
+                            for ( i = 0; i < length; i++) 
+                                {
+                                if ( isdigit(path[i])) 
+                                    break;
+                                }
+                            std::string subPath = path.substr(i, path.length() - i);
+                            int hitID = std::atoi(subPath.c_str());
+                            if (it->ID == hitID) {
+                                std::cout << path << std::endl; 
+                                it->selected = true; 
                                 break;
                             }
-                        std::string subPath = path.substr(i, path.length() - i);
-                        int hitID = std::atoi(subPath.c_str());
-                        if (it->ID == hitID) {
-                            std::cout << path << std::endl; 
-                            it->selected = true; 
-                            break;
-                        }
-                    }                   
-               } 
-               marker->transform.position = si->point + glm::vec3{0, 3, 0};
-//                if (si->hit.ref_cast<TreeNode>())
-//                    std::cout << si->hit.ref_cast<TreeNode>()->get_path() << std::endl;
+                        }                   
+                } 
+                marker->transform.position = si->point + glm::vec3{0, .25f, 0};
+    //                if (si->hit.ref_cast<TreeNode>())
+    //                    std::cout << si->hit.ref_cast<TreeNode>()->get_path() << std::endl;
 
-            }   
+                } 
+            }
+  
         }
 
         // update scene
@@ -600,7 +613,10 @@ void imgui(GLFWwindow * window) {
 
     void on_mouse_button(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos, ev2::input::MouseButton::Enum button, bool down) override {
         mouse_p = ev2::window::getCursorPosition();
-        mouse_down = down;
+        if (button == 1)
+            left_mouse_down = down;
+        if (button == 3)
+            right_mouse_down = down;
     }
 
     void on_window_size_change(int32_t width, int32_t height) override {
