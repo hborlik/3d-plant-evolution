@@ -123,6 +123,7 @@ public:
     LID create_directional_light();
     void set_light_position(LID lid, const glm::vec3& position);
     void set_light_color(LID lid, const glm::vec3& color);
+    void set_light_ambient(LID lid, const glm::vec3& color);
     void destroy_light(LID lid);
 
     MID create_model(std::shared_ptr<Model> model);
@@ -171,9 +172,13 @@ private:
     int gp_g_location;
 
     Program directional_lighting_program;
-    int lp_p_location, lp_n_location, lp_as_location, lp_mt_location;
+    int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location;
+
+    Program ssao_program;
+    int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias;
 
     FBO g_buffer;
+    FBO ssao_buffer;
     
     VertexBuffer sst_vb;
 
@@ -182,11 +187,17 @@ private:
     std::shared_ptr<Texture> normals;
     std::shared_ptr<Texture> position;
 
+    std::shared_ptr<Texture> ssao_kernel_noise;
+    std::shared_ptr<Texture> ssao_kernel_color;
+
     Buffer shader_globals;
     ProgramUniformBlockDescription globals_desc;
 
     Buffer lighting_materials;
     ProgramUniformBlockDescription lighting_materials_desc;
+
+    Buffer ssao_kernel_buffer;
+    ProgramUniformBlockDescription ssao_kernel_desc;
 
     uint32_t width, height;
     bool wireframe = false;

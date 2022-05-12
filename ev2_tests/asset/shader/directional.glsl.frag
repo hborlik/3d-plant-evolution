@@ -9,6 +9,7 @@ uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform usampler2D gMaterialTex;
+uniform sampler2D gAO;
 
 uniform vec3 lightDir;
 uniform vec3 lightColor;
@@ -22,6 +23,7 @@ void main() {
     vec3 Albedo = texture(gAlbedoSpec, tex_coord).rgb;
     float Specular = texture(gAlbedoSpec, tex_coord).a;
     uint MaterialId = texture(gMaterialTex, tex_coord).r;
+    float AO = texture(gAO, tex_coord).r;
 
     if (FragPos == vec3(0, 0, 0)) // no rendered geometry
         discard;
@@ -39,12 +41,12 @@ void main() {
 
     vec3 viewDir = normalize(-FragPos);
 
-    vec3 color = lightAmbient * (Albedo + materials[MaterialId].diffuse) + 1.0 * lightColor * BRDF(lightDirV, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
-
+    vec3 color = AO * lightAmbient * (Albedo + materials[MaterialId].diffuse) + 1.0 * lightColor * BRDF(lightDirV, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
     // fake hdr
     color = color / (color + vec3(1.0)); // function asymptote y = 1 (maps to LDR range of [0, 1])
     // gamma
     color = pow(color, vec3(1.0/2.2));
 
     frag_color = vec4(color, 1.0);
+    // frag_color = vec4(AO, AO, AO, 1.0);
 }

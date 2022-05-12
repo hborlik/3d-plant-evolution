@@ -89,7 +89,7 @@ void DirectionalLightNode::set_color(const glm::vec3& color) {
 }
 
 void DirectionalLightNode::set_ambient(const glm::vec3& color) {
-    
+    ev2::Renderer::get_singleton().set_light_ambient(lid, color);
 }
 
 }
