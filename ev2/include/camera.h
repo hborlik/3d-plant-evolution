@@ -7,11 +7,14 @@
 #ifndef EV2_CAMERA_H
 #define EV2_CAMERA_H
 
+#include <array>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <geometry.h>
+
 
 namespace ev2 {
 
@@ -19,6 +22,8 @@ class Camera {
 public:
     Frustum extract_frustum() const noexcept {
         using namespace glm;
+        if (dirty)
+            force_update_internal();
         const mat4& comp = p_v;
         Frustum f{};
         auto& Left = f.left();
@@ -65,6 +70,14 @@ public:
         Far.normalize();
 
         return f;
+    }
+
+    std::array<glm::vec3, 8> extract_frustum_corners() {
+        using namespace glm;
+        if (dirty)
+            force_update_internal();
+            
+        // TODO
     }
 
     /**
