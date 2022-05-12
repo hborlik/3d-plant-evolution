@@ -291,6 +291,9 @@ void imgui(GLFWwindow * window) {
             if (it->selected)
                 plantWindow(&*it);
         }
+
+        if (show_material_editor)
+            show_material_editor_window();
    //ImGui::ShowDemoWindow(&show_demo_window);
 
 
