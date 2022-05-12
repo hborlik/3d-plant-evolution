@@ -133,7 +133,6 @@ public:
                     ImGui::TreePop();
                 }
                 ImGui::DragFloat("metallic", &mas.second.material->metallic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("roughness", &mas.second.material->roughness, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
                 ImGui::DragFloat("subsurface", &mas.second.material->subsurface, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
                 ImGui::DragFloat("specular", &mas.second.material->specular, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
                 ImGui::DragFloat("roughness", &mas.second.material->roughness, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
@@ -344,7 +343,8 @@ void imgui(GLFWwindow * window) {
 
         auto light = scene->create_node<ev2::DirectionalLightNode>("directional_light");
         light->transform.position = glm::vec3{10, 100, 0};
-        light->set_color(glm::vec3{10, 10, 10});
+        light->set_color(glm::vec3{15, 15, 15});
+        light->set_ambient({0.1, 0.1, 0.1});
 
         auto h_node = scene->create_node<ev2::VisualInstance>("house");
         h_node->set_model(hid);

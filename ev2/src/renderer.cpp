@@ -1,5 +1,7 @@
 #include <renderer.h>
 
+#include <random>
+
 namespace ev2 {
 
 void Drawable::draw(const Program& prog, int32_t material_override) {
@@ -48,11 +50,62 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     geometry_program{"Geometry Program"},
     directional_lighting_program{"Lighting Program"},
     g_buffer{gl::FBOTarget::RW},
+    ssao_buffer{gl::FBOTarget::RW},
     sst_vb{VertexBuffer::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     lighting_materials{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
+    ssao_kernel_buffer{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     width{width}, 
     height{height} {
+
+    // precomputed (static) data
+    std::uniform_real_distribution<float> randomFloats(0.0, 1.0); // random floats between [0.0, 1.0]
+    std::default_random_engine generator;
+    std::vector<glm::vec3> ssaoKernel;
+    auto lerp = [](float a, float b, float f) -> float
+    {
+        return a + f * (b - a);
+    };
+
+    for (unsigned int i = 0; i < 64; ++i)
+    {
+        glm::vec3 sample(
+            randomFloats(generator) * 2.0 - 1.0, 
+            randomFloats(generator) * 2.0 - 1.0, 
+            randomFloats(generator)
+        );
+        sample  = glm::normalize(sample);
+        sample *= randomFloats(generator);
+        // bias samples towards the central pixel
+        // float scale = (float)i / 64.0;
+        float scale = glm::length(sample);
+        scale   = lerp(0.1f, 1.0f, scale * scale);
+        sample *= scale;
+        ssaoKernel.push_back(sample);
+    }
+    std::vector<glm::vec3> ssaoNoise;
+    for (unsigned int i = 0; i < 16; i++)
+    {
+        glm::vec3 noise(
+            randomFloats(generator) * 2.0 - 1.0,
+            randomFloats(generator) * 2.0 - 1.0,
+            0.0f); 
+        ssaoNoise.push_back(noise);
+    }
+
+    // ssao tiling noise texture
+    ssao_kernel_noise = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    ssao_kernel_noise->set_data2D(gl::TextureInternalFormat::RGBA16F, 4, 4, gl::PixelFormat::RGB, gl::PixelType::FLOAT, (unsigned char*)ssaoNoise.data());
+    ssao_kernel_noise->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::REPEAT);
+    ssao_kernel_noise->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::REPEAT);
+
+    ssao_kernel_color = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    ssao_kernel_color->set_data2D(gl::TextureInternalFormat::RED, width, height, gl::PixelFormat::RED, gl::PixelType::FLOAT, nullptr);
+
+    ssao_buffer.attach(ssao_kernel_color, gl::FBOAttachment::COLOR0, 0);
+
+    if (!ssao_buffer.check())
+        throw engine_exception{"Framebuffer is not complete"};
 
     // set up FBO textures
     material_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
@@ -98,6 +151,18 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     lp_n_location = directional_lighting_program.getUniformInfo("gNormal").Location;
     lp_as_location = directional_lighting_program.getUniformInfo("gAlbedoSpec").Location;
     lp_mt_location = directional_lighting_program.getUniformInfo("gMaterialTex").Location;
+    lp_gao_location = directional_lighting_program.getUniformInfo("gAO").Location;
+
+
+    ssao_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
+    ssao_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "ssao.glsl.frag", prep);
+    ssao_program.link();
+
+    ssao_p_loc = ssao_program.getUniformInfo("gPosition").Location;
+    ssao_n_loc = ssao_program.getUniformInfo("gNormal").Location;
+    ssao_tex_noise_loc = ssao_program.getUniformInfo("texNoise").Location;
+    ssao_radius_loc = ssao_program.getUniformInfo("radius").Location;
+    ssao_bias = ssao_program.getUniformInfo("bias").Location;
 
     // program block inputs
     globals_desc = geometry_program.getUniformBlockInfo("Globals");
@@ -105,6 +170,10 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
 
     lighting_materials_desc = directional_lighting_program.getUniformBlockInfo("MaterialsInfo");
     lighting_materials.Allocate(lighting_materials_desc.block_size);
+
+    ssao_kernel_desc = ssao_program.getUniformBlockInfo("Samples");
+    ssao_kernel_buffer.Allocate(ssao_kernel_desc.block_size);
+    ssao_kernel_buffer.CopyData(ssaoKernel);
 
     materials = std::vector<MaterialData>(100, MaterialData{});
     
@@ -196,6 +265,22 @@ void Renderer::set_light_color(LID lid, const glm::vec3& color) {
             auto mi = directional_lights.find(lid._v);
             if (mi != directional_lights.end()) {
                 mi->second.color = color;
+            }
+        }
+        break;
+    };
+}
+
+void Renderer::set_light_ambient(LID lid, const glm::vec3& color) {
+    if (!lid.is_valid())
+        return;
+    
+    switch(lid._type) {
+        case LID::Directional:
+        {
+            auto mi = directional_lights.find(lid._v);
+            if (mi != directional_lights.end()) {
+                mi->second.ambient = color;
             }
         }
         break;
@@ -321,7 +406,49 @@ void Renderer::render(const Camera &camera) {
     geometry_program.unbind();
     g_buffer.unbind();
 
-    //glFlush();
+    glFlush();
+
+    // ssao pass
+    ssao_program.use();
+    ssao_buffer.bind();
+
+    glViewport(0, 0, width, height);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glDisable(GL_DEPTH_TEST); // overdraw
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+    if (ssao_p_loc >= 0) {
+        glActiveTexture(GL_TEXTURE0);
+        position->bind();
+        gl::glUniformSampler(0, ssao_p_loc);
+    }
+
+    if (ssao_n_loc >= 0) {
+        glActiveTexture(GL_TEXTURE1);
+        normals->bind();
+        gl::glUniformSampler(1, ssao_n_loc);
+    }
+
+    if (ssao_tex_noise_loc >= 0) {
+        glActiveTexture(GL_TEXTURE2);
+        ssao_kernel_noise->bind();
+        gl::glUniformSampler(2, ssao_tex_noise_loc);
+    }
+
+    gl::glUniformf(0.05f, ssao_bias);
+    gl::glUniformf(0.2f, ssao_radius_loc);
+
+    ssao_kernel_desc.bind_buffer(ssao_kernel_buffer);
+
+    draw_screen_space_triangle();
+
+    ssao_program.unbind();
+    ssao_buffer.unbind();
+
+    // lighting pass
+    glFlush();
 
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -365,6 +492,12 @@ void Renderer::render(const Camera &camera) {
         gl::glUniformSampler(3, lp_mt_location);
     }
 
+    if (lp_gao_location >= 0) {
+        glActiveTexture(GL_TEXTURE4);
+        ssao_kernel_color->bind();
+        gl::glUniformSampler(4, lp_gao_location);
+    }
+
     for (auto& litr : directional_lights) {
         auto& l = litr.second;
         gl::glUniform(glm::normalize(l.direction), directional_lighting_program.getUniformInfo("lightDir").Location);
@@ -387,6 +520,7 @@ void Renderer::set_resolution(uint32_t width, uint32_t height) {
     this->height = height;
 
     g_buffer.resize_all(width, height);
+    ssao_buffer.resize_all(width, height);
 }
 
 void Renderer::draw_screen_space_triangle() {
