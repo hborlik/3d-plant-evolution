@@ -36,7 +36,7 @@ float randomFloatTo(float limit) {
 }
 
 struct Plant {
-    bool selected = true;
+    bool selected = false;
     int ID;
     int iterations = 5;
     glm::vec3 position;
@@ -44,7 +44,15 @@ struct Plant {
     glm::quat rot;
     Sphere geometry;
     ev2::Ref<TreeNode> tree{};
-    Plant(int IDin, glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn) {ID = IDin; position = pos; color = col; geometry = geo; tree = treeIn; 
+    ev2::Ref<ev2::Collider> tree_hit_sphere;
+    Plant(int IDin, glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn, ev2::Ref<ev2::Collider> tree_hit_sphere_In) 
+    {
+        ID = IDin;
+        position = pos;
+        color = col; 
+        geometry = geo; 
+        tree = treeIn; 
+        tree_hit_sphere = tree_hit_sphere_In; 
         rot = glm::quatLookAt(glm::vec3(randomFloatTo(2) - 1, 0, randomFloatTo(2) - 1), glm::vec3{0, 1, 0});
     }
 
@@ -72,8 +80,7 @@ public:
     ev2::Ref<ev2::CameraNode> cam_first_person{};
 
     std::list<Plant> plantlist;
-    ev2::Ref<TreeNode> tree{};
-    ev2::Ref<ev2::Collider> tree_hit_sphere;
+    //ev2::Ref<TreeNode> tree{};
     ev2::Ref<ev2::Collider> ground_plane;
 
     ev2::Ref<ev2::VisualInstance> marker{};
@@ -305,10 +312,26 @@ void imgui(GLFWwindow * window) {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
+    void initRandomPlant(std::pair<std::shared_ptr<ev2::Material>, int32_t> tree_bark) {
+        int unique_id = (int)randomFloatTo(9999999);
+        std::string unique_hit_tag = std::string("Tree_hit") += std::to_string(unique_id);
+        
+        ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
+        
+        Sphere supershape(1.0f, 20, 20);
+
+        tree->transform.position = glm::vec3{randomFloatTo(50), 0, randomFloatTo(50)};
+
+        ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
+        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
+        tree_hit_sphere->transform.position = tree->transform.position;
+        tree_hit_sphere->add_child(tree);
+        tree->set_material_override(tree_bark.second);
+
+        plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
+    }
 
     void initialize() {
-
-        Sphere supershape(1.0f , 20, 20);
         // cube =  supershape.getModel();
 
         auto highlight_material = RM->create_material("highlight");
@@ -371,31 +394,16 @@ void imgui(GLFWwindow * window) {
         cam_first_person = scene->create_node<ev2::CameraNode>("FP");
 
         cam_orbital_root->add_child(cam_orbital);
-        ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
-        ev2::Ref<TreeNode> tree2 = scene->create_node<TreeNode>("Tree2");
-        tree->transform.position = glm::vec3{50, 0, 0};
-        tree2->transform.position = glm::vec3{25, 0, 0};
-
-
-        tree = scene->create_node<TreeNode>("Tree");
-        tree->set_material_override(tree_bark.second);
-
-        tree_hit_sphere = scene->create_node<ev2::Collider>("Tree_hit");
-        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
-        tree_hit_sphere->transform.position = glm::vec3{50, 0, 0};
-        tree_hit_sphere->add_child(tree);
 
         ground_plane = scene->create_node<ev2::Collider>("Ground Collider");
         ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
         ground_plane->add_child(g_node);
         ground_plane->transform.position = glm::vec3{0, 0.4, 0};
-        
-        tree2->set_material_override(tree_bark.second);    
-        //temp->set_material_override(tree_bark.second);
-
-        plantlist.push_back((Plant(0, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree)));
-        plantlist.push_back((Plant(1, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree2)));
-        //temp->set_material_override(tree_bark.second);
+        for (int n = 0; n < 10; n++)
+        {
+            initRandomPlant(tree_bark);
+        }
+       
     }
 
     void updateShape(float dt, Sphere geometry) {
@@ -502,11 +510,24 @@ void imgui(GLFWwindow * window) {
             glm::vec2 s_pos = ev2::window::getCursorPosition() / scr_size;
             
             ev2::Ray cast = cam.screen_pos_to_ray(s_pos);
-
             auto si = ev2::Physics::get_singleton().raycast_scene(cast);
             if (si) {
-                marker->transform.position = si->point + glm::vec3{0, 3, 0};
-                std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;
+                //std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl; 
+
+               if (strstr(si->hit.ref_cast<ev2::Node>()->get_path().c_str(), std::string("Tree").c_str()))
+               {
+                    for (auto it=plantlist.begin(); it!=plantlist.end(); ++it)
+                    {
+                        int hitID = std::stoi(si->hit.ref_cast<ev2::Node>()->get_path().substr(si->hit.ref_cast<ev2::Node>()->get_path().length() - 8));
+                        if (it->ID == hitID) {
+                            std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;  
+                        }
+                    }                   
+               } 
+               marker->transform.position = si->point + glm::vec3{0, 3, 0};
+//                if (si->hit.ref_cast<TreeNode>())
+//                    std::cout << si->hit.ref_cast<TreeNode>()->get_path() << std::endl;
+
             }   
         }
 
