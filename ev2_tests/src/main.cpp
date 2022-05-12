@@ -173,7 +173,7 @@ public:
 
         ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
         
-        if (ImGui::Checkbox("Make Parent", &somePlant->parent))
+        if (ImGui::Checkbox("Make Parent?", &somePlant->parent))
         {
             if (somePlant->parent)
             {
@@ -396,7 +396,7 @@ void imgui(GLFWwindow * window) {
         ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
         ground_plane->add_child(g_node);
         ground_plane->transform.position = glm::vec3{0, 0.4, 0};
-        for (int n = 0; n < 2; n++)
+        for (int n = 0; n < 100; n++)
         {
             initRandomPlant(tree_bark);
         }
@@ -460,6 +460,44 @@ void imgui(GLFWwindow * window) {
         enabled = !enabled;
         ev2::Renderer::get_singleton().set_wireframe(enabled);
     }
+
+    std::map<std::string, float> crossParams(std::map<std::string, float> paramsA, std::map<std::string, float> paramsB) {
+        float randomGeneWeight = randomFloatTo(1) + 1.f;
+        std::map<std::string, float> retParams = {
+            {"R_1", ((paramsA.find("R_1")->second + paramsB.find("R_1")->second)/randomGeneWeight)},
+            {"R_2", ((paramsA.find("R_2")->second + paramsB.find("R_2")->second)/randomGeneWeight)},
+            {"a_0", ((paramsA.find("a_0")->second + paramsB.find("a_0")->second)/randomGeneWeight)},
+            {"a_2", ((paramsA.find("a_2")->second + paramsB.find("a_2")->second)/randomGeneWeight)},
+            {"d",   ((paramsA.find("d")->second + paramsB.find("d")->second)/randomGeneWeight)},
+            {"w_r", ((paramsA.find("w_r")->second + paramsB.find("w_r")->second)/randomGeneWeight)}
+        };
+        return retParams;
+
+    }
+
+    void placeCross(glm::vec3 somePos) {
+        int unique_id = (int)randomFloatTo(9999999);
+        std::string unique_hit_tag = std::string("Tree_hit") += std::to_string(unique_id);
+        
+        ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
+        
+        Sphere supershape(1.0f, 20, 20);
+
+        std::map<std::string, float> params = crossParams(parentAlpha.tree->getParams(), parentBeta.tree->getParams());
+        
+        ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
+        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
+        tree_hit_sphere->transform.position = somePos;
+        tree_hit_sphere->add_child(tree);
+
+
+        tree->set_material_override(-1);
+        tree->setParams(params, (parentAlpha.iterations + parentBeta.iterations)/2);
+
+        plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
+        placeChild = false;
+    }
+
 
     void placePlant(Plant somePlant, glm::vec3 somePos) {
         int unique_id = (int)randomFloatTo(9999999);
@@ -559,7 +597,13 @@ void imgui(GLFWwindow * window) {
                     }                   
                 } else if (placeChild == true)
                     {
-                        placePlant(child, si->point);
+                        if ((parentAlpha.ID != NULL) && (parentAlpha.ID != NULL))
+                        {
+                            placeCross(si->point);
+                        } else
+                        {
+                            placePlant(child, si->point);
+                        }
                     } 
                 marker->transform.position = si->point + glm::vec3{0, .25f, 0};
     //                if (si->hit.ref_cast<TreeNode>())
