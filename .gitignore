@@ -8,3 +8,4 @@ build/*
 testapp/asset/models/*
 DeferBase22/**
 ShadowBase22/*
+ev2_tests/imgui.ini

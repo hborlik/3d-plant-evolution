@@ -35,6 +35,14 @@ float randomFloatTo(float limit) {
     return static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/limit));
 }
 
+
+float randomFloatRange(float a, float b) {
+    float random = ((float) rand()) / (float) RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
+
 struct Plant {
     bool selected = false;
     bool parent = false;
@@ -306,12 +314,12 @@ void imgui(GLFWwindow * window) {
         Sphere supershape(1.0f, 20, 20);
 
         std::map<std::string, float> params = {
-            {"R_1", randomFloatTo(1.5)},
-            {"R_2", randomFloatTo(1.5)},
+            {"R_1", randomFloatRange(0.2f, 1.0f)},
+            {"R_2", randomFloatRange(0.2f, 1.0f)},
             {"a_0", ptree::degToRad(randomFloatTo(360))},
             {"a_2", ptree::degToRad(randomFloatTo(360))},
             {"d",   ptree::degToRad(randomFloatTo(360))},
-            {"w_r", randomFloatTo(1.5)}
+            {"w_r", randomFloatRange(0.2f, 1.0f)}
         };
         
         ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
@@ -461,14 +469,25 @@ void imgui(GLFWwindow * window) {
         ev2::Renderer::get_singleton().set_wireframe(enabled);
     }
 
+    float randomCoinFlip (float a, float b) {
+        srand(time(NULL));
+
+        int r = rand()%2;
+
+        if(r==0)
+            return a;
+        else
+            return b;        
+    }
+
     std::map<std::string, float> crossParams(std::map<std::string, float> paramsA, std::map<std::string, float> paramsB) {
         float randomGeneWeight = randomFloatTo(1) + 1.f;
         std::map<std::string, float> retParams = {
             {"R_1", ((paramsA.find("R_1")->second + paramsB.find("R_1")->second)/randomGeneWeight)},
             {"R_2", ((paramsA.find("R_2")->second + paramsB.find("R_2")->second)/randomGeneWeight)},
-            {"a_0", ((paramsA.find("a_0")->second + paramsB.find("a_0")->second)/randomGeneWeight)},
-            {"a_2", ((paramsA.find("a_2")->second + paramsB.find("a_2")->second)/randomGeneWeight)},
-            {"d",   ((paramsA.find("d")->second + paramsB.find("d")->second)/randomGeneWeight)},
+            {"a_0", (randomCoinFlip(paramsA.find("a_0")->second, paramsB.find("a_0")->second))},
+            {"a_2", (randomCoinFlip(paramsA.find("a_2")->second, paramsB.find("a_2")->second))},
+            {"d",   (randomCoinFlip(paramsA.find("d")->second, paramsB.find("d")->second))},
             {"w_r", ((paramsA.find("w_r")->second + paramsB.find("w_r")->second)/randomGeneWeight)}
         };
         return retParams;
