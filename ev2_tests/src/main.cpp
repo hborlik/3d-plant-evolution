@@ -414,7 +414,7 @@ void imgui(GLFWwindow * window) {
         ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
         ground_plane->add_child(g_node);
         ground_plane->transform.position = glm::vec3{0, 0.4, 0};
-        for (int n = 0; n < 100; n++)
+        for (int n = 0; n < 5; n++)
         {
             initRandomPlant(tree_bark);
         }
@@ -519,6 +519,7 @@ void imgui(GLFWwindow * window) {
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
 
+        tree->thickness = ((parentAlpha.tree->thickness + parentBeta.tree->thickness)/randomFloatRange(1.5f, 2.5f));
         tree->c0 = ((parentAlpha.tree->c0 + parentBeta.tree->c0)/randomFloatRange(1.5f, 2.5f));
         tree->c1 = ((parentAlpha.tree->c1 + parentBeta.tree->c1)/randomFloatRange(1.5f, 2.5f));
         tree->set_material_override(RM->get_material_id("bark"));
@@ -544,9 +545,10 @@ void imgui(GLFWwindow * window) {
         tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
+
+        tree->thickness = somePlant.tree->thickness;
         tree->c0 = somePlant.tree->c0;
         tree->c1 = somePlant.tree->c1;
-
         tree->set_material_override(RM->get_material_id("bark"));
         tree->setParams(params, somePlant.iterations);
 
