@@ -35,12 +35,8 @@ float randomFloatTo(float limit) {
     return static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/limit));
 }
 
-
-float randomFloatRange(float a, float b) {
-    float random = ((float) rand()) / (float) RAND_MAX;
-    float diff = b - a;
-    float r = random * diff;
-    return a + r;
+float randomFloatRange(float low, float high) {
+    return rand() / static_cast<float>(RAND_MAX) * (high - low) + low;
 }
 
 struct Plant {
@@ -170,9 +166,9 @@ public:
         float fieldA = GUIParams.find("R_1")->second;
         float fieldB = GUIParams.find("R_2")->second;
         float fieldC = GUIParams.find("w_r")->second;
-        float fieldDegree = GUIParams.find("a_0")->second;
-        float fieldDegree2 = GUIParams.find("a_2")->second;
-        float fieldDegree3 = GUIParams.find("d")->second;
+        float fieldDegree = ptree::radToDeg(GUIParams.find("a_0")->second);
+        float fieldDegree2 = ptree::radToDeg(GUIParams.find("a_2")->second);
+        float fieldDegree3 = ptree::radToDeg(GUIParams.find("d")->second);
 
         int counter = somePlant->iterations;
         bool changed = false;
@@ -204,38 +200,46 @@ public:
             }
         }
         //ImGui::Checkbox("Breed Plant?", (childa));
-        
+        if (ImGui::TreeNode("Color")) {
+            changed |= ImGui::ColorPicker3("diffuse color 0", glm::value_ptr(somePlant->tree->c0), ImGuiColorEditFlags_InputRGB);
+            changed |= ImGui::ColorPicker3("diffuse color 1", glm::value_ptr(somePlant->tree->c1), ImGuiColorEditFlags_InputRGB);
+            ImGui::TreePop();
+        }
 
-        if (ImGui::SliderFloat("float", &fieldA, 0.001f, 2.0f))
+        if (ImGui::SliderFloat("R_1", &fieldA, 0.001f, 1.0f))
         {
             GUIParams.find("R_1")->second = fieldA;
             changed = true;
         } 
-        if (ImGui::SliderFloat("float2", &fieldB, 0.001f, 2.0f))
+        if (ImGui::SliderFloat("R_2", &fieldB, 0.001f, 2.0f))
         {
             GUIParams.find("R_2")->second = fieldB;
             changed = true;
         } 
-        if (ImGui::SliderFloat("float3", &fieldC, 0.001f, 2.0f))
+        if (ImGui::SliderFloat("w_r", &fieldC, 0.001f, 1.0f))
         {
             GUIParams.find("w_r")->second = fieldC;
             changed = true;
         } 
-        if (ImGui::SliderFloat("floatDegree1", &fieldDegree, 1.0f, 360.0f))  
+        if (ImGui::SliderFloat("a_0 (degrees)", &fieldDegree, .5f, 60.0f))  
         {
-            GUIParams.find("a_0")->second = fieldDegree;
+            GUIParams.find("a_0")->second = ptree::degToRad(fieldDegree);
             changed = true;
         } 
-        if (ImGui::SliderFloat("floatDegree2", &fieldDegree2, 1.0f, 360.0f))
+        if (ImGui::SliderFloat("a_2 (degrees)", &fieldDegree2, .5f, 60.0f))
         {
-            GUIParams.find("a_2")->second = fieldDegree2;
+            GUIParams.find("a_2")->second = ptree::degToRad(fieldDegree2);
             changed = true;
         } 
-        if (ImGui::SliderFloat("floatDegree3", &fieldDegree3, 1.0f, 360.0f))
+        if (ImGui::SliderFloat("d (degrees)", &fieldDegree3, 0.5f, 60.0f))
         {
-            GUIParams.find("d")->second = fieldDegree3;
+            GUIParams.find("d")->second = ptree::degToRad(fieldDegree3);
             changed = true;
-        } 
+        }
+        if (ImGui::SliderFloat("thickness", &(somePlant->tree->thickness), 0.2f, 10.0f))
+        {
+            changed = true;
+        }
         if (changed) 
         {                                               
             somePlant->tree->setParams(GUIParams, somePlant->iterations);
@@ -314,12 +318,12 @@ void imgui(GLFWwindow * window) {
         Sphere supershape(1.0f, 20, 20);
 
         std::map<std::string, float> params = {
-            {"R_1", randomFloatRange(0.2f, 1.0f)},
-            {"R_2", randomFloatRange(0.2f, 1.0f)},
-            {"a_0", ptree::degToRad(randomFloatTo(360))},
-            {"a_2", ptree::degToRad(randomFloatTo(360))},
-            {"d",   ptree::degToRad(randomFloatTo(360))},
-            {"w_r", randomFloatRange(0.2f, 1.0f)}
+            {"R_1", randomFloatRange(.6f, 1.f)},
+            {"R_2", randomFloatRange(.6f, 1.f)},
+            {"a_0", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
+            {"a_2", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
+            {"d",   ptree::degToRad(randomFloatRange(12.5f, 60.f))},
+            {"w_r", randomFloatRange(0.6f, 0.89f)}
         };
         
         ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
@@ -328,6 +332,12 @@ void imgui(GLFWwindow * window) {
         tree_hit_sphere->add_child(tree);
         tree->set_material_override(tree_bark.second);
         tree->setParams(params, 10);
+        tree->thickness = randomFloatRange(0.5f, 2.0f);
+
+        tree->c0 = glm::vec3{randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f)};
+        tree->c1 = glm::vec3{randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f)};
+
+        tree->generate(10);
 
         plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
     }
@@ -374,7 +384,7 @@ void imgui(GLFWwindow * window) {
         lh_node->set_model(building0);
 
         auto tree_bark = RM->create_material("bark");
-        tree_bark.first->diffuse = glm::vec3{0.59,0.44,0.09};
+        tree_bark.first->diffuse = glm::vec3{0};
         tree_bark.first->metallic = 0;
         // RM->push_material_changed("bark");
 
@@ -639,15 +649,23 @@ void imgui(GLFWwindow * window) {
 
     void onKey(ev2::input::Key::Enum key, ev2::input::Modifier mods, bool down) override {
         ImGuiIO& io = ImGui::GetIO();
-        if (!io.WantCaptureMouse)
+        switch (key) {
+            case ev2::input::Key::Esc:
+                if (down) {
+                    show_settings_editor = true;
+                    show_material_editor = true;
+                }
+                break;
+            default:
+                break;
+        }
+        if (!io.WantCaptureMouse) {
             switch (key) {
                 case ev2::input::Key::Tab:
                     if (down)
                         ev2::window::setMouseCaptured(!ev2::window::getMouseCaptured());
                     break;
                 case ev2::input::Key::KeyP:
-                    break;
-                case ev2::input::Key::Esc:
                     break;
                 case ev2::input::Key::KeyF:
                     if (down) {
@@ -681,15 +699,21 @@ void imgui(GLFWwindow * window) {
                 default:
                     break;
             }
+        } else {
+            move_input = glm::vec2{};
+        }
     }
 
     void on_char(uint32_t scancode) override {}
 
     void on_scroll(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {
-        static int32_t scroll_last = scroll_pos;
-        int32_t scroll_delta = scroll_pos - scroll_last;
-        scroll_last = scroll_pos;
-        cam_boom_length = glm::clamp(cam_boom_length - scroll_delta, 0.f, 200.f);
+        auto& io = ImGui::GetIO();
+        if (!io.WantCaptureMouse) {
+            static int32_t scroll_last = scroll_pos;
+            int32_t scroll_delta = scroll_pos - scroll_last;
+            scroll_last = scroll_pos;
+            cam_boom_length = glm::clamp(cam_boom_length - scroll_delta, 0.f, 200.f);
+        }
     }
 
     void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {

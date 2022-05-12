@@ -11,11 +11,12 @@ in vec3 vert_color;
 in vec2 tex_coord;
 
 uniform uint materialId;
+uniform float vertex_color_weight;
 
 void main() {
     gPosition = frag_pos;
     gNormal = normalize(vert_normal);
-    gAlbedoSpec.rgb = vec3(0);
+    gAlbedoSpec.rgb = vert_color * vertex_color_weight;
     gAlbedoSpec.a = 0;
     gMaterialTex = materialId;
 }

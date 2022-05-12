@@ -25,6 +25,11 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
                 GL_CHECKED_CALL(glUniform1ui(loc, material_override > -1 ? material_override : m.material_id + material_offset));
             }
 
+            loc = prog.getUniformInfo("vertex_color_weight").Location;
+            if (loc != -1) {
+                GL_CHECKED_CALL(glUniform1f(loc, vertex_color_weight));
+            }
+
             vertex_buffer.buffers[vertex_buffer.get_indexed()].Bind(); // bind index buffer (again, @Windows)
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
@@ -36,6 +41,11 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
             int loc = prog.getUniformInfo("materialId").Location;
             if (loc != -1) {
                 GL_CHECKED_CALL(glUniform1ui(loc, material_override > -1 ? material_override : m.material_id + material_offset));
+            }
+
+            loc = prog.getUniformInfo("vertex_color_weight").Location;
+            if (loc != -1) {
+                GL_CHECKED_CALL(glUniform1f(loc, vertex_color_weight));
             }
 
             glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
@@ -320,6 +330,15 @@ MID Renderer::create_model(std::shared_ptr<Drawable> d) {
     MID nmid = {next_model_id++};
     models.insert_or_assign(nmid, d);
     return nmid;
+}
+
+void Renderer::set_model_vertex_color_diffuse_weight(MID mid, float weight) {
+    if (!mid.is_valid())
+        return;
+    auto model = models.find(mid);
+    if (model != models.end()) {
+        model->second->vertex_color_weight = weight;
+    }
 }
 
 IID Renderer::create_model_instance() {
