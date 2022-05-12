@@ -246,8 +246,8 @@ public:
 
         auto light = scene->create_node<ev2::DirectionalLightNode>("directional_light");
         light->transform.position = glm::vec3{10, 100, 0};
-        light->set_color(glm::vec3{10, 10, 10});
-        light->set_ambient({0.2, 0.2, 0.2});
+        light->set_color(glm::vec3{15, 15, 15});
+        light->set_ambient({0.1, 0.1, 0.1});
 
         auto h_node = scene->create_node<ev2::VisualInstance>("house");
         h_node->set_model(hid);

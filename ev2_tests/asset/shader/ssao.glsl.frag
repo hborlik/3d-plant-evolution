@@ -21,8 +21,7 @@ void main() {
 
     vec3 randomVec = texture(texNoise, tex_coord * noiseScale).xyz;
 
-    vec3 tangent   = normalize(randomVec - normal * dot(randomVec, normal));
-    // vec3 tangent   = normalize(randomVec);
+    vec3 tangent   = normalize(randomVec - normal * dot(randomVec, normal)); // take perpendicular part of random vec
     vec3 bitangent = cross(normal, tangent);
     mat3 TBN       = mat3(tangent, bitangent, normal);
 

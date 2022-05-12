@@ -104,6 +104,9 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
 
     ssao_buffer.attach(ssao_kernel_color, gl::FBOAttachment::COLOR0, 0);
 
+    if (!ssao_buffer.check())
+        throw engine_exception{"Framebuffer is not complete"};
+
     // set up FBO textures
     material_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     material_tex->set_data2D(gl::TextureInternalFormat::R8UI, width, height, gl::PixelFormat::RED_INTEGER, gl::PixelType::UNSIGNED_BYTE, nullptr);
@@ -434,8 +437,8 @@ void Renderer::render(const Camera &camera) {
         gl::glUniformSampler(2, ssao_tex_noise_loc);
     }
 
-    gl::glUniformf(0.025f, ssao_bias);
-    gl::glUniformf(1.f, ssao_radius_loc);
+    gl::glUniformf(0.05f, ssao_bias);
+    gl::glUniformf(0.2f, ssao_radius_loc);
 
     ssao_kernel_desc.bind_buffer(ssao_kernel_buffer);
 
