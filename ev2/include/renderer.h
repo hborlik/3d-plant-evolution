@@ -179,7 +179,7 @@ private:
     int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location;
 
     Program ssao_program;
-    int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias, ssao_nSamples_loc;
+    int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
 
     FBO g_buffer;
     FBO ssao_buffer;

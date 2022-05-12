@@ -106,6 +106,7 @@ public:
     float cam_boom_length = 10.0f;
 
     bool show_material_editor = true;
+    bool show_settings_editor = true;
 
     enum CameraMode : uint8_t {
         FirstPerson = 0,
@@ -144,6 +145,14 @@ public:
                 ImGui::DragFloat("sheenTint", &mas.second.material->sheenTint, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
             }
         }
+        ImGui::End();
+    }
+
+    void show_settings_editor_window() {
+        ImGui::Begin("Settings", &show_settings_editor);
+        ImGui::Text("Application %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::DragFloat("ssao radius", &(ev2::Renderer::get_singleton().ssao_radius), 0.01f, 0.0f, 3.0f, "%.3f", 1.0f);
+        ImGui::DragInt("ssao samples", (int32_t*)&(ev2::Renderer::get_singleton().ssao_kernel_samples), 1, 1, 64);
         ImGui::End();
     }
 
@@ -240,8 +249,6 @@ public:
             somePlant->tree->setParams(GUIParams, somePlant->iterations);
         }
         ImGui::Text("P = %d", somePlant->iterations);
-
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();
     
 
@@ -277,6 +284,8 @@ void imgui(GLFWwindow * window) {
 
         if (show_material_editor)
             show_material_editor_window();
+        if (show_settings_editor)
+            show_settings_editor_window();
    //ImGui::ShowDemoWindow(&show_demo_window);
 
 

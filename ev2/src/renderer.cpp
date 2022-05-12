@@ -161,7 +161,7 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     ssao_n_loc = ssao_program.getUniformInfo("gNormal").Location;
     ssao_tex_noise_loc = ssao_program.getUniformInfo("texNoise").Location;
     ssao_radius_loc = ssao_program.getUniformInfo("radius").Location;
-    ssao_bias = ssao_program.getUniformInfo("bias").Location;
+    ssao_bias_loc = ssao_program.getUniformInfo("bias").Location;
     ssao_nSamples_loc = ssao_program.getUniformInfo("nSamples").Location;
 
     // program block inputs
@@ -438,7 +438,7 @@ void Renderer::render(const Camera &camera) {
         gl::glUniformSampler(2, ssao_tex_noise_loc);
     }
 
-    gl::glUniformf(ssao_bias, ssao_bias);
+    gl::glUniformf(ssao_bias, ssao_bias_loc);
     gl::glUniformf(ssao_radius, ssao_radius_loc);
     gl::glUniformui(ssao_kernel_samples, ssao_nSamples_loc);
 
