@@ -3,8 +3,6 @@
 
 out vec4 frag_color;
 
-in vec2 tex_coord;
-
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
@@ -16,6 +14,8 @@ uniform vec3 lightColor;
 // BRDF shader interface
 
 void main() {
+    const vec2 tex_coord = gl_FragCoord.xy / textureSize(gPosition, 0);
+
     vec3 FragPos = texture(gPosition, tex_coord).rgb;
     vec3 Normal = texture(gNormal, tex_coord).rgb;
     vec3 Albedo = texture(gAlbedoSpec, tex_coord).rgb;
@@ -32,17 +32,17 @@ void main() {
 
     const vec3 vLightPos = vec3(View * vec4(lightPos, 1.0f)); 
     float lD = length(vLightPos - FragPos);
-    vec3 lightDirV = normalize(vLightPos - FragPos);
+    vec3 lightDir = normalize(vLightPos - FragPos);
     float attenuation = 1.0 / (0.9 * lD + 0.1 * lD*lD);
 
     vec3 viewDir = normalize(-FragPos);
 
-    vec3 color = attenuation * lightColor * BRDF(lightDirV, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
-
+    vec3 color = attenuation * lightColor * BRDF(lightDir, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
     // fake hdr
     color = color / (color + vec3(1.0)); // function asymptote y = 1 (maps to LDR range of [0, 1])
     // gamma
     color = pow(color, vec3(1.0/2.2));
 
     frag_color = vec4(color, 1.0);
+    // frag_color = vec4(1.0, 0.0, 0.0, 1.0);
 }

@@ -132,6 +132,19 @@ struct Mesh {
     int32_t material_id;
 };
 
+class Model {
+public:
+    Model(std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
+        meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
+    
+    std::vector<Mesh>       meshes;
+    std::vector<float>      buffer;
+
+    glm::vec3 bmin, bmax;
+
+    VertexFormat bufferFormat;
+};
+
 }
 
 #endif // EV2_MESH_H

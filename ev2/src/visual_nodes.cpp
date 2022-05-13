@@ -92,4 +92,30 @@ void DirectionalLightNode::set_ambient(const glm::vec3& color) {
     ev2::Renderer::get_singleton().set_light_ambient(lid, color);
 }
 
+// point
+
+void PointLightNode::on_init() {
+    lid = ev2::Renderer::get_singleton().create_point_light();
+}
+
+void PointLightNode::on_ready() {
+
+}
+
+void PointLightNode::on_process(float delta) {
+    
+}
+
+void PointLightNode::on_destroy() {
+    ev2::Renderer::get_singleton().destroy_light(lid);
+}
+
+void PointLightNode::pre_render() {
+    ev2::Renderer::get_singleton().set_light_position(lid, glm::vec3(get_transform()[3]));
+}
+
+void PointLightNode::set_color(const glm::vec3& color) {
+    ev2::Renderer::get_singleton().set_light_color(lid, color);
+}
+
 }

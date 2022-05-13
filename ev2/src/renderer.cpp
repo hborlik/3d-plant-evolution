@@ -163,6 +163,19 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     lp_gao_location = directional_lighting_program.getUniformInfo("gAO").Location;
 
 
+    point_lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "point_lighting.glsl.vert", prep);
+    point_lighting_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "point_lighting.glsl.frag", prep);
+    point_lighting_program.link();
+
+    plp_p_location = point_lighting_program.getUniformInfo("gPosition").Location;
+    plp_n_location = point_lighting_program.getUniformInfo("gNormal").Location;
+    plp_as_location = point_lighting_program.getUniformInfo("gAlbedoSpec").Location;
+    plp_mt_location = point_lighting_program.getUniformInfo("gMaterialTex").Location;
+    plp_m_location = point_lighting_program.getUniformInfo("M").Location;
+    plp_light_p_location = point_lighting_program.getUniformInfo("lightPos").Location;
+    plp_light_c_location = point_lighting_program.getUniformInfo("lightColor").Location;
+
+
     ssao_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
     ssao_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "ssao.glsl.frag", prep);
     ssao_program.link();
@@ -193,6 +206,11 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
         update_material(i, m);
     }
 
+    // light geometry
+    point_light_geometry_id = create_model(loadObj("sphere.obj", asset_path / "models", nullptr));
+    auto itr = models.find(point_light_geometry_id);
+    point_light_drawable = itr->second.get();
+    point_light_drawable->front_facing = gl::FrontFacing::CW; // render back facing only
 }
 
 void Renderer::update_material(int32_t material_id, const MaterialData& material) {
@@ -220,7 +238,7 @@ int32_t Renderer::create_material(const MaterialData& material) {
         return -1;
 }
 
-LID Renderer::create_light() {
+LID Renderer::create_point_light() {
     uint32_t nlid = next_light_id++;
     Light l{};
     point_lights.insert_or_assign(nlid, l);
@@ -243,7 +261,7 @@ void Renderer::set_light_position(LID lid, const glm::vec3& position) {
         {
             auto mi = point_lights.find(lid._v);
             if (mi != point_lights.end()) {
-                mi->second.color = position;
+                mi->second.position = position;
             }
         }
         break;
@@ -528,8 +546,41 @@ void Renderer::render(const Camera &camera) {
         draw_screen_space_triangle();
     }
 
-
     directional_lighting_program.unbind();
+
+    // pointlight pass
+    point_lighting_program.use();
+
+    if (plp_n_location >= 0) {
+        glActiveTexture(GL_TEXTURE1);
+        normals->bind();
+        gl::glUniformSampler(1, plp_n_location);
+    }
+
+    if (plp_as_location >= 0) {
+        glActiveTexture(GL_TEXTURE2);
+        albedo_spec->bind();
+        gl::glUniformSampler(2, plp_as_location);
+    }
+
+    if (plp_mt_location >= 0) {
+        glActiveTexture(GL_TEXTURE3);
+        material_tex->bind();
+        gl::glUniformSampler(3, plp_mt_location);
+    }
+
+    for (auto& litr : point_lights) {
+        auto& l = litr.second;
+        glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), l.position) * glm::scale(glm::identity<glm::mat4>(), glm::vec3{0.5, 0.5, 0.5});
+
+        ev2::gl::glUniform(tr, plp_m_location);
+        ev2::gl::glUniform(l.color, plp_light_c_location);
+        ev2::gl::glUniform(l.position, plp_light_p_location);
+
+        point_light_drawable->draw(point_lighting_program);
+    }
+
+    point_lighting_program.unbind();
 }
 
 void Renderer::set_wireframe(bool enable) {

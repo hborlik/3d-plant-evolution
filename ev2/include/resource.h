@@ -74,19 +74,6 @@ struct Material {
     Material(std::string name) : name{std::move(name)} {}
 };
 
-class Model {
-public:
-    Model(std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
-        meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
-    
-    std::vector<Mesh>       meshes;
-    std::vector<float>      buffer;
-
-    glm::vec3 bmin, bmax;
-
-    VertexFormat bufferFormat;
-};
-
 class ResourceManager {
 public:
     struct MaterialLocation {
@@ -134,7 +121,7 @@ private:
     std::unordered_map<std::string, MaterialLocation> materials;
 };
 
-
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm);
 
 }
 

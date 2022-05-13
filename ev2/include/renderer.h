@@ -70,7 +70,7 @@ struct Drawable {
     int32_t material_offset = 0;
     float vertex_color_weight = 0.f;
 
-    void draw(const Program& prog, int32_t material_override);
+    void draw(const Program& prog, int32_t material_override = -1);
 };
 
 /**
@@ -120,7 +120,7 @@ public:
     void update_material(int32_t material_id, const MaterialData& material);
     int32_t create_material(const MaterialData& material);
 
-    LID create_light();
+    LID create_point_light();
     LID create_directional_light();
     void set_light_position(LID lid, const glm::vec3& position);
     void set_light_color(LID lid, const glm::vec3& color);
@@ -180,6 +180,9 @@ private:
     Program directional_lighting_program;
     int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location;
 
+    Program point_lighting_program;
+    int plp_p_location, plp_n_location, plp_as_location, plp_mt_location, plp_m_location, plp_light_p_location, plp_light_c_location;
+
     Program ssao_program;
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
 
@@ -208,6 +211,8 @@ private:
     uint32_t width, height;
     bool wireframe = false;
 
+    MID point_light_geometry_id;
+    Drawable* point_light_drawable;
 };
 
 }

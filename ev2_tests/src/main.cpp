@@ -368,10 +368,14 @@ void imgui(GLFWwindow * window) {
         // ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         // ground_cube->materials[0].shininess = 0.02;
 
-        auto light = scene->create_node<ev2::DirectionalLightNode>("directional_light");
-        light->transform.position = glm::vec3{10, 100, 0};
+        auto dlight = scene->create_node<ev2::DirectionalLightNode>("directional_light");
+        dlight->transform.position = glm::vec3{10, 100, 0};
+        dlight->set_color(glm::vec3{5, 5, 5});
+        dlight->set_ambient({0.1, 0.1, 0.1});
+
+        auto light = scene->create_node<ev2::PointLightNode>("point_light");
+        light->transform.position = glm::vec3{0, 20, 0};
         light->set_color(glm::vec3{15, 15, 15});
-        light->set_ambient({0.1, 0.1, 0.1});
 
         auto h_node = scene->create_node<ev2::VisualInstance>("house");
         h_node->set_model(hid);
