@@ -11,6 +11,7 @@
 
 #include <buffer.h>
 #include <shader.h>
+#include <transform.h>
 
 namespace ev2 {
 

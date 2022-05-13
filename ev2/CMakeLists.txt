@@ -26,6 +26,7 @@ target_link_libraries(ev2 PUBLIC glm)
 target_link_libraries(ev2 PUBLIC glad)
 target_link_libraries(ev2 PUBLIC glfw3)
 target_link_libraries(ev2 PRIVATE tinyobjloader)
+target_link_libraries(ev2 PRIVATE tinygltfloader)
 
 target_include_directories(ev2 PUBLIC ${OPENGL_INCLUDE_DIRS})
 target_link_libraries(ev2 PUBLIC ${OPENGL_LIBRARY})

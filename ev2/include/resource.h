@@ -12,6 +12,7 @@
 #include <glm/glm.hpp>
 
 #include <mesh.h>
+#include <texture.h>
 
 namespace ev2 {
 
@@ -122,6 +123,8 @@ private:
 };
 
 std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm);
+
+std::unique_ptr<Texture> load_texture2D(const std::filesystem::path& filename);
 
 }
 

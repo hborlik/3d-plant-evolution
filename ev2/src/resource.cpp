@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 #include <tiny_obj_loader.h>
+#include <stb_image.h>
 
 #include <buffer.h>
 #include <renderer.h>
@@ -756,6 +757,43 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
 
     }
     return {};
+}
+
+std::unique_ptr<Texture> load_texture2D(const std::filesystem::path& filename) {
+    std::unique_ptr<Texture> out;
+    bool error = false;
+    if(!filename.empty()) {
+        std::string file = filename.generic_string();
+        int width, height, nrChannels;
+        unsigned char *image = stbi_load(file.c_str(), &width, &height, &nrChannels, 0);
+        if(image) {
+            std::cout << "Loaded texture data: " << file << ", w = " << width
+                << ", h = " << height << ", channels = " << nrChannels << std::endl;
+
+            out = std::make_unique<Texture>(gl::TextureType::TEXTURE_2D);
+            if(nrChannels == 1) {
+                out->set_data2D(gl::TextureInternalFormat::RED, width, height, gl::PixelFormat::RED, gl::PixelType::UNSIGNED_BYTE, image);
+            } else if(nrChannels == 2) { // rg
+                out->set_data2D(gl::TextureInternalFormat::RG, width, height, gl::PixelFormat::RG, gl::PixelType::UNSIGNED_BYTE, image); 
+            } else if(nrChannels == 3) { // rgb
+                out->set_data2D(gl::TextureInternalFormat::RGB, width, height, gl::PixelFormat::RGB, gl::PixelType::UNSIGNED_BYTE, image);
+            } else if(nrChannels == 4) { // rgba
+                out->set_data2D(gl::TextureInternalFormat::RGBA, width, height, gl::PixelFormat::RGBA, gl::PixelType::UNSIGNED_BYTE, image);
+            } else {
+                error = true;
+                std::cerr << "unable to load unsupported texture format. " + file + " Channels:" + std::to_string(nrChannels) << std::endl;
+            }
+            stbi_image_free(image);
+            
+            out->generate_mips();
+        } else {
+            std::cerr << "Unable to load texture: " + file << std::endl;
+            error = true;
+        }
+    } else
+        error = true;
+    
+    return out;
 }
 
 } // namespace ev2

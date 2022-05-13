@@ -5,7 +5,7 @@
  * 
  */
 #ifndef EV2_TEXTURE_H
-#define EV2_TESTURE_H
+#define EV2_TEXTURE_H
 
 #include <string>
 #include <unordered_map>
