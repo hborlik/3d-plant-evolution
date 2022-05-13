@@ -231,7 +231,7 @@ public:
             GUIParams.find("a_2")->second = ptree::degToRad(fieldDegree2);
             changed = true;
         } 
-        if (ImGui::SliderFloat("d (degrees)", &fieldDegree3, 0.5f, 60.0f))
+        if (ImGui::SliderFloat("d (degrees)", &fieldDegree3, 0.f, 360.0f))
         {
             GUIParams.find("d")->second = ptree::degToRad(fieldDegree3);
             changed = true;
@@ -322,7 +322,7 @@ void imgui(GLFWwindow * window) {
             {"R_2", randomFloatRange(.6f, 1.f)},
             {"a_0", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
             {"a_2", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
-            {"d",   ptree::degToRad(randomFloatRange(12.5f, 60.f))},
+            {"d",   ptree::degToRad(randomFloatRange(.0f, 360.f))},
             {"w_r", randomFloatRange(0.6f, 0.89f)}
         };
         
