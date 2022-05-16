@@ -226,8 +226,8 @@ void TreeNode::generate(int iterations) {
             g_vertices[i].color = sv.color;
         }
 
-        model->vertex_buffer.buffers[0].CopyData(g_vertices);
-        model->vertex_buffer.buffers[model->vertex_buffer.get_indexed()].CopyData(indices);
+        model->vertex_buffer.get_buffer(0).CopyData(g_vertices);
+        model->vertex_buffer.get_buffer(model->vertex_buffer.get_indexed()).CopyData(indices);
 
         model->meshes.clear();
         model->meshes.push_back(ev2::Mesh{0, indices.size(), 2});

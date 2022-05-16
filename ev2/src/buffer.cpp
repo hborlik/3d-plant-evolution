@@ -27,3 +27,10 @@ void Buffer::Allocate(std::size_t bytes) {
     glBindBuffer((GLenum)target, 0);
     buf_size = bytes;
 }
+
+void Buffer::CopyData(std::size_t size, const void* data) {
+    glBindBuffer((GLenum)target, gl_reference);
+    glBufferData((GLenum)target, size, data, (GLenum)usage);
+    glBindBuffer((GLenum)target, 0);
+    buf_size = size;
+}

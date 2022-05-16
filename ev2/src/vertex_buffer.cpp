@@ -1,4 +1,4 @@
-#include <mesh.h>
+#include <vertex_buffer.h>
 
 namespace ev2 {
 
@@ -7,22 +7,22 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& verti
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, vertices});
-    vb.buffers[vb.buffers.size() - 1].Bind();
+    vb.buffers.emplace(gl::VERTEX_BINDING_LOCATION, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, vertices});
+    vb.buffers.at(gl::VERTEX_BINDING_LOCATION).Bind();
     glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
     glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, normals});
-    vb.buffers[vb.buffers.size() - 1].Bind();
+    vb.buffers.emplace(gl::NORMAL_BINDING_LOCATION, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, normals});
+    vb.buffers.at(gl::NORMAL_BINDING_LOCATION).Bind();
     glEnableVertexAttribArray(gl::NORMAL_BINDING_LOCATION);
-    glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(sizeof(float) * 3));
+    glVertexAttribPointer(gl::NORMAL_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(sizeof(float) * 3));
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, vertex_colors});
-    vb.buffers[vb.buffers.size() - 1].Bind();
+    vb.buffers.emplace(gl::COLOR_BINDING_LOCATION, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, vertex_colors});
+    vb.buffers.at(gl::COLOR_BINDING_LOCATION).Bind();
     glEnableVertexAttribArray(gl::COLOR_BINDING_LOCATION);
-    glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(sizeof(float) * 6));
+    glVertexAttribPointer(gl::COLOR_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)(sizeof(float) * 6));
 
-    vb.buffers[vb.buffers.size() - 1].Unbind();
+    vb.buffers.at(gl::COLOR_BINDING_LOCATION).Unbind();
 
     glBindVertexArray(0);
 
@@ -35,8 +35,8 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
-    vb.buffers[vb.buffers.size() - 1].Bind();
+    vb.buffers.emplace(0, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers.at(0).Bind();
 
     constexpr std::size_t vec3Size = sizeof(glm::vec3);
     glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
@@ -51,7 +51,7 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
     glEnableVertexAttribArray(gl::TEXCOORD_BINDING_LOCATION);
     glVertexAttribPointer(gl::TEXCOORD_BINDING_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size * 3));
 
-    vb.buffers[vb.buffers.size() - 1].Unbind();
+    vb.buffers.at(0).Unbind();
 
     glBindVertexArray(0);
 
@@ -61,16 +61,16 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
 VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer) {
     VertexBuffer vb;
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
+    vb.buffers.emplace(0, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers.emplace(1, Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
 
-    vb.indexed = vb.buffers.size() - 1; // location of index buffer
+    vb.indexed = 1; // id of index buffer
 
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
-    vb.buffers[0].Bind();
-    vb.buffers[1].Bind();
+    vb.buffers.at(0).Bind();
+    vb.buffers.at(1).Bind();
 
     glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
     glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)0);
@@ -81,8 +81,8 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
     glEnableVertexAttribArray(gl::TEXCOORD_BINDING_LOCATION);
     glVertexAttribPointer(gl::TEXCOORD_BINDING_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
 
-    vb.buffers[0].Unbind();
-    vb.buffers[1].Unbind();
+    vb.buffers.at(0).Unbind();
+    vb.buffers.at(1).Unbind();
 
     glBindVertexArray(0);
 
@@ -99,13 +99,13 @@ VertexBuffer VertexBuffer::vbInitSST() {
 
     std::vector<float> buffer{0, 0, 2, 0, 0, 2};
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
-    vb.buffers[vb.buffers.size() - 1].Bind();
+    vb.buffers.emplace(0, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers.at(0).Bind();
 
     glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
 
-    vb.buffers[vb.buffers.size() - 1].Unbind();
+    vb.buffers.at(0).Unbind();
 
     glBindVertexArray(0);
 
@@ -118,8 +118,8 @@ VertexBuffer VertexBuffer::vbInitArrayVertexDataInstanced(const std::vector<floa
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
-    vb.buffers[vb.buffers.size() - 1].Bind();
+    vb.buffers.emplace(0, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers.at(0).Bind();
 
     constexpr std::size_t vec3Size = sizeof(glm::vec3);
     glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
@@ -153,7 +153,7 @@ VertexBuffer VertexBuffer::vbInitArrayVertexDataInstanced(const std::vector<floa
     glVertexAttribDivisor(6, 1);
     glVertexAttribDivisor(7, 1);
 
-    vb.buffers[vb.buffers.size() - 1].Unbind();
+    vb.buffers.at(0).Unbind();
 
     glBindVertexArray(0);
 
@@ -166,8 +166,8 @@ VertexBuffer VertexBuffer::vbInitArrayVertexSpec(const std::vector<float>& buffe
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
-    vb.buffers[vb.buffers.size() - 1].Bind();
+    vb.buffers.emplace(0, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers.at(0).Bind();
 
     std::size_t offset = 0;
     for (const auto& l : layout.attributes) {
@@ -177,7 +177,7 @@ VertexBuffer VertexBuffer::vbInitArrayVertexSpec(const std::vector<float>& buffe
         offset += l.count * l.element_size;
     }
 
-    vb.buffers[vb.buffers.size() - 1].Unbind();
+    vb.buffers.at(0).Unbind();
 
     glBindVertexArray(0);
 
@@ -190,13 +190,13 @@ VertexBuffer VertexBuffer::vbInitArrayVertexSpecIndexed(const std::vector<float>
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
 
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
-    vb.buffers.push_back(Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
+    vb.buffers.emplace(0, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
+    vb.buffers.emplace(1, Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
 
-    vb.indexed = vb.buffers.size() - 1; // location of index buffer
+    vb.indexed = 1; // id of index buffer
 
-    vb.buffers[0].Bind();
-    vb.buffers[1].Bind();
+    vb.buffers.at(0).Bind();
+    vb.buffers.at(1).Bind();
 
     std::size_t offset = 0;
     for (const auto& l : layout.attributes) {
@@ -206,8 +206,8 @@ VertexBuffer VertexBuffer::vbInitArrayVertexSpecIndexed(const std::vector<float>
         offset += l.count * l.element_size;
     }
 
-    vb.buffers[0].Unbind();
-    vb.buffers[1].Unbind();
+    vb.buffers.at(0).Unbind();
+    vb.buffers.at(1).Unbind();
 
     glBindVertexArray(0);
 

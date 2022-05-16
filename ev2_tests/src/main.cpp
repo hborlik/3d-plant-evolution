@@ -20,7 +20,7 @@
 #include <application.h>
 #include <camera.h>
 #include <window.h>
-#include <mesh.h>
+#include <vertex_buffer.h>
 #include <resource.h>
 #include <Sphere.h>
 #include <renderer.h>
@@ -75,11 +75,11 @@ ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 class TestApp : public ev2::Application {
 public:
     TestApp() : RM{std::make_unique<ev2::ResourceManager>(asset_path)},
-                scene{std::make_unique<ev2::Scene>(RM)} {}
+                scene{std::make_unique<ev2::Scene>("scene0")} {}
     
     TestApp(const fs::path& asset_path) :   asset_path{asset_path}, 
                                             RM{std::make_unique<ev2::ResourceManager>(asset_path)}, 
-                                            scene{std::make_unique<ev2::Scene>(RM)} {}
+                                            scene{std::make_unique<ev2::Scene>("scene0")} {}
 
     fs::path asset_path = fs::path("asset");
 

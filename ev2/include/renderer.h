@@ -12,12 +12,43 @@
 #include <filesystem>
 
 #include <singleton.h>
-#include <mesh.h>
+#include <vertex_buffer.h>
 #include <shader.h>
 #include <texture.h>
 #include <camera.h>
-#include <resource.h>
+#include <material.h>
 
+
+namespace ev2 {
+
+/**
+ * @brief model id
+ * 
+ */
+struct MID {
+    MID() = default;
+
+    bool is_valid() const noexcept {return v != -1;}
+
+    int32_t v = -1;
+private:
+    friend bool operator==(const MID& a, const MID& b) noexcept {
+        return a.v == b.v;
+    }
+};
+
+} // namespace ev2
+
+
+template<> 
+struct std::hash<ev2::MID> {
+    std::size_t operator()(ev2::MID const& s) const noexcept {
+        std::size_t h1 = std::hash<int>{}(s.v);
+        // std::size_t h2 = std::hash<int>{}(s.y);
+        // return h1 ^ (h2 << 1);
+        return h1;
+    }
+};
 
 namespace ev2 {
 
@@ -56,6 +87,25 @@ struct IID {
     bool is_valid() const noexcept {return v != -1;}
 };
 
+struct Mesh {
+    size_t  start_index;
+    size_t  num_elements;
+    int32_t material_id;
+};
+
+class Model {
+public:
+    Model(std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
+        meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
+    
+    std::vector<Mesh>       meshes;
+    std::vector<float>      buffer;
+
+    glm::vec3 bmin, bmax;
+
+    VertexFormat bufferFormat;
+};
+
 struct Drawable {
     Drawable(VertexBuffer&& vb, std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
         vertex_buffer{std::move(vb)}, meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
@@ -71,6 +121,18 @@ struct Drawable {
     float vertex_color_weight = 0.f;
 
     void draw(const Program& prog, int32_t material_override = -1);
+};
+
+struct VBID { // vertex buffer id
+    int32_t v = -1;
+
+    bool is_valid() const noexcept {return v != -1;}
+};
+
+struct MSID { // mesh id
+    int32_t v = -1;
+
+    bool is_valid() const noexcept {return v != -1;}
 };
 
 /**
@@ -134,6 +196,15 @@ public:
     IID create_model_instance();
     void set_instance_model(IID iid, MID mid);
     void set_instance_transform(IID iid, const glm::mat4& transform);
+
+
+    VBID create_vertex_buffer(VertexBuffer&& vb);
+    void destroy_vertex_buffer(VBID vbid);
+
+    MSID create_mesh();
+    void set_mesh_vb(VBID vb);
+    void set_mesh_transform(MSID mesh_id, const glm::mat4& transform);
+    void destroy_mesh(MSID mesh_id);
 
     /**
      * @brief Set the instance material override id. Note: this will set materials for all shapes in model

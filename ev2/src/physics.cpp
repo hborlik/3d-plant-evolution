@@ -27,6 +27,7 @@ Ref<Shape> Physics::get_collider(CID cid) {
     if (mi != sphere_colldiers.end()) {
         return mi->second.shape;
     }
+    return {};
 }
 
 void Physics::destroy_collider(CID cid) {

@@ -11,69 +11,13 @@
 
 #include <glm/glm.hpp>
 
-#include <mesh.h>
+#include <material.h>
+#include <vertex_buffer.h>
+#include <renderer.h>
+#include <scene.h>
 #include <texture.h>
 
 namespace ev2 {
-
-/**
- * @brief model id
- * 
- */
-struct MID {
-    MID() = default;
-
-    bool is_valid() const noexcept {return v != -1;}
-
-    int32_t v = -1;
-private:
-    friend bool operator==(const MID& a, const MID& b) noexcept {
-        return a.v == b.v;
-    }
-};
-
-} // namespace ev2
-
-
-template<> 
-struct std::hash<ev2::MID> {
-    std::size_t operator()(ev2::MID const& s) const noexcept {
-        std::size_t h1 = std::hash<int>{}(s.v);
-        // std::size_t h2 = std::hash<int>{}(s.y);
-        // return h1 ^ (h2 << 1);
-        return h1;
-    }
-};
-
-namespace ev2 {
-
-struct Material {
-    const std::string name = "default";
-
-    glm::vec3 diffuse   = {1.00f,0.10f,0.85f};
-    float metallic       = 0;
-    float subsurface     = 0;
-    float specular       = .5f;
-    float roughness      = .5f;
-    float specularTint   = 0;
-    float clearcoat      = 0;
-    float clearcoatGloss = 1.f;
-    float anisotropic    = 0;
-    float sheen          = 0;
-    float sheenTint      = .5f;
-
-    std::string ambient_texname;             // map_Ka
-    std::string diffuse_texname;             // map_Kd
-    std::string specular_texname;            // map_Ks
-    std::string specular_highlight_texname;  // map_Ns
-    std::string bump_texname;                // map_bump, map_Bump, bump
-    std::string displacement_texname;        // disp
-    std::string alpha_texname;               // map_d
-    std::string reflection_texname;          // refl
-
-    Material() = default;
-    Material(std::string name) : name{std::move(name)} {}
-};
 
 class ResourceManager {
 public:
@@ -96,6 +40,8 @@ public:
      */
     MID get_model(const std::filesystem::path& filename);
 
+    std::unique_ptr<Scene> loadGLTF(const std::filesystem::path& filename, const std::filesystem::path& base_dir, bool normalize = false);
+
     std::pair<std::shared_ptr<Material>, int32_t> create_material(const std::string& name);
     std::shared_ptr<Material> get_material(const std::string& name);
     int32_t get_material_id(const std::string& name);
@@ -117,12 +63,11 @@ public:
 
 private:
     std::unordered_map<std::string, MID> model_lookup;
-    std::unordered_map<MID, std::shared_ptr<Model>> models;
 
     std::unordered_map<std::string, MaterialLocation> materials;
 };
 
-std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm);
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm = nullptr, bool normalize = false);
 
 std::unique_ptr<Texture> load_texture2D(const std::filesystem::path& filename);
 

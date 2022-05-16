@@ -2,6 +2,8 @@
 
 #include <random>
 
+#include <resource.h>
+
 namespace ev2 {
 
 void Drawable::draw(const Program& prog, int32_t material_override) {
@@ -30,7 +32,7 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
                 GL_CHECKED_CALL(glUniform1f(loc, vertex_color_weight));
             }
 
-            vertex_buffer.buffers[vertex_buffer.get_indexed()].Bind(); // bind index buffer (again, @Windows)
+            vertex_buffer.get_buffer(vertex_buffer.get_indexed()).Bind(); // bind index buffer (again, @Windows)
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {

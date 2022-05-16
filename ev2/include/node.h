@@ -98,8 +98,8 @@ public:
 private:
     friend class Scene;
 
-    void update(float dt);
-    void update_pre_render();
+    void _update(float dt);
+    void _update_pre_render();
     
     const std::string name = "Node";
     std::list<Ref<Node>> children;

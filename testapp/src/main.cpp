@@ -20,7 +20,7 @@
 #include <buffer.h>
 #include <renderer.h>
 #include <resource.h>
-#include <mesh.h>
+#include <vertex_buffer.h>
 #include <scene.h>
 #include <camera.h>
 #include <skysphere.h>

@@ -648,7 +648,6 @@ MID ResourceManager::get_model(const std::filesystem::path& filename) {
     std::shared_ptr<Model> loaded_model = loadObj(filename.filename().generic_string(), (asset_path / base_dir).generic_string(), this);
     if (loaded_model) {
         MID id = ev2::Renderer::get_singleton().create_model(loaded_model);
-        models.insert(std::make_pair(id, loaded_model));
         model_lookup.insert(std::make_pair(filename.generic_string(), id));
         return id;
     } else {
@@ -690,7 +689,7 @@ int32_t ResourceManager::MaterialLocation::update_internal() {
     return material_id;
 }
 
-std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm) {
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm, bool normalize) {
     glm::vec3 bmin, bmax;
     std::vector<DrawObject> drawObjects;
     std::vector<tinyobj::material_t> materials;

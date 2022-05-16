@@ -89,6 +89,20 @@ public:
     void bind() const {glBindVertexArray(gl_vao);}
     void unbind() const {glBindVertexArray(0);}
     
+    int get_indexed() {return indexed;}
+
+    void add_buffer(uint32_t id, Buffer&& buffer) {
+        if (buffer.target == gl::BindingTarget::ELEMENT_ARRAY && indexed == -1) {
+            indexed = id;
+        } else
+            assert(0); // already has an index buffer
+        buffers.emplace(id, std::move(buffer));
+    }
+
+    Buffer& get_buffer(uint32_t id) {
+        return buffers.at(id);
+    }
+
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<float>& vertex_colors);
     
     /**
@@ -119,31 +133,11 @@ public:
     static VertexBuffer vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout);
     static VertexBuffer vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout);
 
-    std::vector<Buffer> buffers;
 
-    int get_indexed() {return indexed;}
 private:
+    std::unordered_map<uint32_t, Buffer> buffers;
     GLuint gl_vao = 0;
     int indexed = -1;
-};
-
-struct Mesh {
-    size_t  start_index;
-    size_t  num_elements;
-    int32_t material_id;
-};
-
-class Model {
-public:
-    Model(std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
-        meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
-    
-    std::vector<Mesh>       meshes;
-    std::vector<float>      buffer;
-
-    glm::vec3 bmin, bmax;
-
-    VertexFormat bufferFormat;
 };
 
 }
