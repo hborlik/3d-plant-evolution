@@ -67,7 +67,7 @@ private:
     std::unordered_map<std::string, MaterialLocation> materials;
 };
 
-std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm = nullptr, bool normalize = false);
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm = nullptr);
 
 std::unique_ptr<Texture> load_texture2D(const std::filesystem::path& filename);
 

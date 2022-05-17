@@ -689,7 +689,7 @@ int32_t ResourceManager::MaterialLocation::update_internal() {
     return material_id;
 }
 
-std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm, bool normalize) {
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm) {
     glm::vec3 bmin, bmax;
     std::vector<DrawObject> drawObjects;
     std::vector<tinyobj::material_t> materials;
@@ -750,7 +750,7 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
             std::move(ev_meshs),
             bmin,
             bmax,
-            buffer,
+            std::move(buffer),
             VertexFormat::Array
         );
 

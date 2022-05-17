@@ -374,7 +374,7 @@ void imgui(GLFWwindow * window) {
         dlight->set_ambient({0.1, 0.1, 0.1});
 
         auto light = scene->create_node<ev2::PointLightNode>("point_light");
-        light->transform.position = glm::vec3{0, 20, 0};
+        light->transform.position = glm::vec3{0, 5, 0};
         light->set_color(glm::vec3{15, 15, 15});
 
         auto h_node = scene->create_node<ev2::VisualInstance>("house");

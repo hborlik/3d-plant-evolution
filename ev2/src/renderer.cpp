@@ -1,6 +1,7 @@
 #include <renderer.h>
 
 #include <random>
+#include <cmath>
 
 #include <resource.h>
 
@@ -176,6 +177,9 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     plp_m_location = point_lighting_program.getUniformInfo("M").Location;
     plp_light_p_location = point_lighting_program.getUniformInfo("lightPos").Location;
     plp_light_c_location = point_lighting_program.getUniformInfo("lightColor").Location;
+    plp_k_c_loc = point_lighting_program.getUniformInfo("k_c").Location;
+    plp_k_l_loc = point_lighting_program.getUniformInfo("k_l").Location;
+    plp_k_q_loc = point_lighting_program.getUniformInfo("k_q").Location;
 
 
     ssao_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
@@ -209,7 +213,10 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     }
 
     // light geometry
-    point_light_geometry_id = create_model(loadObj("sphere.obj", asset_path / "models", nullptr));
+    std::shared_ptr<Model> sphere = loadObj("sphere.obj", asset_path / "models", nullptr);
+    point_light_geometry_id = create_model(sphere);
+    glm::vec3 scaling = glm::vec3{2} / (sphere->bmax - sphere->bmin);
+    point_light_geom_tr = glm::scale(glm::identity<glm::mat4>(), scaling);
     auto itr = models.find(point_light_geometry_id);
     point_light_drawable = itr->second.get();
     point_light_drawable->front_facing = gl::FrontFacing::CW; // render back facing only
@@ -573,11 +580,24 @@ void Renderer::render(const Camera &camera) {
 
     for (auto& litr : point_lights) {
         auto& l = litr.second;
-        glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), l.position) * glm::scale(glm::identity<glm::mat4>(), glm::vec3{0.5, 0.5, 0.5});
+
+        // from https://learnopengl.com/Advanced-Lighting/Deferred-Shading
+        float constant  = l.k.x; 
+        float linear    = l.k.y;
+        float quadratic = l.k.z;
+        float lightMax  = std::fmaxf(std::fmaxf(l.color.r, l.color.g), l.color.b);
+        float radius    = 
+        (-linear +  sqrtf(linear * linear - 4 * quadratic * (constant - (256.0 / 5.0) * lightMax))) 
+        / (2 * quadratic);
+
+        glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), l.position) * glm::scale(point_light_geom_tr, 5.f * glm::vec3{radius});
 
         ev2::gl::glUniform(tr, plp_m_location);
         ev2::gl::glUniform(l.color, plp_light_c_location);
         ev2::gl::glUniform(l.position, plp_light_p_location);
+        ev2::gl::glUniformf(constant, plp_k_c_loc);
+        ev2::gl::glUniformf(linear, plp_k_l_loc);
+        ev2::gl::glUniformf(quadratic, plp_k_q_loc);
 
         point_light_drawable->draw(point_lighting_program);
     }

@@ -67,8 +67,9 @@ struct LID {
 };
 
 struct Light {
-    glm::vec3 color;
-    glm::vec3 position;
+    glm::vec3 color{};
+    glm::vec3 position{};
+    glm::vec3 k{0.0, 0.2, 1.8}; // k_c, k_l, k_q
 };
 
 struct DirectionalLight {
@@ -252,7 +253,7 @@ private:
     int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location;
 
     Program point_lighting_program;
-    int plp_p_location, plp_n_location, plp_as_location, plp_mt_location, plp_m_location, plp_light_p_location, plp_light_c_location;
+    int plp_p_location, plp_n_location, plp_as_location, plp_mt_location, plp_m_location, plp_light_p_location, plp_light_c_location, plp_k_c_loc, plp_k_l_loc, plp_k_q_loc;
 
     Program ssao_program;
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
@@ -283,6 +284,7 @@ private:
     bool wireframe = false;
 
     MID point_light_geometry_id;
+    glm::mat4 point_light_geom_tr;
     Drawable* point_light_drawable;
 };
 
