@@ -50,6 +50,28 @@ struct VertexLayout {
         return *this;
     }
 
+    VertexLayout& add_attribute(VertexAttributeType type, gl::DataType data_type, uint16_t count, uint16_t size) {
+        uint32_t location = 0;
+        switch(type) {
+            case VertexAttributeType::Vertex:
+                location = gl::VERTEX_BINDING_LOCATION;
+                break;
+            case VertexAttributeType::Normal:
+                location = gl::NORMAL_BINDING_LOCATION;
+                break;
+            case VertexAttributeType::Color:
+                location = gl::COLOR_BINDING_LOCATION;
+                break;
+            case VertexAttributeType::Texcoord:
+                location = gl::TEXCOORD_BINDING_LOCATION;
+                break;
+            default:
+                assert(0);
+        }
+        attributes.push_back(Attribute{location, data_type, count, size});
+        return *this;
+    }
+
     VertexLayout& finalize() {
         uint32_t total_size = 0;
         for (auto& l : attributes) {
@@ -70,7 +92,6 @@ enum class VertexFormat {
 
 class VertexBuffer {
 public:
-    VertexBuffer() = default;
 
     VertexBuffer(const VertexBuffer&) = delete;
     VertexBuffer& operator=(const VertexBuffer&) = delete;
@@ -92,10 +113,10 @@ public:
     int get_indexed() {return indexed;}
 
     void add_buffer(uint32_t id, Buffer&& buffer) {
-        if (buffer.target == gl::BindingTarget::ELEMENT_ARRAY && indexed == -1) {
+        if (buffer.target == gl::BindingTarget::ELEMENT_ARRAY) {
+            assert(indexed == -1); // already has an index buffer
             indexed = id;
-        } else
-            assert(0); // already has an index buffer
+        }
         buffers.emplace(id, std::move(buffer));
     }
 
@@ -133,9 +154,13 @@ public:
     static VertexBuffer vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout);
     static VertexBuffer vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout);
 
+    static VertexBuffer vbInitDefault();
 
 private:
+    VertexBuffer() = default;
+
     std::unordered_map<uint32_t, Buffer> buffers;
+    std::vector<GLuint> accessors;
     GLuint gl_vao = 0;
     int indexed = -1;
 };

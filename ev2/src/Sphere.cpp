@@ -463,12 +463,12 @@ std::unique_ptr<ev2::Model> Sphere::getModel() {
     bool success = true;
     if (success) {
         std::vector<ev2::Material> ev_materials;
-        std::vector<ev2::Mesh> ev_meshs(drawObjects.size());
+        std::vector<ev2::Primitive> ev_meshs(drawObjects.size());
         auto mat = ev2::Material{};
         mat.diffuse = {0, 0.9, 0.05};
         ev_materials.push_back(mat);
 
-        ev_meshs.push_back(ev2::Mesh{0, indices.size(), 0});
+        ev_meshs.push_back(ev2::Primitive{0, indices.size(), 0});
 
 
         // return std::make_unique<ev2::Model>(

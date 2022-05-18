@@ -214,4 +214,10 @@ VertexBuffer VertexBuffer::vbInitArrayVertexSpecIndexed(const std::vector<float>
     return std::move(vb);
 }
 
+VertexBuffer VertexBuffer::vbInitDefault() {
+    VertexBuffer vb;
+    glGenVertexArrays(1, &vb.gl_vao);
+    return std::move(vb);
+}
+
 }

@@ -7,6 +7,24 @@
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
+#define CheckGLErrors(desc)                                                   \
+  {                                                                           \
+    GLenum e = glGetError();                                                  \
+    if (e != GL_NO_ERROR) {                                                   \
+      printf("OpenGL error in \"%s\": %d (%d) %s:%d\n", desc, e, e, __FILE__, \
+             __LINE__);                                                       \
+      exit(20);                                                               \
+    }                                                                         \
+  }
+
+void CheckErrors(std::string desc) {
+  GLenum e = glGetError();
+  if (e != GL_NO_ERROR) {
+    fprintf(stderr, "OpenGL error in \"%s\": %d (%d)\n", desc.c_str(), e, e);
+    exit(20);
+  }
+}
+
 namespace ev2 {
 
 static size_t ComponentTypeByteSize(int type) {
@@ -30,12 +48,17 @@ static size_t ComponentTypeByteSize(int type) {
 }
 
 #if 0
-std::unique_ptr<Scene> ResourceManager::loadGLTF(const std::filesystem::path& filename, const std::filesystem::path& base_dir, bool normalize) {
+static Ref<Node> loadNode() {
+
+}
+
+std::unique_ptr<GLTFScene> ResourceManager::loadGLTF(const std::filesystem::path& filename, const std::filesystem::path& base_dir, bool normalize) {
     tinygltf::Model model;
     tinygltf::TinyGLTF loader;
     std::string err, warn;
-    std::string input_filename = filename.generic_string();
+    std::string input_filename = (asset_path / filename).generic_string();
     std::string ext = filename.extension();
+    std::unique_ptr<GLTFScene> scene = std::make_unique<GLTFScene>(filename);
 
     bool ret = false;
     if (ext.compare("glb") == 0)
@@ -49,9 +72,8 @@ std::unique_ptr<Scene> ResourceManager::loadGLTF(const std::filesystem::path& fi
         ret = loader.LoadASCIIFromFile(&model, &err, &warn, input_filename);
     }
 
-    VertexBuffer state;
-    glGenVertexArrays(1, &state.gl_vao);
-    glBindVertexArray(state.gl_vao);
+    VertexBuffer state = VertexBuffer::vbInitDefault();
+    state.bind();
 
     for (std::size_t i = 0; i < model.bufferViews.size(); i++)
     {
@@ -186,7 +208,6 @@ std::unique_ptr<Scene> ResourceManager::loadGLTF(const std::filesystem::path& fi
         glBindBuffer(bufferView.target, 0);
     }
 
-
     for (size_t i_node = 0; i_node < model.nodes.size(); i_node++) {
         if (model.nodes[i_node].mesh != -1) { // this node has a mesh
             tinygltf::Mesh& mesh = model.meshes[model.nodes[i_node].mesh];
@@ -195,7 +216,7 @@ std::unique_ptr<Scene> ResourceManager::loadGLTF(const std::filesystem::path& fi
                 const tinygltf::Primitive &primitive = mesh.primitives[i];
 
                 if (primitive.indices < 0)
-                    return;
+                    continue;
 
                 // Assume TEXTURE_2D target for the texture object.
                 // glBindTexture(GL_TEXTURE_2D, gMeshState[mesh.name].diffuseTex[i]);
@@ -290,8 +311,10 @@ std::unique_ptr<Scene> ResourceManager::loadGLTF(const std::filesystem::path& fi
         }
     }
 
+    scene->vertex_buffer = ev2::Renderer::get_singleton().create_vertex_buffer(std::move(state));
+
     return {};
 }
-#endif // 0
+#endif
 
 }

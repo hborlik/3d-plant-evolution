@@ -422,6 +422,8 @@ void imgui(GLFWwindow * window) {
         {
             initRandomPlant(tree_bark);
         }
+
+        // RM->loadGLTF(fs::path("models") / "Box.gltf", fs::path("models"));
        
     }
 

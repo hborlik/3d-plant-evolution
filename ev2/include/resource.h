@@ -16,6 +16,7 @@
 #include <renderer.h>
 #include <scene.h>
 #include <texture.h>
+// #include <gltf_scene.h>
 
 namespace ev2 {
 
@@ -40,7 +41,7 @@ public:
      */
     MID get_model(const std::filesystem::path& filename);
 
-    std::unique_ptr<Scene> loadGLTF(const std::filesystem::path& filename, const std::filesystem::path& base_dir, bool normalize = false);
+    // std::unique_ptr<GLTFScene> loadGLTF(const std::filesystem::path& filename, const std::filesystem::path& base_dir, bool normalize = false);
 
     std::pair<std::shared_ptr<Material>, int32_t> create_material(const std::string& name);
     std::shared_ptr<Material> get_material(const std::string& name);

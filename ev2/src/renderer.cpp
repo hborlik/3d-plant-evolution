@@ -19,7 +19,7 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
     // TODO: support for multiple index buffers
     if (vertex_buffer.get_indexed() != -1) {
         // draw indexed arrays
-        for (auto& m : meshes) {
+        for (auto& m : primitives) {
             // prog.applyMaterial(materials[m.material_id]);
 
             // TODO does this go here?
@@ -37,7 +37,7 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {
-        for (auto& m : meshes) {
+        for (auto& m : primitives) {
             // prog.applyMaterial(materials[m.material_id]);
 
             // TODO does this go here?
@@ -335,14 +335,14 @@ void Renderer::destroy_light(LID lid) {
 MID Renderer::create_model(std::shared_ptr<Model> model) {
     assert(model->bufferFormat == VertexFormat::Array);
 
-    auto meshes = model->meshes;
-    // for (auto& m : meshes) {
+    auto primitives = model->primitives;
+    // for (auto& m : primitives) {
     //     m.material_id = m.material_id - 1;
     // }
 
     std::shared_ptr<Drawable> d = std::make_shared<Drawable>(
         VertexBuffer::vbInitArrayVertexData(model->buffer),
-        std::move(meshes),
+        std::move(primitives),
         model->bmin,
         model->bmax,
         gl::CullMode::BACK,
@@ -409,6 +409,59 @@ void Renderer::set_instance_transform(IID iid, const glm::mat4& transform) {
     if (mi != model_instances.end()) {
         mi->second.transform = transform;
     }
+}
+
+VBID Renderer::create_vertex_buffer(VertexBuffer&& vb) {
+    int32_t id = next_vb_id++;
+    vertex_buffers.emplace(id, std::move(vb));
+    return {id};
+}
+
+void Renderer::destroy_vertex_buffer(VBID vbid) {
+    if (vbid.is_valid())
+        vertex_buffers.erase(vbid.v);
+}
+
+MSID Renderer::create_mesh() {
+    int32_t id = next_mesh_id++;
+    Mesh mesh{};
+    meshes.emplace(id, mesh);
+    return {id};
+}
+
+void Renderer::set_mesh_vb(MSID mesh_id, VBID vb) {
+    if (!mesh_id.is_valid())
+        return;
+    
+    auto mi = meshes.find(mesh_id.v);
+    if (mi != meshes.end()) {
+        mi->second.vbid = vb;
+    }
+}
+
+void Renderer::set_mesh_transform(MSID mesh_id, const glm::mat4& transform) {
+    if (!mesh_id.is_valid())
+        return;
+    
+    auto mi = meshes.find(mesh_id.v);
+    if (mi != meshes.end()) {
+        mi->second.transform = transform;
+    }
+}
+
+void Renderer::set_mesh_primitives(MSID mesh_id, const std::vector<Primitive>& primitives) {
+    if (!mesh_id.is_valid())
+        return;
+    
+    auto mi = meshes.find(mesh_id.v);
+    if (mi != meshes.end()) {
+        mi->second.primitives = primitives;
+    }
+}
+
+void Renderer::destroy_mesh(MSID mesh_id) {
+    if (mesh_id.is_valid())
+        meshes.erase(mesh_id.v);
 }
 
 void Renderer::render(const Camera &camera) {

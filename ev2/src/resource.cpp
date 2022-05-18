@@ -697,7 +697,7 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
     std::cout << base_dir / filename << std::endl;
     bool success = LoadObjAndConvert(bmin, bmax, &drawObjects, materials, buffer, (base_dir / filename).generic_string(), base_dir.generic_string());
     if (success) {
-        std::vector<Mesh> ev_meshs(drawObjects.size());
+        std::vector<Primitive> ev_meshs(drawObjects.size());
 
         // copy index information
         size_t i = 0;
@@ -738,7 +738,7 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
                 }
             }
 
-            auto n_mesh = Mesh {
+            auto n_mesh = Primitive {
                 dObj.start * 3,
                 dObj.numTriangles * 3,
                 mat_id

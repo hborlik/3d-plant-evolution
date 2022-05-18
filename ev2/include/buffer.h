@@ -116,7 +116,7 @@ private:
     /**
      * @brief size in bytes of copied data 
      */
-    size_t buf_size;
+    size_t buf_size = 0;
 
     GLuint gl_reference = -1;
 };

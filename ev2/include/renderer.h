@@ -88,42 +88,6 @@ struct IID {
     bool is_valid() const noexcept {return v != -1;}
 };
 
-struct Mesh {
-    size_t  start_index;
-    size_t  num_elements;
-    int32_t material_id;
-};
-
-class Model {
-public:
-    Model(std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
-        meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
-    
-    std::vector<Mesh>       meshes;
-    std::vector<float>      buffer;
-
-    glm::vec3 bmin, bmax;
-
-    VertexFormat bufferFormat;
-};
-
-struct Drawable {
-    Drawable(VertexBuffer&& vb, std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
-        vertex_buffer{std::move(vb)}, meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
-    VertexBuffer vertex_buffer;
-    std::vector<Mesh> meshes;
-
-    glm::vec3 bmin, bmax;
-
-    gl::CullMode cull_mode = gl::CullMode::BACK;
-    gl::FrontFacing front_facing = gl::FrontFacing::CCW;
-
-    int32_t material_offset = 0;
-    float vertex_color_weight = 0.f;
-
-    void draw(const Program& prog, int32_t material_override = -1);
-};
-
 struct VBID { // vertex buffer id
     int32_t v = -1;
 
@@ -134,6 +98,48 @@ struct MSID { // mesh id
     int32_t v = -1;
 
     bool is_valid() const noexcept {return v != -1;}
+};
+
+struct Primitive {
+    size_t  start_index = 0;
+    size_t  num_elements = 0;
+    int32_t material_id = 0;
+};
+
+struct Mesh {
+    std::vector<Primitive>  primitives{};
+    glm::mat4               transform = glm::identity<glm::mat4>();
+    VBID                    vbid{};
+};
+
+class Model {
+public:
+    Model(std::vector<Primitive> primitives, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
+        primitives{std::move(primitives)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
+    
+    std::vector<Primitive>  primitives;
+    std::vector<float>      buffer;
+
+    glm::vec3 bmin, bmax;
+
+    VertexFormat bufferFormat;
+};
+
+struct Drawable {
+    Drawable(VertexBuffer&& vb, std::vector<Primitive> primitives, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
+        vertex_buffer{std::move(vb)}, primitives{std::move(primitives)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
+    VertexBuffer vertex_buffer;
+    std::vector<Primitive> primitives;
+
+    glm::vec3 bmin, bmax;
+
+    gl::CullMode cull_mode = gl::CullMode::BACK;
+    gl::FrontFacing front_facing = gl::FrontFacing::CCW;
+
+    int32_t material_offset = 0;
+    float vertex_color_weight = 0.f;
+
+    void draw(const Program& prog, int32_t material_override = -1);
 };
 
 /**
@@ -203,8 +209,9 @@ public:
     void destroy_vertex_buffer(VBID vbid);
 
     MSID create_mesh();
-    void set_mesh_vb(VBID vb);
+    void set_mesh_vb(MSID mesh_id, VBID vb);
     void set_mesh_transform(MSID mesh_id, const glm::mat4& transform);
+    void set_mesh_primitives(MSID mesh_id, const std::vector<Primitive>& primitives);
     void destroy_mesh(MSID mesh_id);
 
     /**
@@ -231,16 +238,24 @@ public:
     uint32_t ssao_kernel_samples = 32;
 
 private:
+    // model, instance vertex data
     std::unordered_map<MID, std::shared_ptr<Drawable>> models;
     uint32_t next_model_id = 1;
 
     std::vector<MaterialData> materials;
+    int next_free_mat = 1;
 
     std::unordered_map<int32_t, ModelInstance> model_instances;
     uint32_t next_instance_id = 100;
 
-    int next_free_mat = 1;
+    // Mesh, vb vertex data
+    std::unordered_map<int32_t, VertexBuffer> vertex_buffers;
+    uint32_t next_vb_id = 1;
 
+    std::unordered_map<int32_t, Mesh> meshes;
+    uint32_t next_mesh_id = 1;
+
+    // lights
     std::unordered_map<uint32_t, Light> point_lights;
     std::unordered_map<uint32_t, DirectionalLight> directional_lights;
     uint32_t next_light_id = 1000;

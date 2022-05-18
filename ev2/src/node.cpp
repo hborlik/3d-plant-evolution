@@ -21,6 +21,15 @@ void Node::remove_child(Ref<Node> node) {
     }
 }
 
+void Node::destroy() {
+    // cleanup children first
+    for (auto& c : children) {
+        c->destroy();
+    }
+
+    on_destroy();
+}
+
 void Node::_update(float dt) {
     on_process(dt);
 
