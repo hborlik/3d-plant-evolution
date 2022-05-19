@@ -71,7 +71,7 @@
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/DeferBase22/resources",
+            "cwd": "${workspaceFolder}/2022NormalBase/resources",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
