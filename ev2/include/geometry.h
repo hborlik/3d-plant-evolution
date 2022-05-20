@@ -61,28 +61,18 @@ struct Ray {
     glm::vec3 eval(float t) const {return origin + t * direction;}
 };
 
-struct Shape : public ReferenceCounted<Shape> {
-    glm::mat4 transform = glm::identity<glm::mat4>();
-
-    Shape() = default;
-    virtual ~Shape() = default;
-
-    virtual bool intersect(const Ray& ray, SurfaceInteraction& hit) {return false;}
-};
-
-struct Sphere : public Shape {
+struct Sphere {
     glm::vec3   center;
     float       radius;
 
     Sphere(const glm::vec3& center, float radius) noexcept : center{center}, radius{radius} {}
 
-    bool intersect(const Ray& ray, SurfaceInteraction& hit) override {
+    bool intersect(const Ray& ray, SurfaceInteraction& hit) {
         using namespace glm;
-        Ray local_ray = ray.transform(inverse(transform));
 
-        vec3 e_c = (local_ray.origin - center);
-        float a = dot(local_ray.direction, local_ray.direction);
-        float b = 2 * dot(local_ray.direction, e_c);
+        vec3 e_c = (ray.origin - center);
+        float a = dot(ray.direction, ray.direction);
+        float b = 2 * dot(ray.direction, e_c);
         float c = dot(e_c,e_c) - radius*radius;
         float det_sq = b*b - 4*a*c;
         if(det_sq <= 0)
@@ -162,7 +152,7 @@ struct Plane {
     }
 };
 
-struct PlaneShape : public Shape {
+struct PlaneShape {
     Plane plane{};
 
     PlaneShape() {};
@@ -180,8 +170,7 @@ struct PlaneShape : public Shape {
      * @return float 
      */
     inline float distanceFromPlane(glm::vec3 point) const noexcept {
-        glm::vec3 local_point = glm::inverse(transform) * glm::vec4{point, 1.0f};
-        return plane.distanceFromPlane(local_point);
+        return plane.distanceFromPlane(point);
     }
 
     /**
@@ -192,11 +181,9 @@ struct PlaneShape : public Shape {
      * @return true 
      * @return false 
      */
-    bool intersect(const Ray& ray, SurfaceInteraction& hit) override {
+    bool intersect(const Ray& ray, SurfaceInteraction& hit) {
         using namespace glm;
-        Ray local_ray = ray.transform(inverse(transform));
-
-        return plane.intersect(local_ray, hit);
+        return plane.intersect(ray, hit);
     }
 };
 

@@ -23,6 +23,7 @@
 #include <mesh.h>
 #include <resource.h>
 #include <Sphere.h>
+#include <physics.h>
 #include <renderer.h>
 #include <scene.h>
 #include <physics.h>
@@ -49,12 +50,12 @@ struct Plant {
     glm::quat rot;
     Sphere geometry;
     ev2::Ref<TreeNode> tree{};
-    ev2::Ref<ev2::Collider> tree_hit_sphere;
+    ev2::Ref<ev2::ColliderBody> tree_hit_sphere;
     Plant() 
     {
         ID = NULL;
     }
-    Plant(int IDin, glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn, ev2::Ref<ev2::Collider> tree_hit_sphere_In) 
+    Plant(int IDin, glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn, ev2::Ref<ev2::ColliderBody> tree_hit_sphere_In) 
     {
         ID = IDin;
         position = pos;
@@ -93,7 +94,7 @@ public:
     Plant parentBeta;
     Plant child;
     //ev2::Ref<TreeNode> tree{};
-    ev2::Ref<ev2::Collider> ground_plane;
+    ev2::Ref<ev2::ColliderBody> ground_plane;
 
     ev2::Ref<ev2::VisualInstance> marker{};
 
@@ -326,9 +327,9 @@ void imgui(GLFWwindow * window) {
             {"w_r", randomFloatRange(0.6f, 0.89f)}
         };
         
-        ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
-        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
-        tree_hit_sphere->transform.position = glm::vec3{randomFloatTo(500) - 250, 0, randomFloatTo(500) - 250};
+        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
+        tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
+        tree_hit_sphere->transform.position = glm::vec3{randomFloatTo(25) - 50, 0, randomFloatTo(25) - 50};
         tree_hit_sphere->add_child(tree);
         tree->set_material_override(tree_bark.second);
         tree->setParams(params, 10);
@@ -362,8 +363,14 @@ void imgui(GLFWwindow * window) {
         marker = scene->create_node<ev2::VisualInstance>("marker");
         marker->set_model(ground);
         marker->transform.scale = glm::vec3{0.5, 0.5, 0.5};
-        marker->transform.position = glm::vec3{0, 5, 0};
+        marker->transform.position = glm::vec3{0, 0, 0};
         marker->set_material_override(highlight_material.second);
+
+        auto box = scene->create_node<ev2::RigidBody>("Box Rigidbody");
+        box->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{1, 1, 1}));
+        box->add_child(marker);
+        box->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
+        box->transform.position = glm::vec3{0, 14, 0};
 
         // ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         // ground_cube->materials[0].shininess = 0.02;
@@ -414,8 +421,8 @@ void imgui(GLFWwindow * window) {
 
         cam_orbital_root->add_child(cam_orbital);
 
-        ground_plane = scene->create_node<ev2::Collider>("Ground Collider");
-        ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
+        ground_plane = scene->create_node<ev2::ColliderBody>("Ground Collider");
+        ground_plane->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{100, 1, 100}));
         ground_plane->add_child(g_node);
         ground_plane->transform.position = glm::vec3{0, 0.4, 0};
         for (int n = 0; n < 10; n++)
@@ -466,7 +473,7 @@ void imgui(GLFWwindow * window) {
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
             update(dt, io);
-            
+            ev2::Physics::get_singleton().simulate(dt);
             scene->update_pre_render();
             RM->pre_render();
             ev2::Renderer::get_singleton().render(scene->get_active_camera()->get_camera());
@@ -518,8 +525,8 @@ void imgui(GLFWwindow * window) {
 
         std::map<std::string, float> params = crossParams(parentAlpha.tree->getParams(), parentBeta.tree->getParams());
         
-        ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
-        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
+        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
+        tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
 
@@ -546,8 +553,8 @@ void imgui(GLFWwindow * window) {
 
         std::map<std::string, float> params = somePlant.tree->getParams();
         
-        ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
-        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
+        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
+        tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
 
@@ -816,6 +823,7 @@ int main(int argc, char *argv[]) {
     //initAudio(asset_path);
     app->initialize();
     int rv = app->run();
+    app = {};
     ev2::EV2_shutdown();
     return rv;
     //TODO: uninit audio device and decoder.

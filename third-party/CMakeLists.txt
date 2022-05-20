@@ -16,6 +16,17 @@ if(glm_ADDED)
     target_include_directories(glm INTERFACE ${glm_SOURCE_DIR})
 endif()
 
+
+CPMAddPackage(
+    NAME reactphysics3d
+    GITHUB_REPOSITORY DanielChappuis/reactphysics3d
+    GIT_TAG v0.9.0
+)
+# if(reactphysics3d_ADDED)
+#     # add_library(glm INTERFACE IMPORTED)
+#     target_include_directories(glm INTERFACE ${glm_SOURCE_DIR})
+# endif()
+
 # ExternalProject_Add(GLM_UTIL
 #     PREFIX glm
 #     GIT_REPOSITORY https://github.com/g-truc/glm.git

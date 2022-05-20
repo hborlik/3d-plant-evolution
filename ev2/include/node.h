@@ -96,6 +96,12 @@ public:
      */
     Ref<Node> get_child(int index);
 
+    Ref<Node> get_parent() const {
+        if (parent)
+            return parent->get_ref().ref_cast<Node>();
+        return{};
+    }
+
     class Scene& get_scene() {
         return *scene;
     }
@@ -113,7 +119,7 @@ public:
         return path;
     }
 
-    glm::mat4 get_transform() const {
+    virtual glm::mat4 get_transform() const {
         glm::mat4 tr = transform.get_transform();
         if (parent)
             tr = parent->get_transform() * tr;
