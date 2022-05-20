@@ -75,3 +75,6 @@ find_package(OpenGL REQUIRED)
 
 add_subdirectory(glad)
 add_subdirectory(tinyobjloader)
+
+add_library(tinygltfloader INTERFACE)
+target_include_directories(tinygltfloader INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tinygltfloader)

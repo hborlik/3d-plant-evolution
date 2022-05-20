@@ -17,19 +17,14 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <reference_counted.h>
-#include <resource.h>
 #include <node.h>
 #include <visual_nodes.h>
 
 namespace ev2 {
 
-class Scene {
+class Scene : public Node {
 public:
-    explicit Scene(std::shared_ptr<ResourceManager> RM);
-
-    void update(float dt);
-
-    void update_pre_render();
+    explicit Scene(const std::string& name) : Node{name} {}
 
     void add_node(Ref<Node> n, Ref<Node> parent);
 
@@ -41,9 +36,10 @@ public:
     void set_active_camera(Ref<CameraNode> camera) {active_camera = camera;}
     Ref<CameraNode> get_active_camera() {return active_camera;}
 
+    void update(float dt);
+    void update_pre_render();
+
 private:
-    Ref<Node> root;
-    std::shared_ptr<ResourceManager> resource_manager;
 
     Ref<CameraNode> active_camera;
 };
@@ -53,7 +49,7 @@ Ref<T> Scene::create_node(const std::string& name) {
     Ref<T> node = make_referenced<T>(name);
     node->scene = this;
     Ref<Node> nnode = node;
-    root->add_child(nnode);
+    add_child(nnode);
     node->on_init();
     return node;
 }

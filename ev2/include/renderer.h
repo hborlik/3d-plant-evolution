@@ -12,12 +12,43 @@
 #include <filesystem>
 
 #include <singleton.h>
-#include <mesh.h>
+#include <vertex_buffer.h>
 #include <shader.h>
 #include <texture.h>
 #include <camera.h>
-#include <resource.h>
+#include <material.h>
 
+
+namespace ev2 {
+
+/**
+ * @brief model id
+ * 
+ */
+struct MID {
+    MID() = default;
+
+    bool is_valid() const noexcept {return v != -1;}
+
+    int32_t v = -1;
+private:
+    friend bool operator==(const MID& a, const MID& b) noexcept {
+        return a.v == b.v;
+    }
+};
+
+} // namespace ev2
+
+
+template<> 
+struct std::hash<ev2::MID> {
+    std::size_t operator()(ev2::MID const& s) const noexcept {
+        std::size_t h1 = std::hash<int>{}(s.v);
+        // std::size_t h2 = std::hash<int>{}(s.y);
+        // return h1 ^ (h2 << 1);
+        return h1;
+    }
+};
 
 namespace ev2 {
 
@@ -36,8 +67,9 @@ struct LID {
 };
 
 struct Light {
-    glm::vec3 color;
-    glm::vec3 position;
+    glm::vec3 color{};
+    glm::vec3 position{};
+    glm::vec3 k{0.0, 0.2, 1.8}; // k_c, k_l, k_q
 };
 
 struct DirectionalLight {
@@ -56,11 +88,64 @@ struct IID {
     bool is_valid() const noexcept {return v != -1;}
 };
 
+struct VBID { // vertex buffer id
+    int32_t v = -1;
+
+    bool is_valid() const noexcept {return v != -1;}
+};
+
+struct MSID { // mesh id
+    int32_t v = -1;
+
+    bool is_valid() const noexcept {return v != -1;}
+};
+
+struct MSIID { // mesh instance id
+    int32_t v = -1;
+
+    bool is_valid() const noexcept {return v != -1;}
+};
+
+struct MeshPrimitive {
+    MeshPrimitive() noexcept = default;
+    MeshPrimitive(VBID vbid, int32_t material_id, int32_t indices = -1)
+        : vbid{vbid}, indices{indices}, material_id{material_id} {}
+
+    ~MeshPrimitive() {
+        if (gl_vao != 0)
+            glDeleteVertexArrays(1, &gl_vao);
+    }
+
+    std::map<int, int>      attributes;         // map of attribute location (engine value like VERTEX_BINDING_LOCATION to a buffer in vb)
+    VBID                    vbid{};             // id of used vertex buffer
+    int32_t                 indices = -1;       // ind of index buffer in vb
+    int32_t                 material_id = 0;
+
+    GLuint gl_vao = 0;                          // vao for primitive (internal use)
+};
+
+struct Mesh {
+    std::vector<MeshPrimitive>      primitives{};
+    gl::CullMode                    cull_mode = gl::CullMode::NONE;
+    gl::FrontFacing                 front_facing = gl::FrontFacing::CCW;
+};
+
+struct MeshInstance {
+    glm::mat4               transform = glm::identity<glm::mat4>();
+    Mesh*                   mesh = nullptr;
+};
+
+struct Primitive {
+    size_t  start_index = 0;
+    size_t  num_elements = 0;
+    int32_t material_id = 0;
+};
+
 struct Drawable {
-    Drawable(VertexBuffer&& vb, std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
-        vertex_buffer{std::move(vb)}, meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
+    Drawable(VertexBuffer&& vb, std::vector<Primitive> primitives, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
+        vertex_buffer{std::move(vb)}, primitives{std::move(primitives)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
     VertexBuffer vertex_buffer;
-    std::vector<Mesh> meshes;
+    std::vector<Primitive> primitives;
 
     glm::vec3 bmin, bmax;
 
@@ -115,7 +200,9 @@ struct ModelInstance {
 
 class Renderer : public Singleton<Renderer> {
 public:
-    Renderer(uint32_t width, uint32_t height, const std::filesystem::path& asset_path);
+    Renderer(uint32_t width, uint32_t height);
+
+    void init();
 
     void update_material(int32_t material_id, const MaterialData& material);
     int32_t create_material(const MaterialData& material);
@@ -127,13 +214,28 @@ public:
     void set_light_ambient(LID lid, const glm::vec3& color);
     void destroy_light(LID lid);
 
-    MID create_model(std::shared_ptr<Model> model);
     MID create_model(std::shared_ptr<Drawable> d);
     void set_model_vertex_color_diffuse_weight(MID mid, float weight);
 
     IID create_model_instance();
     void set_instance_model(IID iid, MID mid);
     void set_instance_transform(IID iid, const glm::mat4& transform);
+
+
+    VBID create_vertex_buffer();
+    VertexBuffer* get_vertex_buffer(VBID vbid);
+    void destroy_vertex_buffer(VBID vbid);
+
+    MSID create_mesh();
+    void set_mesh_primitives(MSID mesh_id, const std::vector<MeshPrimitive>& primitives);
+    void set_mesh_cull_mode(MSID mesh_id, gl::CullMode cull_mode);
+    void set_mesh_front_facing(MSID mesh_id, gl::FrontFacing front_facing);
+    void destroy_mesh(MSID mesh_id);
+
+    MSIID create_mesh_instance();
+    void set_mesh_instance_mesh(MSIID msiid, MSID msid);
+    void set_mesh_instance_transform(MSIID msiid, const glm::mat4& transform);
+    void destroy_mesh_instance(MSIID msiid);
 
     /**
      * @brief Set the instance material override id. Note: this will set materials for all shapes in model
@@ -159,16 +261,27 @@ public:
     uint32_t ssao_kernel_samples = 32;
 
 private:
+    // model, instance vertex data
     std::unordered_map<MID, std::shared_ptr<Drawable>> models;
     uint32_t next_model_id = 1;
 
     std::vector<MaterialData> materials;
+    int next_free_mat = 1;
 
     std::unordered_map<int32_t, ModelInstance> model_instances;
     uint32_t next_instance_id = 100;
 
-    int next_free_mat = 1;
+    // Mesh, vb vertex data
+    std::unordered_map<int32_t, VertexBuffer> vertex_buffers;
+    uint32_t next_vb_id = 1;
 
+    std::unordered_map<int32_t, Mesh> meshes;
+    uint32_t next_mesh_id = 1;
+
+    std::unordered_map<int32_t, MeshInstance> mesh_instances;
+    uint32_t next_mesh_instance_id = 1;
+
+    // lights
     std::unordered_map<uint32_t, Light> point_lights;
     std::unordered_map<uint32_t, DirectionalLight> directional_lights;
     uint32_t next_light_id = 1000;
@@ -181,7 +294,7 @@ private:
     int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location;
 
     Program point_lighting_program;
-    int plp_p_location, plp_n_location, plp_as_location, plp_mt_location, plp_m_location, plp_light_p_location, plp_light_c_location;
+    int plp_p_location, plp_n_location, plp_as_location, plp_mt_location, plp_m_location, plp_light_p_location, plp_light_c_location, plp_k_c_loc, plp_k_l_loc, plp_k_q_loc;
 
     Program ssao_program;
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
@@ -212,6 +325,7 @@ private:
     bool wireframe = false;
 
     MID point_light_geometry_id;
+    glm::mat4 point_light_geom_tr;
     Drawable* point_light_drawable;
 };
 

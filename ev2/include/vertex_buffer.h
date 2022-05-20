@@ -11,6 +11,7 @@
 
 #include <buffer.h>
 #include <shader.h>
+#include <transform.h>
 
 namespace ev2 {
 
@@ -49,6 +50,28 @@ struct VertexLayout {
         return *this;
     }
 
+    VertexLayout& add_attribute(VertexAttributeType type, gl::DataType data_type, uint16_t count, uint16_t size) {
+        uint32_t location = 0;
+        switch(type) {
+            case VertexAttributeType::Vertex:
+                location = gl::VERTEX_BINDING_LOCATION;
+                break;
+            case VertexAttributeType::Normal:
+                location = gl::NORMAL_BINDING_LOCATION;
+                break;
+            case VertexAttributeType::Color:
+                location = gl::COLOR_BINDING_LOCATION;
+                break;
+            case VertexAttributeType::Texcoord:
+                location = gl::TEXCOORD_BINDING_LOCATION;
+                break;
+            default:
+                assert(0);
+        }
+        attributes.push_back(Attribute{location, data_type, count, size});
+        return *this;
+    }
+
     VertexLayout& finalize() {
         uint32_t total_size = 0;
         for (auto& l : attributes) {
@@ -67,10 +90,18 @@ enum class VertexFormat {
     Indexed
 };
 
+struct VertexBufferAccessor {
+    int buffer_id = -1;     // buffer in VertexBuffer
+    size_t byte_offset = 0;
+    bool normalized = false;
+    gl::DataType type = gl::DataType::FLOAT;
+    size_t count = 0;       // required
+    size_t stride = 0;
+};
+
 class VertexBuffer {
 public:
     VertexBuffer() = default;
-
     VertexBuffer(const VertexBuffer&) = delete;
     VertexBuffer& operator=(const VertexBuffer&) = delete;
 
@@ -88,6 +119,39 @@ public:
     void bind() const {glBindVertexArray(gl_vao);}
     void unbind() const {glBindVertexArray(0);}
     
+    int get_indexed() {return indexed;}
+
+    void add_buffer(uint32_t buffer_id, Buffer&& buffer) {
+        if (buffer.target == gl::BindingTarget::ELEMENT_ARRAY) {
+            indexed = buffer_id;
+        }
+        buffers.emplace(buffer_id, std::move(buffer));
+    }
+
+    Buffer& get_buffer(uint32_t buffer_id) {
+        return buffers.at(buffer_id);
+    }
+
+    void add_accessor(uint32_t accessor_id, uint32_t buffer_id, size_t byte_offset, bool normalized, gl::DataType type, size_t count, size_t stride) {
+        accessors.insert_or_assign(
+            accessor_id,
+            VertexBufferAccessor{(int)buffer_id, byte_offset, normalized, type, count, stride}
+        );
+    }
+
+    VertexBufferAccessor& get_accessor(uint32_t id) {
+        return accessors.at(id);
+    }
+
+    /**
+     * @brief create a vertex array object using stored accessors and locations specified in map
+     * 
+     * @param attributes map where key is binding location for attribute and value is the accessor it is targeting in this 
+     *  vertex_buffer
+     * @return GLuint 
+     */
+    GLuint gen_vao_for_attributes(const std::map<int, int>& attributes);
+
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<float>& vertex_colors);
     
     /**
@@ -118,31 +182,13 @@ public:
     static VertexBuffer vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout);
     static VertexBuffer vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout);
 
-    std::vector<Buffer> buffers;
+    static VertexBuffer vbInitDefault();
 
-    int get_indexed() {return indexed;}
 private:
+    std::unordered_map<uint32_t, Buffer> buffers;
+    std::unordered_map<uint32_t, VertexBufferAccessor> accessors;
     GLuint gl_vao = 0;
     int indexed = -1;
-};
-
-struct Mesh {
-    size_t  start_index;
-    size_t  num_elements;
-    int32_t material_id;
-};
-
-class Model {
-public:
-    Model(std::vector<Mesh> meshes, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
-        meshes{std::move(meshes)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
-    
-    std::vector<Mesh>       meshes;
-    std::vector<float>      buffer;
-
-    glm::vec3 bmin, bmax;
-
-    VertexFormat bufferFormat;
 };
 
 }

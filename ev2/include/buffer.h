@@ -27,6 +27,11 @@ public:
         CopyData(data);
     }
 
+    Buffer(gl::BindingTarget target, gl::Usage usage, std::size_t size, const void* data) : target{target}, usage{usage} {
+        glGenBuffers(1, &gl_reference);
+        CopyData(size, data);
+    }
+
     virtual ~Buffer();
 
     Buffer(const Buffer& o) = delete;
@@ -46,6 +51,8 @@ public:
      */
     template<typename T>
     void CopyData(const std::vector<T>& source);
+
+    void CopyData(std::size_t size, const void* data);
 
     /**
      * @brief Update part of data in buffer. Buffer should have data allocated before call is made to sub data
@@ -109,7 +116,7 @@ private:
     /**
      * @brief size in bytes of copied data 
      */
-    size_t buf_size;
+    size_t buf_size = 0;
 
     GLuint gl_reference = -1;
 };

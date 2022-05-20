@@ -116,7 +116,12 @@
 			"forward_list": "cpp",
 			"source_location": "cpp",
 			"future": "cpp",
-			"typeindex": "cpp"
+			"typeindex": "cpp",
+			"ranges": "cpp",
+			"csignal": "cpp",
+			"any": "cpp",
+			"strstream": "cpp",
+			"*.ipp": "cpp"
 		},
 		"cmake.buildDirectory": "${workspaceRoot}/build",
 		"glsllint.glslangValidatorPath": "../glslang-master-windows-x64-Release/bin/glslangValidator.exe"
