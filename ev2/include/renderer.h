@@ -100,29 +100,45 @@ struct MSID { // mesh id
     bool is_valid() const noexcept {return v != -1;}
 };
 
+struct MSIID { // mesh instance id
+    int32_t v = -1;
+
+    bool is_valid() const noexcept {return v != -1;}
+};
+
+struct MeshPrimitive {
+    MeshPrimitive() noexcept = default;
+    MeshPrimitive(VBID vbid, int32_t material_id, int32_t indices = -1)
+        : vbid{vbid}, indices{indices}, material_id{material_id} {}
+
+    ~MeshPrimitive() {
+        if (gl_vao != 0)
+            glDeleteVertexArrays(1, &gl_vao);
+    }
+
+    std::map<int, int>      attributes;         // map of attribute location (engine value like VERTEX_BINDING_LOCATION to a buffer in vb)
+    VBID                    vbid{};             // id of used vertex buffer
+    int32_t                 indices = -1;       // ind of index buffer in vb
+    int32_t                 material_id = 0;
+
+    GLuint gl_vao = 0;                          // vao for primitive (internal use)
+};
+
+struct Mesh {
+    std::vector<MeshPrimitive>      primitives{};
+    gl::CullMode                    cull_mode = gl::CullMode::NONE;
+    gl::FrontFacing                 front_facing = gl::FrontFacing::CCW;
+};
+
+struct MeshInstance {
+    glm::mat4               transform = glm::identity<glm::mat4>();
+    Mesh*                   mesh = nullptr;
+};
+
 struct Primitive {
     size_t  start_index = 0;
     size_t  num_elements = 0;
     int32_t material_id = 0;
-};
-
-struct Mesh {
-    std::vector<Primitive>  primitives{};
-    glm::mat4               transform = glm::identity<glm::mat4>();
-    VBID                    vbid{};
-};
-
-class Model {
-public:
-    Model(std::vector<Primitive> primitives, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
-        primitives{std::move(primitives)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
-    
-    std::vector<Primitive>  primitives;
-    std::vector<float>      buffer;
-
-    glm::vec3 bmin, bmax;
-
-    VertexFormat bufferFormat;
 };
 
 struct Drawable {
@@ -184,7 +200,9 @@ struct ModelInstance {
 
 class Renderer : public Singleton<Renderer> {
 public:
-    Renderer(uint32_t width, uint32_t height, const std::filesystem::path& asset_path);
+    Renderer(uint32_t width, uint32_t height);
+
+    void init();
 
     void update_material(int32_t material_id, const MaterialData& material);
     int32_t create_material(const MaterialData& material);
@@ -196,7 +214,6 @@ public:
     void set_light_ambient(LID lid, const glm::vec3& color);
     void destroy_light(LID lid);
 
-    MID create_model(std::shared_ptr<Model> model);
     MID create_model(std::shared_ptr<Drawable> d);
     void set_model_vertex_color_diffuse_weight(MID mid, float weight);
 
@@ -205,14 +222,20 @@ public:
     void set_instance_transform(IID iid, const glm::mat4& transform);
 
 
-    VBID create_vertex_buffer(VertexBuffer&& vb);
+    VBID create_vertex_buffer();
+    VertexBuffer* get_vertex_buffer(VBID vbid);
     void destroy_vertex_buffer(VBID vbid);
 
     MSID create_mesh();
-    void set_mesh_vb(MSID mesh_id, VBID vb);
-    void set_mesh_transform(MSID mesh_id, const glm::mat4& transform);
-    void set_mesh_primitives(MSID mesh_id, const std::vector<Primitive>& primitives);
+    void set_mesh_primitives(MSID mesh_id, const std::vector<MeshPrimitive>& primitives);
+    void set_mesh_cull_mode(MSID mesh_id, gl::CullMode cull_mode);
+    void set_mesh_front_facing(MSID mesh_id, gl::FrontFacing front_facing);
     void destroy_mesh(MSID mesh_id);
+
+    MSIID create_mesh_instance();
+    void set_mesh_instance_mesh(MSIID msiid, MSID msid);
+    void set_mesh_instance_transform(MSIID msiid, const glm::mat4& transform);
+    void destroy_mesh_instance(MSIID msiid);
 
     /**
      * @brief Set the instance material override id. Note: this will set materials for all shapes in model
@@ -254,6 +277,9 @@ private:
 
     std::unordered_map<int32_t, Mesh> meshes;
     uint32_t next_mesh_id = 1;
+
+    std::unordered_map<int32_t, MeshInstance> mesh_instances;
+    uint32_t next_mesh_instance_id = 1;
 
     // lights
     std::unordered_map<uint32_t, Light> point_lights;

@@ -57,7 +57,7 @@ void Drawable::draw(const Program& prog, int32_t material_override) {
     vertex_buffer.unbind();
 }
 
-Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path& asset_path) : 
+Renderer::Renderer(uint32_t width, uint32_t height) : 
     models{},
     model_instances{},
     geometry_program{"Geometry Program"},
@@ -71,6 +71,9 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     width{width}, 
     height{height} {
 
+}
+
+void Renderer::init() {
     // precomputed (static) data
     std::uniform_real_distribution<float> randomFloats(0.0, 1.0); // random floats between [0.0, 1.0]
     std::default_random_engine generator;
@@ -144,7 +147,7 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
 
     // set up programs
 
-    ev2::ShaderPreprocessor prep{asset_path / "shader"};
+    ev2::ShaderPreprocessor prep{ResourceManager::get_singleton().asset_path / "shader"};
     prep.load_includes();
 
     geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "geometry.glsl.vert", prep);
@@ -213,13 +216,12 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     }
 
     // light geometry
-    std::shared_ptr<Model> sphere = loadObj("sphere.obj", asset_path / "models", nullptr);
-    point_light_geometry_id = create_model(sphere);
-    glm::vec3 scaling = glm::vec3{2} / (sphere->bmax - sphere->bmin);
-    point_light_geom_tr = glm::scale(glm::identity<glm::mat4>(), scaling);
+    point_light_geometry_id = ResourceManager::get_singleton().get_model(std::filesystem::path("models") / "sphere.obj", false);
     auto itr = models.find(point_light_geometry_id);
     point_light_drawable = itr->second.get();
     point_light_drawable->front_facing = gl::FrontFacing::CW; // render back facing only
+    glm::vec3 scaling = glm::vec3{2} / (point_light_drawable->bmax - point_light_drawable->bmin);
+    point_light_geom_tr = glm::scale(glm::identity<glm::mat4>(), scaling);
 }
 
 void Renderer::update_material(int32_t material_id, const MaterialData& material) {
@@ -332,27 +334,6 @@ void Renderer::destroy_light(LID lid) {
     point_lights.erase(lid._v);
 }
 
-MID Renderer::create_model(std::shared_ptr<Model> model) {
-    assert(model->bufferFormat == VertexFormat::Array);
-
-    auto primitives = model->primitives;
-    // for (auto& m : primitives) {
-    //     m.material_id = m.material_id - 1;
-    // }
-
-    std::shared_ptr<Drawable> d = std::make_shared<Drawable>(
-        VertexBuffer::vbInitArrayVertexData(model->buffer),
-        std::move(primitives),
-        model->bmin,
-        model->bmax,
-        gl::CullMode::BACK,
-        gl::FrontFacing::CCW
-    );
-    d->material_offset = 0;
-
-    return create_model(d);
-}
-
 MID Renderer::create_model(std::shared_ptr<Drawable> d) {
     MID nmid = {next_model_id++};
     models.insert_or_assign(nmid, d);
@@ -411,10 +392,20 @@ void Renderer::set_instance_transform(IID iid, const glm::mat4& transform) {
     }
 }
 
-VBID Renderer::create_vertex_buffer(VertexBuffer&& vb) {
+VBID Renderer::create_vertex_buffer() {
     int32_t id = next_vb_id++;
-    vertex_buffers.emplace(id, std::move(vb));
+    vertex_buffers.emplace(id, VertexBuffer{});
     return {id};
+}
+
+VertexBuffer* Renderer::get_vertex_buffer(VBID vbid) {
+    if (vbid.is_valid()) {
+        auto itr = vertex_buffers.find(vbid.v);
+        if (itr != vertex_buffers.end()) {
+            return &(itr->second);
+        }
+    }
+    return nullptr;
 }
 
 void Renderer::destroy_vertex_buffer(VBID vbid) {
@@ -429,39 +420,77 @@ MSID Renderer::create_mesh() {
     return {id};
 }
 
-void Renderer::set_mesh_vb(MSID mesh_id, VBID vb) {
-    if (!mesh_id.is_valid())
-        return;
-    
-    auto mi = meshes.find(mesh_id.v);
-    if (mi != meshes.end()) {
-        mi->second.vbid = vb;
-    }
-}
-
-void Renderer::set_mesh_transform(MSID mesh_id, const glm::mat4& transform) {
-    if (!mesh_id.is_valid())
-        return;
-    
-    auto mi = meshes.find(mesh_id.v);
-    if (mi != meshes.end()) {
-        mi->second.transform = transform;
-    }
-}
-
-void Renderer::set_mesh_primitives(MSID mesh_id, const std::vector<Primitive>& primitives) {
+void Renderer::set_mesh_primitives(MSID mesh_id, const std::vector<MeshPrimitive>& primitives) {
     if (!mesh_id.is_valid())
         return;
     
     auto mi = meshes.find(mesh_id.v);
     if (mi != meshes.end()) {
         mi->second.primitives = primitives;
+
+        for (auto& m_pri : mi->second.primitives) {
+            VertexBuffer* vb = get_vertex_buffer(m_pri.vbid);
+            if (vb) {
+                m_pri.gl_vao = vb->gen_vao_for_attributes(m_pri.attributes);
+            }
+        }
+    }
+}
+
+void Renderer::set_mesh_cull_mode(MSID mesh_id, gl::CullMode cull_mode) {
+    if (!mesh_id.is_valid())
+        return;
+    
+    auto mi = meshes.find(mesh_id.v);
+    if (mi != meshes.end()) {
+        mi->second.cull_mode = cull_mode;
+    }
+}
+
+void Renderer::set_mesh_front_facing(MSID mesh_id, gl::FrontFacing front_facing) {
+    if (!mesh_id.is_valid())
+        return;
+    
+    auto mi = meshes.find(mesh_id.v);
+    if (mi != meshes.end()) {
+        mi->second.front_facing = front_facing;
     }
 }
 
 void Renderer::destroy_mesh(MSID mesh_id) {
     if (mesh_id.is_valid())
         meshes.erase(mesh_id.v);
+}
+
+MSIID Renderer::create_mesh_instance() {
+    int32_t id = next_mesh_instance_id++;
+    mesh_instances.emplace(id, MeshInstance{});
+    return {id};
+}
+
+void Renderer::set_mesh_instance_mesh(MSIID msiid, MSID msid) {
+    if (!msiid.is_valid())
+        return;
+    auto msi = meshes.find(msid.v);
+    auto mi = mesh_instances.find(msiid.v);
+    if (mi != mesh_instances.end() && msi != meshes.end()) {
+        mi->second.mesh = &(msi->second);
+    }
+}
+
+void Renderer::set_mesh_instance_transform(MSIID msiid, const glm::mat4& transform) {
+    if (!msiid.is_valid())
+        return;
+    
+    auto mi = mesh_instances.find(msiid.v);
+    if (mi != mesh_instances.end()) {
+        mi->second.transform = transform;
+    }
+}
+
+void Renderer::destroy_mesh_instance(MSIID msiid) {
+    if (msiid.is_valid())
+        mesh_instances.erase(msiid.v);
 }
 
 void Renderer::render(const Camera &camera) {

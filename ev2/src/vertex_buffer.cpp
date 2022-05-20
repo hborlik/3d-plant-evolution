@@ -220,4 +220,30 @@ VertexBuffer VertexBuffer::vbInitDefault() {
     return std::move(vb);
 }
 
+GLuint VertexBuffer::gen_vao_for_attributes(const std::map<int, int>& attributes) {
+    GLuint vao_id;
+    glGenVertexArrays(1, &vao_id);
+    glBindVertexArray(vao_id);
+
+    for (const auto& l : attributes) {
+        const int binding = l.first;
+        const int accessor_id = l.second;
+
+        auto accessor_itr = accessors.find(accessor_id);
+        assert(accessor_itr != accessors.end());
+        VertexBufferAccessor& vba = accessor_itr->second;
+        
+        auto buffer_itr= buffers.find(vba.buffer_id);
+        assert(buffer_itr != buffers.end());
+
+        buffer_itr->second.Bind();
+        glEnableVertexAttribArray(binding);
+        glVertexAttribPointer(binding, vba.count, (GLenum)vba.type, vba.normalized ? GL_TRUE : GL_FALSE, vba.stride, (void*)vba.byte_offset);
+        buffer_itr->second.Unbind();
+    }
+
+    glBindVertexArray(0);
+    return vao_id;
+}
+
 }

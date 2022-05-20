@@ -90,9 +90,18 @@ enum class VertexFormat {
     Indexed
 };
 
+struct VertexBufferAccessor {
+    int buffer_id = -1;     // buffer in VertexBuffer
+    size_t byte_offset = 0;
+    bool normalized = false;
+    gl::DataType type = gl::DataType::FLOAT;
+    size_t count = 0;       // required
+    size_t stride = 0;
+};
+
 class VertexBuffer {
 public:
-
+    VertexBuffer() = default;
     VertexBuffer(const VertexBuffer&) = delete;
     VertexBuffer& operator=(const VertexBuffer&) = delete;
 
@@ -112,17 +121,36 @@ public:
     
     int get_indexed() {return indexed;}
 
-    void add_buffer(uint32_t id, Buffer&& buffer) {
+    void add_buffer(uint32_t buffer_id, Buffer&& buffer) {
         if (buffer.target == gl::BindingTarget::ELEMENT_ARRAY) {
-            assert(indexed == -1); // already has an index buffer
-            indexed = id;
+            indexed = buffer_id;
         }
-        buffers.emplace(id, std::move(buffer));
+        buffers.emplace(buffer_id, std::move(buffer));
     }
 
-    Buffer& get_buffer(uint32_t id) {
-        return buffers.at(id);
+    Buffer& get_buffer(uint32_t buffer_id) {
+        return buffers.at(buffer_id);
     }
+
+    void add_accessor(uint32_t accessor_id, uint32_t buffer_id, size_t byte_offset, bool normalized, gl::DataType type, size_t count, size_t stride) {
+        accessors.insert_or_assign(
+            accessor_id,
+            VertexBufferAccessor{(int)buffer_id, byte_offset, normalized, type, count, stride}
+        );
+    }
+
+    VertexBufferAccessor& get_accessor(uint32_t id) {
+        return accessors.at(id);
+    }
+
+    /**
+     * @brief create a vertex array object using stored accessors and locations specified in map
+     * 
+     * @param attributes map where key is binding location for attribute and value is the accessor it is targeting in this 
+     *  vertex_buffer
+     * @return GLuint 
+     */
+    GLuint gen_vao_for_attributes(const std::map<int, int>& attributes);
 
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<float>& vertex_colors);
     
@@ -157,10 +185,8 @@ public:
     static VertexBuffer vbInitDefault();
 
 private:
-    VertexBuffer() = default;
-
     std::unordered_map<uint32_t, Buffer> buffers;
-    std::vector<GLuint> accessors;
+    std::unordered_map<uint32_t, VertexBufferAccessor> accessors;
     GLuint gl_vao = 0;
     int indexed = -1;
 };

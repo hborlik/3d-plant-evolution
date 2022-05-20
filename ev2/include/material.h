@@ -15,7 +15,7 @@
 namespace ev2 {
 
 struct Material {
-    const std::string name = "default";
+    std::string name = "default";
 
     glm::vec3 diffuse   = {1.00f,0.10f,0.85f};
     float metallic       = 0;
@@ -40,6 +40,11 @@ struct Material {
 
     Material() = default;
     Material(std::string name) : name{std::move(name)} {}
+
+    Material(const Material&) = default;
+    Material(Material&&) = default;
+    Material& operator=(const Material&) = default;
+    Material& operator=(Material&&) noexcept = default;
 };
 
 }
