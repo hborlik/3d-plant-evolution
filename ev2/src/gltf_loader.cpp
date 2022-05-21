@@ -99,7 +99,7 @@ static Ref<Node> loadNode(Ref<GLTFScene> scene, Ref<Node> parent, const tinygltf
     return ev_node;
 }
 
-Ref<GLTFScene> ResourceManager::loadGLTF(const std::filesystem::path& filename, const std::filesystem::path& base_dir, bool normalize) {
+Ref<GLTFScene> ResourceManager::loadGLTF(const std::filesystem::path& filename, bool normalize) {
     tinygltf::Model model;
     tinygltf::TinyGLTF loader;
     std::string err, warn;

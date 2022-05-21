@@ -100,7 +100,7 @@ std::optional<SurfaceInteraction> Physics::raycast_scene(const Ray& ray, float d
             triangleIndex = info.triangleIndex;
             body = info.body;
             collider = info.collider;
-            return decimal(1.0);
+            return decimal(info.hitFraction);
         }
     };
     MyCallbackClass nhc;

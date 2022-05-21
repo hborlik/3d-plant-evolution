@@ -328,7 +328,7 @@ void imgui(GLFWwindow * window) {
         
         ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
         tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
-        tree_hit_sphere->transform.position = glm::vec3{randomFloatTo(25) - 50, 0, randomFloatTo(25) - 50};
+        tree_hit_sphere->transform.position = glm::vec3{randomFloatTo(25) - 12.5, 0, randomFloatTo(25) - 12.5};
         tree_hit_sphere->add_child(tree);
         tree->set_material_override(tree_bark.second);
         tree->setParams(params, 10);
@@ -433,15 +433,11 @@ void imgui(GLFWwindow * window) {
         ground_plane->get_body()->setType(reactphysics3d::BodyType::STATIC);
         for (int n = 0; n < 10; n++)
         {
-            // initRandomPlant(tree_bark);
+            initRandomPlant(tree_bark);
         }
 
-        // ev2::ResourceManager::get_singleton().loadGLTF(fs::path("models") / "Box.gltf", fs::path("models"));
+        ev2::ResourceManager::get_singleton().loadGLTF(fs::path("models") / "Box.gltf");
        
-    }
-
-    void updateShape(float dt, Sphere geometry) {
-        // cube = geometry.getModel();
     }
 
 

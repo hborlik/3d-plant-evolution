@@ -67,7 +67,7 @@ public:
 
     std::shared_ptr<Texture> get_texture(const std::filesystem::path& filename);
 
-    Ref<GLTFScene> loadGLTF(const std::filesystem::path& filename, const std::filesystem::path& base_dir, bool normalize = false);
+    Ref<GLTFScene> loadGLTF(const std::filesystem::path& filename, bool normalize = false);
 
     std::pair<std::shared_ptr<Material>, int32_t> create_material(const std::string& name);
     std::shared_ptr<Material> get_material(const std::string& name);
