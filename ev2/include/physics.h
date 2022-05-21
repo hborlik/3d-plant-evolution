@@ -25,7 +25,7 @@ public:
     virtual ~Physics();
 
     reactphysics3d::PhysicsWorld* get_physics_world() {return world;}
-    reactphysics3d::PhysicsCommon& get_physics_common() {return physicsCommon;}   
+    reactphysics3d::PhysicsCommon& get_physics_common() {return physicsCommon;}
 
     void simulate(double dt);
     void pre_render();
@@ -34,7 +34,10 @@ public:
 
     double get_frame_interpolation() const {return interp_factor;}
 
+    void enable_simulation(bool enable) noexcept {enable_timestep = enable;}
+
 private:
+    bool enable_timestep = true;
     double interp_factor = 0.f;
     double accumulator = 0.0f;
     int32_t next_collider_id = 100;
@@ -63,7 +66,7 @@ public:
     }
 
 private:
-    reactphysics3d::SphereShape* sphere;
+    reactphysics3d::SphereShape* sphere = nullptr;
 };
 
 class BoxShape : public ColliderShape {
@@ -82,7 +85,26 @@ public:
     }
 
 private:
-    reactphysics3d::BoxShape* box;
+    reactphysics3d::BoxShape* box = nullptr;
+};
+
+class CapsuleShape : public ColliderShape {
+public:
+    CapsuleShape(float radius, float height) {
+        capsule = Physics::get_singleton().get_physics_common().createCapsuleShape(radius, height);
+    }
+
+    virtual ~CapsuleShape() {
+        if (capsule)
+            Physics::get_singleton().get_physics_common().destroyCapsuleShape(capsule);
+    }
+
+    reactphysics3d::CapsuleShape* get_shape() override {
+        return capsule;
+    }
+
+private:
+    reactphysics3d::CapsuleShape* capsule = nullptr;
 };
 
 

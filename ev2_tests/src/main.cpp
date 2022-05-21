@@ -28,7 +28,7 @@
 #include <scene.h>
 #include <physics.h>
 #include <visual_nodes.h>
-
+#include <debug.h>
 
 namespace fs = std::filesystem;
 
@@ -107,9 +107,7 @@ public:
     float cam_x = 0, cam_y = 0;
     float cam_boom_length = 10.0f;
 
-    bool show_material_editor = true;
-    bool show_settings_editor = true;
-    bool enable_physics_simulation = false;
+    bool show_debug = false;
 
     enum CameraMode : uint8_t {
         FirstPerson = 0,
@@ -125,39 +123,6 @@ public:
             default:
                 return cam_orbital;
         }
-    }
-
-    void show_material_editor_window() {
-        ImGui::Begin("Material Editor", &show_material_editor);
-        for (auto& mas : ev2::ResourceManager::get_singleton().get_materials_locations()) {
-            if (ImGui::CollapsingHeader(("Material " + std::to_string(mas.second.material_id) + " " + mas.first).c_str())) {
-                
-                if (ImGui::TreeNode("Color")) {
-                    ImGui::ColorPicker3("diffuse", glm::value_ptr(mas.second.material->diffuse), ImGuiColorEditFlags_InputRGB);
-                    ImGui::TreePop();
-                }
-                ImGui::DragFloat("metallic", &mas.second.material->metallic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("subsurface", &mas.second.material->subsurface, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("specular", &mas.second.material->specular, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("roughness", &mas.second.material->roughness, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("specularTint", &mas.second.material->specularTint, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("clearcoat", &mas.second.material->clearcoat, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("clearcoatGloss", &mas.second.material->clearcoatGloss, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("anisotropic", &mas.second.material->anisotropic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("sheen", &mas.second.material->sheen, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("sheenTint", &mas.second.material->sheenTint, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-            }
-        }
-        ImGui::End();
-    }
-
-    void show_settings_editor_window() {
-        ImGui::Begin("Settings", &show_settings_editor);
-        ImGui::Text("Application %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        ImGui::DragFloat("ssao radius", &(ev2::Renderer::get_singleton().ssao_radius), 0.01f, 0.0f, 3.0f, "%.3f", 1.0f);
-        ImGui::DragInt("ssao samples", (int32_t*)&(ev2::Renderer::get_singleton().ssao_kernel_samples), 1, 1, 64);
-        ImGui::Checkbox("Enable Physics Timestep", &enable_physics_simulation);
-        ImGui::End();
     }
 
     void plantWindow(Plant * somePlant) {
@@ -294,10 +259,11 @@ void imgui(GLFWwindow * window) {
                 plantWindow(&*it);
         }
 
-        if (show_material_editor)
+        if (show_debug) {
             show_material_editor_window();
-        if (show_settings_editor)
             show_settings_editor_window();
+
+        }
    //ImGui::ShowDemoWindow(&show_demo_window);
 
 
@@ -479,8 +445,7 @@ void imgui(GLFWwindow * window) {
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
             update(dt, io);
-            if (enable_physics_simulation)
-                ev2::Physics::get_singleton().simulate(dt);
+            ev2::Physics::get_singleton().simulate(dt);
             scene->update_pre_render();
             ev2::ResourceManager::get_singleton().pre_render();
             ev2::Renderer::get_singleton().render(scene->get_active_camera()->get_camera());
@@ -679,9 +644,8 @@ void imgui(GLFWwindow * window) {
         switch (key) {
             case ev2::input::Key::Esc:
                 if (down) {
-                    show_settings_editor = true;
-                    show_material_editor = true;
-                }
+                    show_debug = !show_debug;
+                } 
                 break;
             default:
                 break;

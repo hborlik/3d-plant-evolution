@@ -38,6 +38,8 @@ Physics::~Physics() {
 }
 
 void Physics::simulate(double dt) {
+    if (!enable_timestep)
+        return;
     // Constant physics time step 
     const float timeStep = 1.0 / 60.0; 
     double deltaTime  = dt;
@@ -54,7 +56,7 @@ void Physics::simulate(double dt) {
     
         // Decrease the accumulated time
         accumulator -= timeStep;
-    } 
+    }
     
     // Compute the time interpolation factor
     interp_factor = accumulator / timeStep;
