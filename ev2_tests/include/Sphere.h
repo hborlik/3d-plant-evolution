@@ -1,5 +1,5 @@
 /*
-* Sphere Class template from http://www.songho.ca/opengl/gl_sphere.html
+* SuperSphere Class template from http://www.songho.ca/opengl/gl_sphere.html
 * Modified by Jack Ortega to render a super shape instead, and to support animation.
 */
 
@@ -9,12 +9,12 @@
 #include <vector>
 #include <resource.h>
 
-class Sphere
+class SuperSphere
 {
 public:
     // ctor/dtor
-    Sphere(float radius=1.0f, int sectorCount=36, int stackCount=18, bool smooth=true);
-    ~Sphere() {}
+    SuperSphere(float radius=1.0f, int sectorCount=36, int stackCount=18, bool smooth=true);
+    ~SuperSphere() {}
 
     // getters/setters
     float getRadius() const                 { return radius; }
@@ -67,7 +67,7 @@ public:
                   this->c = c; this->d = d; this->k = k; this->q1 = q1; this->q2 = q2; this->q3 = q3; 
                   }
 
-    Sphere crossGenes(Sphere parentB);
+    SuperSphere crossGenes(SuperSphere parentB);
 
     //genes
     float a = 1.f; //* //sin(time); //+ sin(f);

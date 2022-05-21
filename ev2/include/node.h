@@ -12,7 +12,6 @@
 #include <list>
 #include <memory>
 
-
 #include <transform.h>
 #include <ev.h>
 #include <reference_counted.h>
@@ -20,10 +19,18 @@
 namespace ev2 {
 
 class Node : public Object {
-public:
+protected:
     Node() = default;
     explicit Node(const std::string& name) : name{name} {}
+public:
     virtual ~Node() = default;
+
+    template<typename T, typename... Args>
+    static Ref<T> create_node(Args&&... args) {
+        Ref<T> node{new T(std::forward<Args&&>(args)...)};
+        node->on_init();
+        return node;
+    }
 
     /**
      * @brief node initialization
@@ -66,6 +73,7 @@ public:
      * @return Ref<Node> 
      */
     Ref<Node> get_child(int index);
+    size_t get_n_children() const noexcept {return children.size();}
 
     Ref<Node> get_parent() const {
         if (parent)
@@ -73,8 +81,8 @@ public:
         return{};
     }
 
-    class Scene& get_scene() {
-        return *scene;
+    class Scene* get_scene() {
+        return scene;
     }
 
     /**

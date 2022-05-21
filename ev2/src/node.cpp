@@ -11,6 +11,7 @@ void Node::add_child(Ref<Node> node) {
         node->parent->remove_child(node);
     children.push_back(node);
     node->parent = this;
+    node->scene = scene;
 }
 
 void Node::remove_child(Ref<Node> node) {

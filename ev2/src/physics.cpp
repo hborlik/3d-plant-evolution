@@ -146,12 +146,16 @@ void PhysicsNode::set_cur_transform(const reactphysics3d::Transform& curr_tranfo
     const reactphysics3d::Vector3 pos = interpolatedTransform.getPosition();
     const reactphysics3d::Quaternion qua = interpolatedTransform.getOrientation();
     transform.position = glm::vec3{pos.x, pos.y, pos.z};
-    transform.rotation = glm::quat{qua.x, qua.y, qua.z, qua.w};
+    transform.rotation = glm::quat{qua.w, qua.x, qua.y, qua.z};
+}
+
+ColliderBody::ColliderBody(const std::string &name) : PhysicsNode{name} {
+    body = Physics::get_singleton().get_physics_world()->createCollisionBody(get_physics_transform());
+    body->setUserData(this);
 }
 
 void ColliderBody::on_init() {
-    body = Physics::get_singleton().get_physics_world()->createCollisionBody(get_physics_transform());
-    body->setUserData(this);
+    
 }
 
 void ColliderBody::on_ready() {
@@ -184,10 +188,14 @@ Ref<ColliderShape> ColliderBody::get_shape(int ind) {
 
 // RigidBody
 
-
-void RigidBody::on_init() {
+RigidBody::RigidBody(const std::string &name, reactphysics3d::BodyType type) : PhysicsNode{name} {
     body = Physics::get_singleton().get_physics_world()->createRigidBody(get_physics_transform());
     body->setUserData(this);
+    body->setType(type);
+}
+
+void RigidBody::on_init() {
+    
 }
 
 void RigidBody::on_ready() {

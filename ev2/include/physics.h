@@ -133,7 +133,7 @@ private:
 
 class ColliderBody : public PhysicsNode {
 public:
-    explicit ColliderBody(const std::string &name) : PhysicsNode{name} {}
+    explicit ColliderBody(const std::string &name);
 
     void on_init() override;
     void on_ready() override;
@@ -159,7 +159,7 @@ private:
 
 class RigidBody : public PhysicsNode {
 public:
-    explicit RigidBody(const std::string &name) : PhysicsNode{name} {}
+    explicit RigidBody(const std::string &name, reactphysics3d::BodyType type = reactphysics3d::BodyType::STATIC);
 
     void on_init() override;
     void on_ready() override;
