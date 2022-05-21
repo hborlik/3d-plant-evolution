@@ -30,7 +30,7 @@ public:
     void simulate(double dt);
     void pre_render();
 
-    std::optional<SurfaceInteraction> raycast_scene(const Ray& ray);
+    std::optional<SurfaceInteraction> raycast_scene(const Ray& ray, float distance);
 
     double get_frame_interpolation() const {return interp_factor;}
 

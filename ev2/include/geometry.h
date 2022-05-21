@@ -26,24 +26,15 @@ struct SurfaceInteraction
     glm::vec3 point;
     glm::vec3 incoming;
     glm::vec3 normal;
-    glm::vec3 tan;
-    glm::vec3 bi;
-    glm::vec2 uv;
     Ref<Object> hit;
 
     SurfaceInteraction() = default;
     SurfaceInteraction(glm::vec3 normal,
-                       glm::vec3 tan,
-                       glm::vec3 bi,
-                       glm::vec2 uv,
                        float t,
                        glm::vec3 point,
                        glm::vec3 incoming)
         : t{t}, point{point}, incoming{incoming},
-          normal{normal},
-          tan{tan},
-          bi{bi},
-          uv{uv}
+          normal{normal}
     {
     }
 };
@@ -87,9 +78,6 @@ struct Sphere {
         // hit info into surface interaction
         SurfaceInteraction h {
             normalize(hit_point - center),
-            {},
-            {},
-            {},
             t,
             hit_point,
             ray.direction
@@ -138,9 +126,6 @@ struct Plane {
         if (t >= 0.01f) {
             SurfaceInteraction h {
                 vec3(p),
-                {},
-                {},
-                {},
                 t,
                 ray.eval(t),
                 ray.direction

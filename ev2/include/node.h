@@ -99,15 +99,16 @@ public:
 
     glm::vec3 get_world_position() const {return glm::vec3(get_transform()[3]);}
 
+    const std::string name = "Node";
     Transform transform{};
 
 private:
     friend class Scene;
 
     void _update(float dt);
+    void _ready();
     void _update_pre_render();
     
-    const std::string name = "Node";
     std::list<Ref<Node>> children;
     Node* parent = nullptr;
     class Scene* scene = nullptr;

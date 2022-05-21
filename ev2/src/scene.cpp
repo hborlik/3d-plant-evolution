@@ -13,4 +13,8 @@ void Scene::update_pre_render() {
     _update_pre_render();
 }
 
+void Scene::ready() {
+    _ready();
+}
+
 } // namespace ev2

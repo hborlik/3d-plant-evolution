@@ -509,7 +509,8 @@ void setWindowTitle(const std::string& title) {
 
 void setApplication(Application* app) {
     static_context->application = app;
-    app->on_window_size_change(static_context->width, static_context->width);
+    if (app)
+        app->on_window_size_change(static_context->width, static_context->width);
 }
 
 GLFWwindow* getContextWindow() {

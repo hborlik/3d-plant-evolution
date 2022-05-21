@@ -38,6 +38,14 @@ void Node::_update(float dt) {
     }
 }
 
+void Node::_ready() {
+    on_ready();
+
+    for (auto& c : children) {
+        c->_ready();
+    }
+}
+
 void Node::_update_pre_render() {
     pre_render();
 

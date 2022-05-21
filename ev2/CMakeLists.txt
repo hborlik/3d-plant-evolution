@@ -22,15 +22,7 @@ PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-<<<<<<< HEAD
-target_link_libraries(ev2 PUBLIC glm glad glfw3 tinyobjloader reactphysics3d)
-=======
-target_link_libraries(ev2 PUBLIC glm)
-target_link_libraries(ev2 PUBLIC glad)
-target_link_libraries(ev2 PUBLIC glfw3)
-target_link_libraries(ev2 PRIVATE tinyobjloader)
-target_link_libraries(ev2 PRIVATE tinygltfloader)
->>>>>>> hunter_experimental
+target_link_libraries(ev2 PUBLIC glm glad glfw3 tinyobjloader tinygltfloader reactphysics3d)
 
 target_include_directories(ev2 PUBLIC ${OPENGL_INCLUDE_DIRS})
 target_link_libraries(ev2 PUBLIC ${OPENGL_LIBRARY})

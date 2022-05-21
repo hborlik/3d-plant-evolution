@@ -4,13 +4,33 @@ using namespace reactphysics3d;
 
 namespace ev2 {
 
+Vector3 vec_cast(glm::vec3 vec) noexcept {
+    return Vector3{vec.x, vec.y, vec.z};
+}
+
+glm::vec3 react_vec_cast(Vector3 vec) noexcept {
+    return glm::vec3{vec.x, vec.y, vec.z};
+}
+
+class PhysicsEventListener : public EventListener {
+public:
+    void onContact(const CollisionCallback::CallbackData& callbackData) override {
+        std::string name0 = reinterpret_cast<Node*>(callbackData.getContactPair(0).getBody1()->getUserData())->name;
+        std::string name1 = reinterpret_cast<Node*>(callbackData.getContactPair(0).getBody2()->getUserData())->name;
+        // std::cout << name0 << " contact " << name1 << std::endl;
+    }
+};
+
+PhysicsEventListener pel;
+
 Physics::Physics() {
     PhysicsWorld::WorldSettings settings; 
-    settings.defaultVelocitySolverNbIterations = 20; 
-    settings.isSleepingEnabled = false; 
+    settings.defaultVelocitySolverNbIterations = 20;
+    settings.isSleepingEnabled = false;
     settings.gravity = Vector3(0, -9.81, 0);
 
     world = physicsCommon.createPhysicsWorld(settings);
+    world->setEventListener(&pel);
 }
 
 Physics::~Physics() {
@@ -29,14 +49,14 @@ void Physics::simulate(double dt) {
     // one or several physics steps 
     while (accumulator >= timeStep) { 
     
-        // Update the physics world with a constant time step 
-        world->update(timeStep); 
+        // Update the physics world with a constant time step
+        world->update(timeStep);
     
-        // Decrease the accumulated time 
+        // Decrease the accumulated time
         accumulator -= timeStep;
     } 
     
-    // Compute the time interpolation factor 
+    // Compute the time interpolation factor
     interp_factor = accumulator / timeStep;
 }
 
@@ -44,21 +64,59 @@ void Physics::pre_render() {
 
 }
 
-std::optional<SurfaceInteraction> Physics::raycast_scene(const Ray& ray) {
+std::optional<SurfaceInteraction> Physics::raycast_scene(const Ray& ray, float distance) {
     float nearest = INFINITY;
     SurfaceInteraction closest_hit{};
-    // for (auto& si : sphere_colldiers) {
-    //     SurfaceInteraction sfi{};
-    //     if (si.second.shape)
-    //         if (si.second.shape->intersect(ray, sfi)) {
-    //             if (sfi.t < nearest) {
-    //                 nearest = sfi.t;
-    //                 closest_hit = sfi;
-    //                 closest_hit.hit = si.second.owner;
-    //             }
-    //         }
-    // }
-    if (closest_hit.hit.get()) {
+
+    class MyCallbackClass : public RaycastCallback {
+    public:
+        /// Hit point in world-space coordinates
+        Vector3 worldPoint{};
+
+        /// Surface normal at hit point in world-space coordinates
+        Vector3 worldNormal{};
+
+        /// Fraction distance of the hit point between point1 and point2 of the ray
+        /// The hit point "p" is such that p = point1 + hitFraction * (point2 - point1)
+        decimal hitFraction = 0.0f;
+
+        /// Mesh subpart index that has been hit (only used for triangles mesh and -1 otherwise)
+        int meshSubpart = 0;
+
+        /// Hit triangle index (only used for triangles mesh and -1 otherwise)
+        int triangleIndex = 0;
+
+        /// Pointer to the hit collision body
+        CollisionBody* body = nullptr;
+
+        /// Pointer to the hit collider
+        Collider* collider = nullptr;
+
+        virtual decimal notifyRaycastHit(const RaycastInfo& info) {
+            worldPoint = info.worldPoint;
+            worldNormal = info.worldNormal;
+            hitFraction = info.hitFraction;
+            meshSubpart = info.meshSubpart;
+            triangleIndex = info.triangleIndex;
+            body = info.body;
+            collider = info.collider;
+            return decimal(1.0);
+        }
+    };
+    MyCallbackClass nhc;
+    reactphysics3d::Ray cast_ray{vec_cast(ray.origin), vec_cast(ray.eval(distance))};
+    world->raycast(cast_ray, &nhc);
+
+    if (nhc.body) { // got a hit
+        closest_hit = SurfaceInteraction{
+            react_vec_cast(nhc.worldNormal),
+            nhc.hitFraction,
+            react_vec_cast(nhc.worldPoint),
+            ray.direction
+        };
+
+        closest_hit.hit = Ref<PhysicsNode>(reinterpret_cast<PhysicsNode*>(nhc.body->getUserData()));
+
         return {closest_hit};
     }
     return {};
@@ -114,7 +172,7 @@ void ColliderBody::pre_render() {
 void ColliderBody::add_shape(Ref<ColliderShape> shape, const glm::vec3& pos) {
     shapes.push_back(shape);
     Collider* collider = body->addCollider(shape->get_shape(), reactphysics3d::Transform{Vector3{pos.x, pos.y, pos.z}, Quaternion::identity()});
-
+    assert(collider);
     colliders.push_back(collider);
 }
 
@@ -139,7 +197,7 @@ void RigidBody::on_process(float delta) {
 }
 
 void RigidBody::on_destroy() {
-    Physics::get_singleton().get_physics_world()->destroyCollisionBody(body);
+    Physics::get_singleton().get_physics_world()->destroyRigidBody(body);
 }
 
 void RigidBody::pre_render() {
@@ -149,7 +207,7 @@ void RigidBody::pre_render() {
 void RigidBody::add_shape(Ref<ColliderShape> shape, const glm::vec3& pos) {
     shapes.push_back(shape);
     Collider* collider = body->addCollider(shape->get_shape(), reactphysics3d::Transform{Vector3{pos.x, pos.y, pos.z}, Quaternion::identity()});
-
+    assert(collider);
     colliders.push_back(collider);
 }
 

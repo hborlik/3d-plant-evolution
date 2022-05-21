@@ -92,7 +92,7 @@ public:
     Plant parentBeta;
     Plant child;
     //ev2::Ref<TreeNode> tree{};
-    ev2::Ref<ev2::ColliderBody> ground_plane;
+    ev2::Ref<ev2::RigidBody> ground_plane;
 
     ev2::Ref<ev2::VisualInstance> marker{};
 
@@ -109,6 +109,7 @@ public:
 
     bool show_material_editor = true;
     bool show_settings_editor = true;
+    bool enable_physics_simulation = false;
 
     enum CameraMode : uint8_t {
         FirstPerson = 0,
@@ -155,6 +156,7 @@ public:
         ImGui::Text("Application %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::DragFloat("ssao radius", &(ev2::Renderer::get_singleton().ssao_radius), 0.01f, 0.0f, 3.0f, "%.3f", 1.0f);
         ImGui::DragInt("ssao samples", (int32_t*)&(ev2::Renderer::get_singleton().ssao_kernel_samples), 1, 1, 64);
+        ImGui::Checkbox("Enable Physics Timestep", &enable_physics_simulation);
         ImGui::End();
     }
 
@@ -360,12 +362,18 @@ void imgui(GLFWwindow * window) {
         marker = scene->create_node<ev2::VisualInstance>("marker");
         marker->set_model(ground);
         marker->transform.scale = glm::vec3{0.5, 0.5, 0.5};
-        marker->transform.position = glm::vec3{0, 0, 0};
+        marker->transform.position = glm::vec3{0, 3, 0};
         marker->set_material_override(highlight_material.second);
 
+        auto box_vis = scene->create_node<ev2::VisualInstance>("marker");
+        box_vis->set_model(ground);
+        box_vis->transform.scale = glm::vec3{0.5, 0.5, 0.5};
+        box_vis->transform.position = glm::vec3{0, 0, 0};
+        box_vis->set_material_override(highlight_material.second);
+
         auto box = scene->create_node<ev2::RigidBody>("Box Rigidbody");
-        box->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{1, 1, 1}));
-        box->add_child(marker);
+        box->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{0.25, 0.25, 0.25}));
+        box->add_child(box_vis);
         box->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
         box->transform.position = glm::vec3{0, 14, 0};
 
@@ -410,7 +418,7 @@ void imgui(GLFWwindow * window) {
         auto g_node = scene->create_node<ev2::VisualInstance>("ground");
         g_node->set_model(ground);
         g_node->set_material_override(ground_material.second);
-        g_node->transform.scale = glm::vec3{1000, 0.1, 1000};
+        g_node->transform.scale = glm::vec3{100, 0.1, 100};
 
         cam_orbital      = scene->create_node<ev2::CameraNode>("Orbital");
         cam_orbital_root = scene->create_node<ev2::Node>("cam_orbital_root");
@@ -418,13 +426,14 @@ void imgui(GLFWwindow * window) {
 
         cam_orbital_root->add_child(cam_orbital);
 
-        ground_plane = scene->create_node<ev2::ColliderBody>("Ground Collider");
-        ground_plane->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{100, 1, 100}));
+        ground_plane = scene->create_node<ev2::RigidBody>("Ground Collider");
+        ground_plane->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{10, 0.05, 10}));
         ground_plane->add_child(g_node);
-        ground_plane->transform.position = glm::vec3{0, 0.4, 0};
+        ground_plane->transform.position = glm::vec3{0, 0, 0};
+        ground_plane->get_body()->setType(reactphysics3d::BodyType::STATIC);
         for (int n = 0; n < 10; n++)
         {
-            initRandomPlant(tree_bark);
+            // initRandomPlant(tree_bark);
         }
 
         // ev2::ResourceManager::get_singleton().loadGLTF(fs::path("models") / "Box.gltf", fs::path("models"));
@@ -468,17 +477,23 @@ void imgui(GLFWwindow * window) {
 
         scene->set_active_camera(getCameraNode());
 
+        scene->ready();
+
         float dt = 0.05f;
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
             update(dt, io);
-            ev2::Physics::get_singleton().simulate(dt);
+            if (enable_physics_simulation)
+                ev2::Physics::get_singleton().simulate(dt);
             scene->update_pre_render();
             ev2::ResourceManager::get_singleton().pre_render();
             ev2::Renderer::get_singleton().render(scene->get_active_camera()->get_camera());
             imgui(window);
             dt = float(ev2::window::getFrameTime());
         }
+
+        scene->destroy();
+
         ev2::Renderer::shutdown();      
         return 0;
     }
@@ -615,7 +630,7 @@ void imgui(GLFWwindow * window) {
             if ((left_mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) 
                 {
                 ev2::Ray cast = cam.screen_pos_to_ray(s_pos);
-                auto si = ev2::Physics::get_singleton().raycast_scene(cast);
+                auto si = ev2::Physics::get_singleton().raycast_scene(cast, 200.0f);
                 if (si) {
                     std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl; 
                         
@@ -821,7 +836,11 @@ int main(int argc, char *argv[]) {
     ev2::window::setApplication(app.get());
     //initAudio(asset_path);
     app->initialize();
+
     int rv = app->run();
+
+    // shutdown
+    ev2::window::setApplication(nullptr);
     app = {};
     ev2::EV2_shutdown();
     return rv;

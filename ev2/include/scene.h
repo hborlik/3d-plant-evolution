@@ -39,6 +39,8 @@ public:
     void update(float dt);
     void update_pre_render();
 
+    void ready();
+
 private:
 
     Ref<CameraNode> active_camera;
