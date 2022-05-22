@@ -241,6 +241,7 @@ void imgui(GLFWwindow * window) {
         if (show_debug) {
             show_material_editor_window();
             show_settings_editor_window();
+            show_game_debug_window(game.get());
         }
    //ImGui::ShowDemoWindow(&show_demo_window);
 
@@ -333,6 +334,7 @@ void imgui(GLFWwindow * window) {
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
             update(dt, io);
+            game->update(dt);
             ev2::Physics::get_singleton().simulate(dt);
             game->scene->update_pre_render();
             ev2::ResourceManager::get_singleton().pre_render();

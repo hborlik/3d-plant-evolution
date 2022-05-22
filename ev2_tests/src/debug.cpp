@@ -36,8 +36,20 @@ void show_settings_editor_window() {
     ImGui::Text("Application %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
     ImGui::DragFloat("ssao radius", &(ev2::Renderer::get_singleton().ssao_radius), 0.01f, 0.0f, 3.0f, "%.3f", 1.0f);
     ImGui::DragInt("ssao samples", (int32_t*)&(ev2::Renderer::get_singleton().ssao_kernel_samples), 1, 1, 64);
+    ImGui::Separator();
+    ImGui::DragFloat("Exposure", &(ev2::Renderer::get_singleton().exposure), 0.01f, 0.05f, 1.0f, "%.3f", 1.0f);
+    ImGui::DragFloat("Gamma", &(ev2::Renderer::get_singleton().gamma), 0.01f, 0.8f, 2.8f, "%.1f", 1.0f);
+    ImGui::Separator();
+    ImGui::Text("World");
     if (ImGui::Checkbox("Enable Physics Timestep", &enable_physics_timestep)) {
         ev2::Physics::get_singleton().enable_simulation(enable_physics_timestep);
     }
+    ImGui::End();
+}
+
+void show_game_debug_window(GameState* game) {
+    ImGui::Begin("Game Settings");
+    ImGui::Text("Time %.3f", game->game_time);
+    ImGui::DragFloat("Time Speed", &(game->time_speed), 0.01f, 0.05f, 5.0f, "%.3f", 1.0f);
     ImGui::End();
 }

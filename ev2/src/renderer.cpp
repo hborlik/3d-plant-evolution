@@ -212,6 +212,7 @@ void Renderer::init() {
     sky_time_loc = sky_program.getUniformInfo("time").Location;
     sky_cirrus_loc = sky_program.getUniformInfo("cirrus").Location;
     sky_cumulus_loc = sky_program.getUniformInfo("cumulus").Location;
+    sky_sun_position_loc = sky_program.getUniformInfo("sun_position").Location;
 
     post_fx_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
     post_fx_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "post_fx.glsl.frag", prep);
@@ -726,7 +727,8 @@ void Renderer::render(const Camera &camera) {
     // sky program
     sky_program.use();
     float time = (float)glfwGetTime() - 0.0f;
-    gl::glUniformf(time, sky_time_loc);
+    gl::glUniformf(time * cloud_speed, sky_time_loc);
+    gl::glUniformf(sun_position, sky_sun_position_loc);
     // draw into non lit pixels
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
@@ -748,6 +750,9 @@ void Renderer::render(const Camera &camera) {
     glDisable(GL_STENCIL_TEST);
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+    gl::glUniformf(exposure, post_fx_exposure_loc);
+    gl::glUniformf(gamma, post_fx_gamma_loc);
 
     if (post_fx_hdrt_loc >= 0) {
         glActiveTexture(GL_TEXTURE0);

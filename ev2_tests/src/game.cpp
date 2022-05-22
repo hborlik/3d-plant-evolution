@@ -60,6 +60,11 @@ GameState::GameState() {
     ground_plane->get_body()->setType(reactphysics3d::BodyType::STATIC);
 }
 
+void GameState::update(float dt) {
+    game_time += time_speed * dt;
+    Renderer::get_singleton().sun_position = M_2_PI * game_time / DayLength;
+}
+
 void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations) {
     int unique_id = (int)randomFloatTo(9999999);
     std::string unique_hit_tag = std::string("Tree_hit") + std::to_string(unique_id);

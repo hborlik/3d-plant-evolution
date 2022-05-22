@@ -28,6 +28,12 @@ public:
 
     Ref<RigidBody> ground_plane;
 
+    float game_time = 0.0f;
+    float time_speed = 1.0f;
+    const float DayLength = 25.0f;
+
+    void update(float dt);
+
     void spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations);
     void spawn_random_tree(const glm::vec3& position, float range_extent, int iterations);
     void spawn_box(const glm::vec3& position);

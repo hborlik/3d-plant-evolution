@@ -260,6 +260,11 @@ public:
     float ssao_bias = 0.025f;
     uint32_t ssao_kernel_samples = 32;
 
+    float exposure      = .2f;
+    float gamma         = 2.2f;
+    float sun_position  = .0f;
+    float cloud_speed   = .1f;
+
 private:
     // model, instance vertex data
     std::unordered_map<MID, std::shared_ptr<Drawable>> models;
@@ -300,7 +305,7 @@ private:
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
 
     Program sky_program;
-    int sky_time_loc, sky_cirrus_loc, sky_cumulus_loc;
+    int sky_time_loc, sky_cirrus_loc, sky_cumulus_loc, sky_sun_position_loc;
 
     Program post_fx_program;
     int post_fx_gamma_loc, post_fx_exposure_loc, post_fx_hdrt_loc;
