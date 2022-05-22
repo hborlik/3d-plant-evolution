@@ -289,7 +289,7 @@ void imgui(GLFWwindow * window) {
         
         for (int n = 0; n < 20; n++)
         {
-            game->spawn_random_tree(glm::vec3{}, 80, 10);
+            game->spawn_random_tree(glm::vec3{}, 40, 10);
         }
 
         ev2::ResourceManager::get_singleton().loadGLTF(fs::path("models") / "Box.gltf");

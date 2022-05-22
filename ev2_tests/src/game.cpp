@@ -25,8 +25,12 @@ GameState::GameState() {
     sun_light->set_ambient({0.1, 0.1, 0.1});
 
     auto light = scene->create_node<ev2::PointLightNode>("point_light");
-    light->transform.position = glm::vec3{0, 5, 0};
-    light->set_color(glm::vec3{15, 15, 15});
+    light->transform.position = glm::vec3{0, 5, -10};
+    light->set_color(glm::vec3{1, 0, 0});
+
+    light = scene->create_node<ev2::PointLightNode>("point_light");
+    light->transform.position = glm::vec3{0, 3, 10};
+    light->set_color(glm::vec3{0, 1, 0});
 
     auto bark = ev2::ResourceManager::get_singleton().create_material("bark");
     bark.first->diffuse = glm::vec3{0};
@@ -87,7 +91,7 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
         {"w_r", randomFloatRange(0.6f, 0.89f)}
     };
 
-    float r = sqrt(randomFloatTo(range_extent));
+    float r = sqrt(randomFloatTo(1)) * range_extent;
     float th = randomFloatTo(ptree::degToRad(360));
 
     glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;

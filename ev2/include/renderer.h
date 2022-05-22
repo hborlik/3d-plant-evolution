@@ -299,8 +299,15 @@ private:
     Program ssao_program;
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
 
+    Program sky_program;
+    int sky_time_loc, sky_cirrus_loc, sky_cumulus_loc;
+
+    Program post_fx_program;
+    int post_fx_gamma_loc, post_fx_exposure_loc, post_fx_hdrt_loc;
+
     FBO g_buffer;
     FBO ssao_buffer;
+    FBO lighting_buffer;
     
     VertexBuffer sst_vb;
 
@@ -311,6 +318,8 @@ private:
 
     std::shared_ptr<Texture> ssao_kernel_noise;
     std::shared_ptr<Texture> ssao_kernel_color;
+
+    std::shared_ptr<Texture> hdr_texture;
 
     Buffer shader_globals;
     ProgramUniformBlockDescription globals_desc;

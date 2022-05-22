@@ -45,7 +45,7 @@ void main() {
     // fake hdr
     // color = color / (color + vec3(1.0)); // function asymptote y = 1 (maps to LDR range of [0, 1])
     // gamma
-    color = pow(color, vec3(1.0/2.2));
+    // color = pow(color, vec3(1.0/2.2));
 
     frag_color = vec4(color, 1.0);
     // frag_color = vec4(AO, AO, AO, 1.0);
