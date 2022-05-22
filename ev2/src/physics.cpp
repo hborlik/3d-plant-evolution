@@ -214,6 +214,22 @@ void RigidBody::pre_render() {
     set_cur_transform(body->getTransform());
 }
 
+void RigidBody::set_mass(float mass) {
+    body->setMass(mass);
+}
+
+float RigidBody::get_mass() const {
+    return body->getMass();
+}
+    
+void RigidBody::apply_force(const glm::vec3& force) {
+    body->applyWorldForceAtCenterOfMass(vec_cast(force));
+}
+
+void RigidBody::apply_local_force(const glm::vec3& force) {
+    body->applyLocalForceAtCenterOfMass(vec_cast(force));
+}
+
 void RigidBody::add_shape(Ref<ColliderShape> shape, const glm::vec3& pos) {
     shapes.push_back(shape);
     Collider* collider = body->addCollider(shape->get_shape(), reactphysics3d::Transform{Vector3{pos.x, pos.y, pos.z}, Quaternion::identity()});

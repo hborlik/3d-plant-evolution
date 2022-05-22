@@ -175,6 +175,11 @@ public:
     reactphysics3d::Collider* get_collider(int ind) {return colliders[ind];}
     size_t get_num_colliders() const {return colliders.size();}
 
+    void set_mass(float mass);
+    float get_mass() const;
+    
+    void apply_force(const glm::vec3& force);
+
     reactphysics3d::RigidBody* get_body() {return body;}
 
 private:

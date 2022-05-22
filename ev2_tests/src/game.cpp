@@ -54,7 +54,7 @@ GameState::GameState() {
     g_node->transform.scale = glm::vec3{100, 0.1, 100};
 
     ground_plane = scene->create_node<RigidBody>("Ground Collider");
-    ground_plane->add_shape(make_referenced<BoxShape>(glm::vec3{10, 0.05, 10}));
+    ground_plane->add_shape(make_referenced<BoxShape>(glm::vec3{100, 0.05, 100}));
     ground_plane->add_child(g_node);
     ground_plane->transform.position = glm::vec3{0, 0, 0};
     ground_plane->get_body()->setType(reactphysics3d::BodyType::STATIC);
