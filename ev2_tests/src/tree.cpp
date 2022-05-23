@@ -187,6 +187,7 @@ void TreeNode::on_init() {
 
 void TreeNode::setParams(std::map<std::string, float> paramsNew, int iterations) {
     params = paramsNew;
+    thickness = params.at("thickness");
     this->generate(iterations);
 }
 

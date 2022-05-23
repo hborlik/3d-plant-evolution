@@ -41,8 +41,6 @@ public:
 
     void pre_render() override;
 
-    void set_active();
-
     void set_fov(float fov) noexcept {this->fov = fov;}
     float get_fov() noexcept {return fov;}
 

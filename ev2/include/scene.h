@@ -24,17 +24,14 @@ namespace ev2 {
 
 class Scene : public Node {
 public:
-    explicit Scene(const std::string& name) : Node{name} {}
+    explicit Scene(const std::string& name) : Node{name} {
+        scene = this; // we are the scene
+    }
 
-    void add_node(Ref<Node> n, Ref<Node> parent);
+    void add_node(Ref<Node> n, Ref<Node> parent = nullptr);
 
     template<typename T>
     Ref<T> create_node(const std::string& name);
-
-    void destroy_node(Ref<Node> node);
-
-    void set_active_camera(Ref<CameraNode> camera) {active_camera = camera;}
-    Ref<CameraNode> get_active_camera() {return active_camera;}
 
     void update(float dt);
     void update_pre_render();
@@ -43,16 +40,14 @@ public:
 
 private:
 
-    Ref<CameraNode> active_camera;
+    bool is_ready = false;
 };
 
 template<typename T>
 Ref<T> Scene::create_node(const std::string& name) {
-    Ref<T> node = make_referenced<T>(name);
+    Ref<T> node = Node::create_node<T>(name);
     node->scene = this;
-    Ref<Node> nnode = node;
-    add_child(nnode);
-    node->on_init();
+    add_child(node);
     return node;
 }
 

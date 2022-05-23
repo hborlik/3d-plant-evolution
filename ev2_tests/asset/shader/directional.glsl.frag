@@ -5,15 +5,42 @@ out vec4 frag_color;
 
 in vec2 tex_coord;
 
+uniform mat4 LS;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform usampler2D gMaterialTex;
 uniform sampler2D gAO;
+uniform sampler2D shadowDepth;
 
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 uniform vec3 lightAmbient;
+
+
+/* returns 1 if shadowed */
+/* called with the point projected into the light's coordinate space */
+float TestShadow(vec3 LSfPos, vec3 Normal) {
+    // pcss
+    vec3 X = vec3(1, 0, 0);
+    vec3 Y = normalize(cross(Normal, X));
+    X = normalize(cross(Y, Normal));
+
+    mat3 TBN = mat3(X, Y, Normal);
+
+    vec2 texelScale = 1.0 / textureSize(shadowDepth, 0);
+    float percentShadow = 0.0f;
+    // 5x5 sampling
+    for (int i = -2; i <= 2; i++)
+        for (int j = -2; j <= 2; j++) {
+            const vec3 spos = TBN * vec3(vec2(i, j) * texelScale, 0);
+            const float lightDepth = texture(shadowDepth, LSfPos.xy + spos.xy).r;
+            if (LSfPos.z - spos.z * 1.5f > lightDepth)
+                percentShadow += 1.0f;
+        }
+
+    return percentShadow / 25.0f;
+}
 
 // BRDF shader interface
 
@@ -41,12 +68,11 @@ void main() {
 
     vec3 viewDir = normalize(-FragPos);
 
-    vec3 color = AO * lightAmbient * (Albedo + materials[MaterialId].diffuse) + 1.0 * lightColor * BRDF(lightDirV, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
-    // fake hdr
-    // color = color / (color + vec3(1.0)); // function asymptote y = 1 (maps to LDR range of [0, 1])
-    // gamma
-    color = pow(color, vec3(1.0/2.2));
+    mat4 inv_pv = LS * VInv;
+    float Shade = TestShadow((inv_pv * vec4(FragPos, 1.0)).xyz, (inv_pv * vec4(Normal, 0.0)).xyz);
 
+    vec3 color = AO * lightAmbient * (Albedo + materials[MaterialId].diffuse) + (1.0 - Shade) * lightColor * BRDF(lightDirV, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
+    
     frag_color = vec4(color, 1.0);
     // frag_color = vec4(AO, AO, AO, 1.0);
 }

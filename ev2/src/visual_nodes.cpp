@@ -50,14 +50,10 @@ void CameraNode::pre_render() {
     update_internal();
 }
 
-void CameraNode::set_active() {
-    get_scene().set_active_camera(Ref(this));
-}
-
 void CameraNode::update_internal() {
     float r_aspect = ev2::Renderer::get_singleton().get_aspect_ratio();
-    auto p = glm::perspective(glm::radians(fov), aspect * r_aspect, near, far);
-    camera.set_projection(p);
+    
+    camera.set_projection(fov, aspect * r_aspect, near, far);
 
     auto tr = get_transform();
     camera.set_position(glm::vec3(tr[3]));

@@ -2,7 +2,9 @@
 
 layout (std140, binding = 0) uniform Globals {
     mat4 View;
+    mat4 VInv;
     mat4 P;
+    mat4 PInv;
     vec3 CameraPos;
     vec3 CameraDir;
 };

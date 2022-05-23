@@ -75,7 +75,7 @@ struct Light {
 struct DirectionalLight {
     glm::vec3 color     = {1, 1, 1};
     glm::vec3 ambient   = {0.05, 0.05, 0.05};
-    glm::vec3 direction = {0, -1, 0};
+    glm::vec3 position = {0, -1, 0};
 };
 
 /**
@@ -260,6 +260,15 @@ public:
     float ssao_bias = 0.025f;
     uint32_t ssao_kernel_samples = 32;
 
+    float exposure      = .2f;
+    float gamma         = 2.2f;
+    float sun_position  = .0f;
+    float cloud_speed   = .1f;
+
+    const uint32_t ShadowMapWidth = 4096;
+    const uint32_t ShadowMapHeight = 4096;
+    float shadow_bias_world = 0.3f;
+
 private:
     // model, instance vertex data
     std::unordered_map<MID, std::shared_ptr<Drawable>> models;
@@ -285,13 +294,18 @@ private:
     std::unordered_map<uint32_t, Light> point_lights;
     std::unordered_map<uint32_t, DirectionalLight> directional_lights;
     uint32_t next_light_id = 1000;
+    int32_t shadow_directional_light_id = -1;
 
     Program geometry_program;
     int gp_m_location;
     int gp_g_location;
 
+    Program depth_program;
+    int sdp_m_location;
+    int sdp_lpv_location;
+
     Program directional_lighting_program;
-    int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location;
+    int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location, lp_ls_location, lp_sdt_location;
 
     Program point_lighting_program;
     int plp_p_location, plp_n_location, plp_as_location, plp_mt_location, plp_m_location, plp_light_p_location, plp_light_c_location, plp_k_c_loc, plp_k_l_loc, plp_k_q_loc;
@@ -299,11 +313,20 @@ private:
     Program ssao_program;
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
 
+    Program sky_program;
+    int sky_time_loc, sky_cirrus_loc, sky_cumulus_loc, sky_sun_position_loc;
+
+    Program post_fx_program;
+    int post_fx_gamma_loc, post_fx_exposure_loc, post_fx_hdrt_loc;
+
     FBO g_buffer;
     FBO ssao_buffer;
+    FBO lighting_buffer;
+    FBO d_buffer;
     
     VertexBuffer sst_vb;
 
+    std::shared_ptr<Texture> shadow_depth_tex;
     std::shared_ptr<Texture> material_tex;
     std::shared_ptr<Texture> albedo_spec;
     std::shared_ptr<Texture> normals;
@@ -311,6 +334,8 @@ private:
 
     std::shared_ptr<Texture> ssao_kernel_noise;
     std::shared_ptr<Texture> ssao_kernel_color;
+
+    std::shared_ptr<Texture> hdr_texture;
 
     Buffer shader_globals;
     ProgramUniformBlockDescription globals_desc;

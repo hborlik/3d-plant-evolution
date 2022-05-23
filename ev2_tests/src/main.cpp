@@ -28,17 +28,10 @@
 #include <scene.h>
 #include <physics.h>
 #include <visual_nodes.h>
-
+#include <debug.h>
+#include <game.h>
 
 namespace fs = std::filesystem;
-
-float randomFloatTo(float limit) {
-    return static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/limit));
-}
-
-float randomFloatRange(float low, float high) {
-    return rand() / static_cast<float>(RAND_MAX) * (high - low) + low;
-}
 
 struct Plant {
     bool selected = false;
@@ -48,14 +41,14 @@ struct Plant {
     glm::vec3 position;
     glm::vec3 color;
     glm::quat rot;
-    Sphere geometry;
+    SuperSphere geometry;
     ev2::Ref<TreeNode> tree{};
-    ev2::Ref<ev2::ColliderBody> tree_hit_sphere;
+    ev2::Ref<ev2::Node> tree_hit_sphere;
     Plant() 
     {
         ID = NULL;
     }
-    Plant(int IDin, glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn, ev2::Ref<ev2::ColliderBody> tree_hit_sphere_In) 
+    Plant(int IDin, glm::vec3 pos, glm::vec3 col, SuperSphere geo, ev2::Ref<TreeNode> treeIn, ev2::Ref<ev2::Node> tree_hit_sphere_In) 
     {
         ID = IDin;
         position = pos;
@@ -75,28 +68,25 @@ ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 class TestApp : public ev2::Application {
 public:
-    TestApp() : scene{std::make_unique<ev2::Scene>("scene0")} {}
+    TestApp() {}
     
-    TestApp(const fs::path& asset_path) :   asset_path{asset_path}, 
-                                            scene{std::make_unique<ev2::Scene>("scene0")} {}
+    TestApp(const fs::path& asset_path) :   asset_path{asset_path} {}
 
     fs::path asset_path = fs::path("asset");
 
     ev2::Ref<ev2::CameraNode> cam_orbital{};
     ev2::Ref<ev2::Node> cam_orbital_root{};
-    ev2::Ref<ev2::CameraNode> cam_fly{};
     ev2::Ref<ev2::CameraNode> cam_first_person{};
+
+    std::unique_ptr<GameState> game;
 
     std::list<Plant> plantlist;
     Plant parentAlpha;
     Plant parentBeta;
     Plant child;
     //ev2::Ref<TreeNode> tree{};
-    ev2::Ref<ev2::RigidBody> ground_plane;
 
     ev2::Ref<ev2::VisualInstance> marker{};
-
-    std::unique_ptr<ev2::Scene> scene;
 
     glm::vec2 mouse_p{};
     glm::vec2 mouse_delta{};
@@ -107,9 +97,7 @@ public:
     float cam_x = 0, cam_y = 0;
     float cam_boom_length = 10.0f;
 
-    bool show_material_editor = true;
-    bool show_settings_editor = true;
-    bool enable_physics_simulation = false;
+    bool show_debug = false;
 
     enum CameraMode : uint8_t {
         FirstPerson = 0,
@@ -125,39 +113,6 @@ public:
             default:
                 return cam_orbital;
         }
-    }
-
-    void show_material_editor_window() {
-        ImGui::Begin("Material Editor", &show_material_editor);
-        for (auto& mas : ev2::ResourceManager::get_singleton().get_materials_locations()) {
-            if (ImGui::CollapsingHeader(("Material " + std::to_string(mas.second.material_id) + " " + mas.first).c_str())) {
-                
-                if (ImGui::TreeNode("Color")) {
-                    ImGui::ColorPicker3("diffuse", glm::value_ptr(mas.second.material->diffuse), ImGuiColorEditFlags_InputRGB);
-                    ImGui::TreePop();
-                }
-                ImGui::DragFloat("metallic", &mas.second.material->metallic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("subsurface", &mas.second.material->subsurface, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("specular", &mas.second.material->specular, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("roughness", &mas.second.material->roughness, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("specularTint", &mas.second.material->specularTint, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("clearcoat", &mas.second.material->clearcoat, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("clearcoatGloss", &mas.second.material->clearcoatGloss, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("anisotropic", &mas.second.material->anisotropic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("sheen", &mas.second.material->sheen, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-                ImGui::DragFloat("sheenTint", &mas.second.material->sheenTint, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
-            }
-        }
-        ImGui::End();
-    }
-
-    void show_settings_editor_window() {
-        ImGui::Begin("Settings", &show_settings_editor);
-        ImGui::Text("Application %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        ImGui::DragFloat("ssao radius", &(ev2::Renderer::get_singleton().ssao_radius), 0.01f, 0.0f, 3.0f, "%.3f", 1.0f);
-        ImGui::DragInt("ssao samples", (int32_t*)&(ev2::Renderer::get_singleton().ssao_kernel_samples), 1, 1, 64);
-        ImGui::Checkbox("Enable Physics Timestep", &enable_physics_simulation);
-        ImGui::End();
     }
 
     void plantWindow(Plant * somePlant) {
@@ -282,22 +237,12 @@ void imgui(GLFWwindow * window) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        //supershape.getModel();
-        // cube =  supershape.getModel();
-        
-        //Plant testPlant(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape);
-        //for (plant in plantlist)
-        // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
-        for (auto it=plantlist.begin(); it!=plantlist.end(); ++it)
-        {
-            if (it->selected)
-                plantWindow(&*it);
-        }
 
-        if (show_material_editor)
+        if (show_debug) {
             show_material_editor_window();
-        if (show_settings_editor)
             show_settings_editor_window();
+            show_game_debug_window(game.get());
+        }
    //ImGui::ShowDemoWindow(&show_demo_window);
 
 
@@ -309,49 +254,11 @@ void imgui(GLFWwindow * window) {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
-    void initRandomPlant(std::pair<std::shared_ptr<ev2::Material>, int32_t> tree_bark) {
-        int unique_id = (int)randomFloatTo(9999999);
-        std::string unique_hit_tag = std::string("Tree_hit") += std::to_string(unique_id);
-        
-        ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
-        
-        Sphere supershape(1.0f, 20, 20);
-
-        std::map<std::string, float> params = {
-            {"R_1", randomFloatRange(.6f, 1.f)},
-            {"R_2", randomFloatRange(.6f, 1.f)},
-            {"a_0", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
-            {"a_2", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
-            {"d",   ptree::degToRad(randomFloatRange(.0f, 360.f))},
-            {"w_r", randomFloatRange(0.6f, 0.89f)}
-        };
-        
-        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
-        tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
-        tree_hit_sphere->transform.position = glm::vec3{randomFloatTo(25) - 12.5, 0, randomFloatTo(25) - 12.5};
-        tree_hit_sphere->add_child(tree);
-        tree->set_material_override(tree_bark.second);
-        tree->setParams(params, 10);
-        tree->thickness = randomFloatRange(0.5f, 2.0f);
-
-        tree->c0 = glm::vec3{randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f)};
-        tree->c1 = glm::vec3{randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f)};
-
-        tree->generate(10);
-
-        plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
-    }
-
     void initialize() {
+        game = std::make_unique<GameState>();
         // cube =  supershape.getModel();
         parentAlpha.ID = NULL;
         parentBeta.ID = NULL;
-        
-
-        auto highlight_material = ev2::ResourceManager::get_singleton().create_material("highlight");
-        highlight_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
-        highlight_material.first->sheen = 1.0;
-        highlight_material.first->metallic = 0.9;
 
 
         ev2::MID hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
@@ -359,81 +266,31 @@ void imgui(GLFWwindow * window) {
         ev2::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "low_poly_houses.obj");
         ev2::MID sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
 
-        marker = scene->create_node<ev2::VisualInstance>("marker");
+        marker = game->scene->create_node<ev2::VisualInstance>("marker");
         marker->set_model(ground);
         marker->transform.scale = glm::vec3{0.5, 0.5, 0.5};
         marker->transform.position = glm::vec3{0, 3, 0};
-        marker->set_material_override(highlight_material.second);
 
-        auto box_vis = scene->create_node<ev2::VisualInstance>("marker");
-        box_vis->set_model(ground);
-        box_vis->transform.scale = glm::vec3{0.5, 0.5, 0.5};
-        box_vis->transform.position = glm::vec3{0, 0, 0};
-        box_vis->set_material_override(highlight_material.second);
-
-        auto box = scene->create_node<ev2::RigidBody>("Box Rigidbody");
-        box->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{0.25, 0.25, 0.25}));
-        box->add_child(box_vis);
-        box->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
-        box->transform.position = glm::vec3{0, 14, 0};
-
-        // ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
-        // ground_cube->materials[0].shininess = 0.02;
-
-        auto dlight = scene->create_node<ev2::DirectionalLightNode>("directional_light");
-        dlight->transform.position = glm::vec3{10, 100, 0};
-        dlight->set_color(glm::vec3{5, 5, 5});
-        dlight->set_ambient({0.1, 0.1, 0.1});
-
-        auto light = scene->create_node<ev2::PointLightNode>("point_light");
-        light->transform.position = glm::vec3{0, 5, 0};
-        light->set_color(glm::vec3{15, 15, 15});
-
-        auto h_node = scene->create_node<ev2::VisualInstance>("house");
+        auto h_node = game->scene->create_node<ev2::VisualInstance>("house");
         h_node->set_model(hid);
         h_node->transform.position = glm::vec3{30, 0, 0};
         h_node->transform.rotate({0.1, 0.5, 0});
         h_node->transform.scale = glm::vec3{0.1, 0.1, 0.1};
 
-        auto lh_node = scene->create_node<ev2::VisualInstance>("building");
+        auto lh_node = game->scene->create_node<ev2::VisualInstance>("building");
         lh_node->transform.position = glm::vec3{50, 1, -20};
         lh_node->set_model(building0);
 
-        auto tree_bark = ev2::ResourceManager::get_singleton().create_material("bark");
-        tree_bark.first->diffuse = glm::vec3{0};
-        tree_bark.first->metallic = 0;
-        // ev2::ResourceManager::get_singleton().push_material_changed("bark");
-
-        auto sphere_node = scene->create_node<ev2::VisualInstance>("sphere");
-        sphere_node->transform.position = glm::vec3{50, 1, -30};
-        sphere_node->transform.scale = glm::vec3{0.05, 0.05, 0.05};
-        sphere_node->set_model(sphere);
-        sphere_node->set_material_override(tree_bark.second);
-
-        auto ground_material = ev2::ResourceManager::get_singleton().create_material("ground_mat");
-        ground_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
-        ground_material.first->sheen = 0.2;
-        // ev2::ResourceManager::get_singleton().push_material_changed("ground_mat");
-
-        auto g_node = scene->create_node<ev2::VisualInstance>("ground");
-        g_node->set_model(ground);
-        g_node->set_material_override(ground_material.second);
-        g_node->transform.scale = glm::vec3{100, 0.1, 100};
-
-        cam_orbital      = scene->create_node<ev2::CameraNode>("Orbital");
-        cam_orbital_root = scene->create_node<ev2::Node>("cam_orbital_root");
-        cam_first_person = scene->create_node<ev2::CameraNode>("FP");
+        cam_orbital      = game->scene->create_node<ev2::CameraNode>("Orbital");
+        cam_orbital_root = game->scene->create_node<ev2::Node>("cam_orbital_root");
+        cam_first_person = game->scene->create_node<ev2::CameraNode>("FP");
 
         cam_orbital_root->add_child(cam_orbital);
 
-        ground_plane = scene->create_node<ev2::RigidBody>("Ground Collider");
-        ground_plane->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{10, 0.05, 10}));
-        ground_plane->add_child(g_node);
-        ground_plane->transform.position = glm::vec3{0, 0, 0};
-        ground_plane->get_body()->setType(reactphysics3d::BodyType::STATIC);
-        for (int n = 0; n < 10; n++)
+        
+        for (int n = 0; n < 20; n++)
         {
-            initRandomPlant(tree_bark);
+            game->spawn_random_tree(glm::vec3{}, 40, 10);
         }
 
         ev2::ResourceManager::get_singleton().loadGLTF(fs::path("models") / "Box.gltf");
@@ -471,24 +328,22 @@ void imgui(GLFWwindow * window) {
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL3_Init(glsl_version);
 
-        scene->set_active_camera(getCameraNode());
-
-        scene->ready();
+        game->scene->ready();
 
         float dt = 0.05f;
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
             update(dt, io);
-            if (enable_physics_simulation)
-                ev2::Physics::get_singleton().simulate(dt);
-            scene->update_pre_render();
+            game->update(dt);
+            ev2::Physics::get_singleton().simulate(dt);
+            game->scene->update_pre_render();
             ev2::ResourceManager::get_singleton().pre_render();
-            ev2::Renderer::get_singleton().render(scene->get_active_camera()->get_camera());
+            ev2::Renderer::get_singleton().render(getCameraNode()->get_camera());
             imgui(window);
             dt = float(ev2::window::getFrameTime());
         }
 
-        scene->destroy();
+        game->scene->destroy();
 
         ev2::Renderer::shutdown();      
         return 0;
@@ -529,13 +384,13 @@ void imgui(GLFWwindow * window) {
         int unique_id = (int)randomFloatTo(9999999);
         std::string unique_hit_tag = std::string("Tree_hit") += std::to_string(unique_id);
         
-        ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
+        ev2::Ref<TreeNode> tree = game->scene->create_node<TreeNode>("Tree");
         
-        Sphere supershape(1.0f, 20, 20);
+        SuperSphere supershape(1.0f, 20, 20);
 
         std::map<std::string, float> params = crossParams(parentAlpha.tree->getParams(), parentBeta.tree->getParams());
         
-        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
+        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = game->scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
         tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
@@ -557,13 +412,13 @@ void imgui(GLFWwindow * window) {
         int unique_id = (int)randomFloatTo(9999999);
         std::string unique_hit_tag = std::string("Tree_hit") += std::to_string(unique_id);
         
-        ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
+        ev2::Ref<TreeNode> tree = game->scene->create_node<TreeNode>("Tree");
         
-        Sphere supershape(1.0f, 20, 20);
+        SuperSphere supershape(1.0f, 20, 20);
 
         std::map<std::string, float> params = somePlant.tree->getParams();
         
-        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
+        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = game->scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
         tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
@@ -618,8 +473,8 @@ void imgui(GLFWwindow * window) {
             ; // camera movement on y plane
         }
 
-        if (scene->get_active_camera()) {
-            const ev2::Camera& cam = scene->get_active_camera()->get_camera();
+        if (getCameraNode()) {
+            const ev2::Camera& cam = getCameraNode()->get_camera();
             glm::vec2 scr_size = ev2::window::getWindowSize();
             glm::vec2 s_pos = ev2::window::getCursorPosition() / scr_size;
             
@@ -671,7 +526,7 @@ void imgui(GLFWwindow * window) {
         }
 
         // update scene
-        scene->update(dt);
+        game->scene->update(dt);
     }
 
     void onKey(ev2::input::Key::Enum key, ev2::input::Modifier mods, bool down) override {
@@ -679,9 +534,8 @@ void imgui(GLFWwindow * window) {
         switch (key) {
             case ev2::input::Key::Esc:
                 if (down) {
-                    show_settings_editor = true;
-                    show_material_editor = true;
-                }
+                    show_debug = !show_debug;
+                } 
                 break;
             default:
                 break;
@@ -697,7 +551,6 @@ void imgui(GLFWwindow * window) {
                 case ev2::input::Key::KeyF:
                     if (down) {
                         camera_type = CameraMode((camera_type + 1) % 2);
-                        getCameraNode()->set_active();
                     }
                     break;
                 case ev2::input::Key::KeyZ:

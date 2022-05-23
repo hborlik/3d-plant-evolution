@@ -1,5 +1,5 @@
 /*
-* Sphere Class template from http://www.songho.ca/opengl/gl_sphere.html
+* SuperSphere Class template from http://www.songho.ca/opengl/gl_sphere.html
 * Modified by Jack Ortega to render a super shape instead, and to support animation.
 */
 #ifdef _WIN32
@@ -163,7 +163,7 @@ int randLim = 1;
 
 
 
-Sphere::Sphere(float radius, int sectors, int stacks, bool smooth) : interleavedStride(32)
+SuperSphere::SuperSphere(float radius, int sectors, int stacks, bool smooth) : interleavedStride(32)
 {
     set(radius, sectors, stacks, smooth, 1.f);
 }
@@ -172,8 +172,8 @@ static float randomFloatTo(float limit) {
     return static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/limit));
 }
 
-Sphere Sphere::crossGenes(const Sphere parentB){
-                      Sphere child = Sphere();
+SuperSphere SuperSphere::crossGenes(const SuperSphere parentB){
+                      SuperSphere child = SuperSphere();
                       float randomGeneWeight = randomFloatTo(1) + 1.f;
                       child.setGenes(
                                      ((this->a + parentB.a)/randomGeneWeight),
@@ -192,7 +192,7 @@ Sphere Sphere::crossGenes(const Sphere parentB){
                       return child;
                   }
 
-void Sphere::set(float radius, int sectors, int stacks, float time, bool smooth)
+void SuperSphere::set(float radius, int sectors, int stacks, float time, bool smooth)
 {
     this->radius = radius;
     this->sectorCount = sectors;
@@ -207,25 +207,25 @@ void Sphere::set(float radius, int sectors, int stacks, float time, bool smooth)
         buildVerticesSmooth(time);
 }
 
-void Sphere::setRadius(float radius)
+void SuperSphere::setRadius(float radius)
 {
     if (radius != this->radius)
         set(radius, sectorCount, stackCount, smooth, amplitude_on_frequency_10steps_temp);
 }
 
-void Sphere::setSectorCount(int sectors)
+void SuperSphere::setSectorCount(int sectors)
 {
     if (sectors != this->sectorCount)
         set(radius, sectors, stackCount, smooth, amplitude_on_frequency_10steps_temp);
 }
 
-void Sphere::setStackCount(int stacks)
+void SuperSphere::setStackCount(int stacks)
 {
     if (stacks != this->stackCount)
         set(radius, sectorCount, stacks, smooth);
 }
 
-void Sphere::setSmooth(bool smooth)
+void SuperSphere::setSmooth(bool smooth)
 {
     if (this->smooth == smooth)
         return;
@@ -236,7 +236,7 @@ void Sphere::setSmooth(bool smooth)
 }
 
 
-void Sphere::printSelf() const
+void SuperSphere::printSelf() const
 {
     std::cout << "===== Supershape =====\n"
         << "  Sector Count: " << sectorCount << "\n"
@@ -250,7 +250,7 @@ void Sphere::printSelf() const
 
 
 /*
-void Sphere::draw() const
+void SuperSphere::draw() const
 {
     std::cout << "drawing\n";
     // interleaved array
@@ -271,7 +271,7 @@ void Sphere::draw() const
 
 
 /*
-void Sphere::drawLines(const float lineColor[4]) const
+void SuperSphere::drawLines(const float lineColor[4]) const
 {
     // set line colour
     glColor4fv(lineColor);
@@ -292,7 +292,7 @@ void Sphere::drawLines(const float lineColor[4]) const
 */
 
 /*
-void Sphere::drawWithLines(const float lineColor[4]) const
+void SuperSphere::drawWithLines(const float lineColor[4]) const
 {
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0, 1.0f); // move polygon backward
@@ -304,7 +304,7 @@ void Sphere::drawWithLines(const float lineColor[4]) const
 }
 */
 
-void Sphere::clearArrays()
+void SuperSphere::clearArrays()
 {
     std::vector<float>().swap(vertices);
     std::vector<float>().swap(normals);
@@ -315,7 +315,7 @@ void Sphere::clearArrays()
 
 
 
-void Sphere::buildVerticesSmooth(float time)
+void SuperSphere::buildVerticesSmooth(float time)
 {
     const float PI = acos(-1);
 
@@ -436,7 +436,7 @@ void Sphere::buildVerticesSmooth(float time)
 // generate interleaved vertices: V/N/T
 // stride must be 32 bytes
 ///////////////////////////////////////////////////////////////////////////////
-void Sphere::buildInterleavedVertices()
+void SuperSphere::buildInterleavedVertices()
 {
     std::vector<float>().swap(interleavedVertices);
 
@@ -457,7 +457,7 @@ void Sphere::buildInterleavedVertices()
     }
 }
 
-std::unique_ptr<ev2::Model> Sphere::getModel() {
+std::unique_ptr<ev2::Model> SuperSphere::getModel() {
     glm::vec3 bmin, bmax;
     std::vector<DrawObject> drawObjects;
     bool success = true;
@@ -486,7 +486,7 @@ std::unique_ptr<ev2::Model> Sphere::getModel() {
 ///////////////////////////////////////////////////////////////////////////////
 // add single vertex to array
 ///////////////////////////////////////////////////////////////////////////////
-void Sphere::addVertex(float x, float y, float z)
+void SuperSphere::addVertex(float x, float y, float z)
 {
     vertices.push_back(x);
     vertices.push_back(y);
@@ -498,7 +498,7 @@ void Sphere::addVertex(float x, float y, float z)
 ///////////////////////////////////////////////////////////////////////////////
 // add single normal to array
 ///////////////////////////////////////////////////////////////////////////////
-void Sphere::addNormal(float nx, float ny, float nz)
+void SuperSphere::addNormal(float nx, float ny, float nz)
 {
     normals.push_back(nx);
     normals.push_back(ny);
@@ -510,7 +510,7 @@ void Sphere::addNormal(float nx, float ny, float nz)
 ///////////////////////////////////////////////////////////////////////////////
 // add single texture coord to array
 ///////////////////////////////////////////////////////////////////////////////
-void Sphere::addTexCoord(float s, float t)
+void SuperSphere::addTexCoord(float s, float t)
 {
     texCoords.push_back(s);
     texCoords.push_back(t);
@@ -521,7 +521,7 @@ void Sphere::addTexCoord(float s, float t)
 ///////////////////////////////////////////////////////////////////////////////
 // add 3 indices to array
 ///////////////////////////////////////////////////////////////////////////////
-void Sphere::addIndices(unsigned int i1, unsigned int i2, unsigned int i3)
+void SuperSphere::addIndices(unsigned int i1, unsigned int i2, unsigned int i3)
 {
     indices.push_back(i1);
     indices.push_back(i2);
@@ -534,7 +534,7 @@ void Sphere::addIndices(unsigned int i1, unsigned int i2, unsigned int i3)
 // return face normal of a triangle v1-v2-v3
 // if a triangle has no surface (normal length = 0), then return a zero vector
 ///////////////////////////////////////////////////////////////////////////////
-std::vector<float> Sphere::computeFaceNormal(float x1, float y1, float z1,  // v1
+std::vector<float> SuperSphere::computeFaceNormal(float x1, float y1, float z1,  // v1
     float x2, float y2, float z2,  // v2
     float x3, float y3, float z3)  // v3
 {

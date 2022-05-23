@@ -38,6 +38,8 @@ Physics::~Physics() {
 }
 
 void Physics::simulate(double dt) {
+    if (!enable_timestep)
+        return;
     // Constant physics time step 
     const float timeStep = 1.0 / 60.0; 
     double deltaTime  = dt;
@@ -54,7 +56,7 @@ void Physics::simulate(double dt) {
     
         // Decrease the accumulated time
         accumulator -= timeStep;
-    } 
+    }
     
     // Compute the time interpolation factor
     interp_factor = accumulator / timeStep;
@@ -144,12 +146,16 @@ void PhysicsNode::set_cur_transform(const reactphysics3d::Transform& curr_tranfo
     const reactphysics3d::Vector3 pos = interpolatedTransform.getPosition();
     const reactphysics3d::Quaternion qua = interpolatedTransform.getOrientation();
     transform.position = glm::vec3{pos.x, pos.y, pos.z};
-    transform.rotation = glm::quat{qua.x, qua.y, qua.z, qua.w};
+    transform.rotation = glm::quat{qua.w, qua.x, qua.y, qua.z};
+}
+
+ColliderBody::ColliderBody(const std::string &name) : PhysicsNode{name} {
+    body = Physics::get_singleton().get_physics_world()->createCollisionBody(get_physics_transform());
+    body->setUserData(this);
 }
 
 void ColliderBody::on_init() {
-    body = Physics::get_singleton().get_physics_world()->createCollisionBody(get_physics_transform());
-    body->setUserData(this);
+    
 }
 
 void ColliderBody::on_ready() {
@@ -182,10 +188,14 @@ Ref<ColliderShape> ColliderBody::get_shape(int ind) {
 
 // RigidBody
 
-
-void RigidBody::on_init() {
+RigidBody::RigidBody(const std::string &name, reactphysics3d::BodyType type) : PhysicsNode{name} {
     body = Physics::get_singleton().get_physics_world()->createRigidBody(get_physics_transform());
     body->setUserData(this);
+    body->setType(type);
+}
+
+void RigidBody::on_init() {
+    
 }
 
 void RigidBody::on_ready() {
@@ -202,6 +212,22 @@ void RigidBody::on_destroy() {
 
 void RigidBody::pre_render() {
     set_cur_transform(body->getTransform());
+}
+
+void RigidBody::set_mass(float mass) {
+    body->setMass(mass);
+}
+
+float RigidBody::get_mass() const {
+    return body->getMass();
+}
+    
+void RigidBody::apply_force(const glm::vec3& force) {
+    body->applyWorldForceAtCenterOfMass(vec_cast(force));
+}
+
+void RigidBody::apply_local_force(const glm::vec3& force) {
+    body->applyLocalForceAtCenterOfMass(vec_cast(force));
 }
 
 void RigidBody::add_shape(Ref<ColliderShape> shape, const glm::vec3& pos) {

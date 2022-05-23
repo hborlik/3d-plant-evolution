@@ -87,11 +87,11 @@ static Ref<Node> loadNode(Ref<GLTFScene> scene, Ref<Node> parent, const tinygltf
     }
 
     if (node.mesh > 0) {
-        ev_node = make_referenced<GLTFNode>(node.name);
+        ev_node = Node::create_node<GLTFNode>(node.name);
         // TODO create mesh instance
     } else {
         // regular node
-        ev_node = make_referenced<Node>(node.name);
+        ev_node = Node::create_node<Node>(node.name);
     }
     ev_node->transform.position = pos;
     ev_node->transform.rotation = quat;
