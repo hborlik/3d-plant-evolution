@@ -75,7 +75,7 @@ struct Light {
 struct DirectionalLight {
     glm::vec3 color     = {1, 1, 1};
     glm::vec3 ambient   = {0.05, 0.05, 0.05};
-    glm::vec3 direction = {0, -1, 0};
+    glm::vec3 position = {0, -1, 0};
 };
 
 /**
@@ -293,6 +293,7 @@ private:
     std::unordered_map<uint32_t, Light> point_lights;
     std::unordered_map<uint32_t, DirectionalLight> directional_lights;
     uint32_t next_light_id = 1000;
+    int32_t shadow_directional_light_id = -1;
 
     Program geometry_program;
     int gp_m_location;

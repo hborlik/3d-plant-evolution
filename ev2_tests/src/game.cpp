@@ -62,7 +62,10 @@ GameState::GameState() {
 
 void GameState::update(float dt) {
     game_time += time_speed * dt;
-    Renderer::get_singleton().sun_position = M_2_PI * game_time / DayLength;
+    const float sun_rads = M_2_PI * game_time / DayLength;
+    Renderer::get_singleton().sun_position = sun_rads;
+
+    sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
 }
 
 void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations) {

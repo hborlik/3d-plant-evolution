@@ -306,6 +306,8 @@ LID Renderer::create_point_light() {
 
 LID Renderer::create_directional_light() {
     uint32_t nlid = next_light_id++;
+    if (shadow_directional_light_id < 0)
+        shadow_directional_light_id = nlid;
     DirectionalLight l{};
     directional_lights.insert_or_assign(nlid, l);
     return {LID::Directional, nlid};
@@ -328,7 +330,7 @@ void Renderer::set_light_position(LID lid, const glm::vec3& position) {
         {
             auto mi = directional_lights.find(lid._v);
             if (mi != directional_lights.end()) {
-                mi->second.direction = glm::normalize(position);
+                mi->second.position = position;
             }
         }
         break;
@@ -560,7 +562,7 @@ void Renderer::render(const Camera &camera) {
     glDisable(GL_DITHER);
     glDisable(GL_STENCIL_TEST);
 
-    if (directional_lights.size() > 0) {
+    if (shadow_directional_light_id >= 0) {
         //set up shadow shader
         depth_program.use();
         d_buffer.bind();
@@ -569,9 +571,10 @@ void Renderer::render(const Camera &camera) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        glm::vec3 directional_light_pos = camera.get_position() - 5.f * directional_lights[0].direction;
-        glm::mat4 LV =  glm::lookAt(directional_light_pos, camera.get_position(), camera.get_forward()) *
-                        glm::inverse(glm::translate(glm::identity<glm::mat4>(), directional_light_pos));
+        const glm::vec3 directional_light_pos = camera.get_position() + directional_lights[shadow_directional_light_id].position;
+        const float dist_to_camera = glm::length(directional_lights[shadow_directional_light_id].position);
+        glm::mat4 LV =  glm::lookAt(directional_light_pos, camera.get_position(), camera.get_forward());
+                    //    glm::inverse(glm::translate(glm::identity<glm::mat4>(), directional_light_pos));
         
         std::array<glm::vec3, 8> worldPoints = camera.extract_frustum_corners(0.1f);
         float minX = INFINITY, maxX = -INFINITY, minY = INFINITY, maxY = -INFINITY;
@@ -587,7 +590,7 @@ void Renderer::render(const Camera &camera) {
                 maxY = ls_point.y;
         }
 
-        glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY, 0.1f, 100.f);
+        glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY, 0.1f, 2.f * dist_to_camera);
         light_vp = bias_mat * LO * LV;
 
         //render scene
@@ -748,7 +751,7 @@ void Renderer::render(const Camera &camera) {
 
     for (auto& litr : directional_lights) {
         auto& l = litr.second;
-        gl::glUniform(glm::normalize(l.direction), directional_lighting_program.getUniformInfo("lightDir").Location);
+        gl::glUniform(glm::normalize(l.position), directional_lighting_program.getUniformInfo("lightDir").Location);
         gl::glUniform(l.color, directional_lighting_program.getUniformInfo("lightColor").Location);
         gl::glUniform(l.ambient, directional_lighting_program.getUniformInfo("lightAmbient").Location);
         
