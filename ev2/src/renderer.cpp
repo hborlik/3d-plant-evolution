@@ -61,6 +61,7 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     directional_lighting_program{"Lighting Program"},
     g_buffer{gl::FBOTarget::RW},
     ssao_buffer{gl::FBOTarget::RW},
+    d_buffer{gl::FBOTarget::RW},
     sst_vb{VertexBuffer::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     lighting_materials{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
@@ -118,8 +119,17 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
 
     // set up FBO textures
     shadow_depth_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
-    shadow_depth_tex->set_data2D(gl::TextureInternalFormat::R8UI, width, height, gl::PixelFormat::RED_INTEGER, gl::PixelType::UNSIGNED_BYTE, nullptr);
-    g_buffer.attach(shadow_depth_tex, gl::FBOAttachment::COLOR3, 5);
+    shadow_depth_tex->set_data2D(gl::TextureInternalFormat::DEPTH_COMPONENT, 1024, 1024, gl::PixelFormat::DEPTH_COMPONENT, gl::PixelType::FLOAT, nullptr);
+    shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::CLAMP_TO_BORDER);
+    shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::CLAMP_TO_BORDER);
+    d_buffer.attach(shadow_depth_tex, gl::FBOAttachment::DEPTH);
+    if (!d_buffer.check())
+        throw engine_exception{"Framebuffer is not complete"};
+    
+    
+    
+    
+    
 
     material_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     material_tex->set_data2D(gl::TextureInternalFormat::R8UI, width, height, gl::PixelFormat::RED_INTEGER, gl::PixelType::UNSIGNED_BYTE, nullptr);
@@ -140,7 +150,7 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     g_buffer.attach_renderbuffer(gl::RenderBufferInternalFormat::DEPTH_COMPONENT, width, height, gl::FBOAttachment::DEPTH);
 
     if (!g_buffer.check())
-        throw engine_exception{"Framebuffer is not complete"};
+        throw engine_exception{"Geometry Framebuffer is not complete"};
 
 
     // set up programs
@@ -190,12 +200,12 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     ssao_radius_loc = ssao_program.getUniformInfo("radius").Location;
     ssao_bias_loc = ssao_program.getUniformInfo("bias").Location;
     ssao_nSamples_loc = ssao_program.getUniformInfo("nSamples").Location;
-
+/*
     //generate the FBO for the shadow depth
-    glGenFramebuffers(1, &depthMapFBO);
+    glGenFramebuffers(5, &depthMapFBO);
 
     //generate the texture
-    glGenTextures(1, &depthMap);
+    glGenTextures(5, &depthMap);
     glBindTexture(GL_TEXTURE_2D, depthMap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, S_WIDTH, S_HEIGHT,
                     0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
@@ -210,8 +220,8 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 5);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 5);
-
+    //glBindFramebuffer(GL_FRAMEBUFFER, 5);
+*/
 
     // program block inputs
     globals_desc = geometry_program.getUniformBlockInfo("Globals");
@@ -436,28 +446,21 @@ void Renderer::render(const Camera &camera) {
     glDisable(GL_BLEND);
     glDisable(GL_DITHER);
 
-    if (wireframe)
-        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-    else
-        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-
-    geometry_program.use();
-    g_buffer.bind();
-    glViewport(0, 0, width, height);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		if (bool shadow = true) {
-			//set up light's depth map
-			glViewport(0, 0, S_WIDTH, S_HEIGHT);
-			glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-			glClear(GL_DEPTH_BUFFER_BIT);
-			glCullFace(GL_FRONT);
-
+		if (true) {
 			//set up shadow shader
 			//render scene
 			DepthProg.use();
-            glm::mat4 l_v = glm::inverse(glm::translate(glm::identity<glm::mat4>(), camera.get_position() + directional_lights[0].direction) * glm::lookAt((camera.get_position() + directional_lights[0].direction), camera.get_position(), glm::vec3(0.0f, 1.0f, 0.0f)));
+            d_buffer.bind();
+			//set up light's depth map
+			glViewport(0, 0, 1024, 1024);
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			glClear(GL_DEPTH_BUFFER_BIT);
+
+
+//            glm::mat4 l_v = glm::inverse(glm::translate(glm::identity<glm::mat4>(), camera.get_position() + directional_lights[0].direction) 
+//            * glm::lookAt((camera.get_position() + directional_lights[0].direction), camera.get_position(), glm::vec3(0.0f, 1.0f, 0.0f)));
+            glm::mat4 l_v = glm::lookAt((camera.get_position() - 5.f * directional_lights[0].direction), camera.get_position(), camera.get_forward()); 
+                          //* glm::inverse(glm::translate(glm::identity<glm::mat4>(), camera.get_position() + directional_lights[0].direction));
             std::array<glm::vec3, 8> worldPoints = camera.extract_frustum_corners();
             float minX = worldPoints[0].x, maxX = worldPoints[0].x, minY = worldPoints[0].y, maxY = worldPoints[0].y;
             for (auto &point : worldPoints) {
@@ -470,27 +473,43 @@ void Renderer::render(const Camera &camera) {
                 if (point.y > maxY)
                     maxY = point.y;        
             }
-			glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY);
-            
+            glm::mat4 LO = glm::ortho(-50.f, 50.f, -50.f, 50.f, 0.1f, 100.f);
+            ev2::gl::glUniform(l_v, sdp_lv_location);
+            ev2::gl::glUniform(LO, sdp_lp_location);
+            std::cout << directional_lights[0].direction.x << ' ';
+            std::cout << directional_lights[0].direction.y << ' ';
+            std::cout << directional_lights[0].direction.z << '\n';
+
             for (auto &mPair : model_instances) {
                 auto& m = mPair.second;
                 if (m.drawable) {
-                    const glm::mat3 G = glm::inverse(glm::transpose(glm::mat3(m.transform)));
-
-                    ev2::gl::glUniform(m.transform, gp_m_location);
-                    ev2::gl::glUniform(G, gp_g_location);
+                    ev2::gl::glUniform(m.transform, sdp_m_location);
 
                     m.drawable->draw(DepthProg, m.material_override);
-                }
+            }
             }
 
 			DepthProg.unbind();
-			glCullFace(GL_BACK);
+//			glCullFace(GL_BACK);
 
 			LSpace = LO * l_v;
 
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            d_buffer.unbind();
+//			glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
 		}
+
+
+    if (wireframe)
+        glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+    else
+        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
+
+    geometry_program.use();
+    g_buffer.bind();
+    glViewport(0, 0, width, height);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
     // bind global shader UBO to shader
@@ -610,16 +629,7 @@ void Renderer::render(const Camera &camera) {
         gl::glUniformSampler(5, lp_sdt_location);      
     }
 
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, depthMap);
-		glUniform1i(directional_lighting_program.getUniformInfo("shadowDepth").Location, 2);
-		glUniform3f(directional_lighting_program.getUniformInfo("lightDir").Location, 1, 1, 1);
-		//render scene
-		//SetProjectionMatrix(ShadowProg);
-		//SetView(ShadowProg);
-		glUniformMatrix4fv(directional_lighting_program.getUniformInfo("LS").Location, 1, GL_FALSE, value_ptr(LSpace)) ;
-//		drawScene(ShadowProg, ShadowProg->getUniform("normalTex"), ShadowProg->getUniform("colorTex"), true, true);
-
+		gl::glUniform(LSpace, lp_ls_location);
 
     for (auto& litr : directional_lights) {
         auto& l = litr.second;

@@ -194,6 +194,7 @@ private:
 
     FBO g_buffer;
     FBO ssao_buffer;
+    FBO d_buffer;
     
     VertexBuffer sst_vb;
 

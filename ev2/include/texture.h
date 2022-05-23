@@ -185,7 +185,7 @@ public:
      * @return true 
      * @return false 
      */
-    bool attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_point, int location);
+    bool attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_point, int location = -1);
 
     bool attach_renderbuffer(gl::RenderBufferInternalFormat format, uint32_t width, uint32_t height, gl::FBOAttachment attachment_point);
 

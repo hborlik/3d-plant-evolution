@@ -4,7 +4,7 @@
 out vec4 frag_color;
 
 in vec2 tex_coord;
-in vec4 fPosLS;
+uniform mat4 LS;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
@@ -60,22 +60,23 @@ void main() {
     vec3 lightDirV = vec3(View * vec4(lightDir, .0f));
 
     vec3 viewDir = normalize(-FragPos);
+    mat4 inv_pv = LS * inverse(View);
 
-    vec3 color = AO * lightAmbient * (Albedo + materials[MaterialId].diffuse) + 1.0 * lightColor * BRDF(lightDirV, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
+    float Shade = TestShadow(inv_pv * vec4(FragPos, 1));
+
+    vec3 color = AO * lightAmbient * (Albedo + materials[MaterialId].diffuse) + (1.0 - Shade) * lightColor * BRDF(lightDirV, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
     // fake hdr
     color = color / (color + vec3(1.0)); // function asymptote y = 1 (maps to LDR range of [0, 1])
     // gamma
     color = pow(color, vec3(1.0/2.2));
-
+    
 //    frag_color = vec4(color, 1.0);
     // frag_color = vec4(AO, AO, AO, 1.0);
 
-  float Shade = TestShadow(in_struct.fPosLS);
 
   //TODO replace first set with normal mapped result when ready
 //  float dCoeff = max(0.0, dot(normalize(lightDirV), 2*(Normal.xyz) - vec3(1.0))); //;
-   Outcolor = vec4(color, 1.0) + (1.0 - Shade)*vec4(color, 1.0);
-
-  dCoeff =  BaseColor.x;    
+   frag_color = vec4(color, 1);
+//  dCoeff =  BaseColor.x;    
 
 }

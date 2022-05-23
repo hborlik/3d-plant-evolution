@@ -1,9 +1,7 @@
 #version 460 core
 
-uniform mat4 LS;
 
 out vec2 tex_coord;
-out vec4 fPosLS;
 // from https://rauwendaal.net/2014/06/14/rendering-a-screen-covering-triangle-in-opengl/
 
 void main()
@@ -14,5 +12,4 @@ void main()
     tex_coord.y = (y+1.0)*0.5;
     gl_Position = vec4(x, y, 0, 1);
 
-    fPosLS = LS*vec4(gl_Position, 1.0);
 }
