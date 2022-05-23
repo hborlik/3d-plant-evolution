@@ -590,7 +590,16 @@ void Renderer::render(const Camera &camera) {
                 maxY = ls_point.y;
         }
 
-        glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY, 0.1f, 2.f * dist_to_camera);
+        const float shadow_near = 0.1f;
+        const float shadow_far = 2.f * dist_to_camera;
+        const float shadow_bias = 2.f * shadow_bias_world / (shadow_far - shadow_near);
+        glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY, shadow_near, shadow_far);
+        glm::mat4 bias_mat = {
+            glm::vec4{.5f, 0, 0, 0},
+            glm::vec4{0, .5f, 0, 0},
+            glm::vec4{0, 0, .5f, 0},
+            glm::vec4{.5f, .5f, .5f - shadow_bias, 0}
+        };
         light_vp = bias_mat * LO * LV;
 
         //render scene

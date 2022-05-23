@@ -267,6 +267,7 @@ public:
 
     const uint32_t ShadowMapWidth = 4096;
     const uint32_t ShadowMapHeight = 4096;
+    float shadow_bias_world = 0.3f;
 
 private:
     // model, instance vertex data
@@ -302,13 +303,6 @@ private:
     Program depth_program;
     int sdp_m_location;
     int sdp_lpv_location;
-
-    glm::mat4 bias_mat = {
-        glm::vec4{.5f, 0, 0, 0},
-        glm::vec4{0, .5f, 0, 0},
-        glm::vec4{0, 0, .5f, 0},
-        glm::vec4{.5f, .5f, .5f - 0.005f, 0}
-    };
 
     Program directional_lighting_program;
     int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location, lp_ls_location, lp_sdt_location;
