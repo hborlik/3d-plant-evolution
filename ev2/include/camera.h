@@ -71,13 +71,38 @@ public:
 
         return f;
     }
-
-    std::array<glm::vec3, 8> extract_frustum_corners() {
+    
+    /**
+     * @brief get the world space frustum corners. 
+     * 
+     * @param frustum_extent_far percentage of the frustum far extent
+     * @return std::array<glm::vec3, 8> 
+     */
+    std::array<glm::vec3, 8> extract_frustum_corners(float frustum_extent_far = 1.0f) const noexcept {
         using namespace glm;
         if (dirty)
             force_update_internal();
-            
-        // TODO
+        const float f_n = far - near;
+        const float f_view = f_n * frustum_extent_far + near;
+        const float ndc_far = (far + near) / f_n + 2 * far * near / (f_n * -f_view);
+        std::array<glm::vec3, 8> ndcPoints = {
+            glm::vec3(-1, -1,  ndc_far),
+            glm::vec3( 1, -1,  ndc_far),
+            glm::vec3(-1,  1,  ndc_far),
+            glm::vec3( 1,  1,  ndc_far),
+            glm::vec3(-1, -1, -1),
+            glm::vec3( 1, -1, -1),
+            glm::vec3(-1,  1, -1),
+            glm::vec3( 1,  1, -1)
+        };    
+        std::array<glm::vec3, 8> worldPoints;
+        for (int i = 0; i < 8; i++)
+        {
+            glm::vec4 pos = inv_pv() * vec4(ndcPoints[i], 1.0);
+            pos = pos / pos.w;
+            worldPoints[i] = glm::vec3(pos);
+        }
+        return worldPoints;
     }
 
     /**
@@ -117,8 +142,12 @@ public:
     glm::vec3 get_position() const {return position;}
     glm::quat get_rotation() const {return rotation;}
 
-    void set_projection(const glm::mat4& p) {
-        projection = p;
+    void set_projection(float _fov, float _aspect, float _near, float _far) {
+        fov = _fov;
+        aspect = _aspect;
+        near = _near;
+        far = _far;
+        projection = glm::perspective(glm::radians(fov), aspect, near, far);
         dirty = true;
     }
 
@@ -178,6 +207,10 @@ private:
     mutable glm::mat4 view = glm::identity<glm::mat4>();
     mutable glm::mat4 p_v = glm::identity<glm::mat4>();
     mutable bool dirty = true;
+
+    float fov = 60.0f;
+    float near = 0.1f, far = 500.0f;
+    float aspect = 1.0f;
 };
 
 } // namespace ev

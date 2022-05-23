@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <glm/gtc/type_ptr.hpp>
+
 namespace ev2 {
 
 Texture::Texture(gl::TextureType texture_type) : texture_type{texture_type} {
@@ -27,6 +29,12 @@ Texture::Texture(gl::TextureType texture_type, gl::TextureFilterMode filterMode)
 void Texture::set_wrap_mode(gl::TextureParamWrap wrap, gl::TextureWrapMode mode) {
     glBindTexture((GLenum)texture_type, handle);
     glTexParameteri((GLenum)texture_type, (GLenum)wrap, (GLenum)mode);
+    glBindTexture((GLenum)texture_type, 0);
+}
+
+void Texture::set_border_color(const glm::vec4& color) {
+    glBindTexture((GLenum)texture_type, handle);
+    glTexParameterfv((GLenum)texture_type, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(color));
     glBindTexture((GLenum)texture_type, 0);
 }
 
@@ -78,11 +86,13 @@ bool FBO::check() {
     // enable all drawbuffers
     int max_binding = 0;
     for (auto &a : attachments) {
+        if (a.second.location >= 0) 
         max_binding = max_binding > a.second.location ? max_binding : a.second.location;
     }
     std::vector<GLenum> dbtgt(max_binding + 1);
     int i = 0;
     for (auto &a : attachments) {
+        if (a.second.location >= 0) 
         dbtgt[a.second.location] = (GLenum)a.first;
     }
 
@@ -97,6 +107,10 @@ bool FBO::check() {
 }
 
 bool FBO::attach(std::shared_ptr<Texture> texture, gl::FBOAttachment attachment_point, int location) {
+    if ((attachment_point == gl::FBOAttachment::DEPTH) || (attachment_point == gl::FBOAttachment::DEPTH_STENCIL) || (attachment_point == gl::FBOAttachment::STENCIL)) 
+    {
+        assert(location == -1);
+    }
     if (attachments.find(attachment_point) != attachments.end())
         return false;
     if (texture && texture->type() == gl::TextureType::TEXTURE_2D) {

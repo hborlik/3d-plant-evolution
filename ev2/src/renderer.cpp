@@ -65,6 +65,7 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
     g_buffer{gl::FBOTarget::RW},
     ssao_buffer{gl::FBOTarget::RW},
     lighting_buffer{gl::FBOTarget::RW},
+    d_buffer{gl::FBOTarget::RW},
     sst_vb{VertexBuffer::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     lighting_materials{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
@@ -124,6 +125,16 @@ void Renderer::init() {
         throw engine_exception{"Framebuffer is not complete"};
 
     // set up FBO textures
+    shadow_depth_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    shadow_depth_tex->set_data2D(gl::TextureInternalFormat::DEPTH_COMPONENT, ShadowMapWidth, ShadowMapHeight, gl::PixelFormat::DEPTH_COMPONENT, gl::PixelType::FLOAT, nullptr);
+    shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::CLAMP_TO_BORDER);
+    shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::CLAMP_TO_BORDER);
+    shadow_depth_tex->set_border_color(glm::vec4{1.0f});
+    d_buffer.attach(shadow_depth_tex, gl::FBOAttachment::DEPTH);
+    if (!d_buffer.check())
+        throw engine_exception{"Framebuffer is not complete"};
+    
+
     material_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     material_tex->set_data2D(gl::TextureInternalFormat::R8UI, width, height, gl::PixelFormat::RED_INTEGER, gl::PixelType::UNSIGNED_BYTE, nullptr);
     g_buffer.attach(material_tex, gl::FBOAttachment::COLOR3, 3);
@@ -143,7 +154,7 @@ void Renderer::init() {
     g_buffer.attach_renderbuffer(gl::RenderBufferInternalFormat::DEPTH_COMPONENT, width, height, gl::FBOAttachment::DEPTH);
 
     if (!g_buffer.check())
-        throw engine_exception{"Framebuffer is not complete"};
+        throw engine_exception{"Geometry Framebuffer is not complete"};
 
     // lighting output HDR FBO
     hdr_texture = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
@@ -160,12 +171,21 @@ void Renderer::init() {
     ev2::ShaderPreprocessor prep{ResourceManager::get_singleton().asset_path / "shader"};
     prep.load_includes();
 
+
     geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "geometry.glsl.vert", prep);
     geometry_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "geometry.glsl.frag", prep);
     geometry_program.link();
 
     gp_m_location = geometry_program.getUniformInfo("M").Location;
     gp_g_location = geometry_program.getUniformInfo("G").Location;
+
+    // Initialize the GLSL programs
+    depth_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "simpleDepth.glsl.vert", prep);
+    depth_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "simpleDepth.glsl.frag", prep);
+    depth_program.link();
+
+    sdp_m_location = depth_program.getUniformInfo("M").Location;
+    sdp_lpv_location = depth_program.getUniformInfo("LPV").Location;
 
 
     directional_lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
@@ -177,6 +197,8 @@ void Renderer::init() {
     lp_as_location = directional_lighting_program.getUniformInfo("gAlbedoSpec").Location;
     lp_mt_location = directional_lighting_program.getUniformInfo("gMaterialTex").Location;
     lp_gao_location = directional_lighting_program.getUniformInfo("gAO").Location;
+    lp_ls_location = directional_lighting_program.getUniformInfo("LS").Location;
+    lp_sdt_location = directional_lighting_program.getUniformInfo("shadowDepth").Location;
 
 
     point_lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "point_lighting.glsl.vert", prep);
@@ -205,6 +227,7 @@ void Renderer::init() {
     ssao_radius_loc = ssao_program.getUniformInfo("radius").Location;
     ssao_bias_loc = ssao_program.getUniformInfo("bias").Location;
     ssao_nSamples_loc = ssao_program.getUniformInfo("nSamples").Location;
+
 
     sky_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, std::filesystem::path("sky") / "sky.glsl.vert", prep);
     sky_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, std::filesystem::path("sky") / "sky.glsl.frag", prep);
@@ -519,12 +542,15 @@ void Renderer::destroy_mesh_instance(MSIID msiid) {
 }
 
 void Renderer::render(const Camera &camera) {
+    glm::mat4 light_vp;
 
     // update globals buffer with frame info
     glm::mat4 P = camera.get_projection();
+    glm::mat4 V = camera.get_view();
     globals_desc.setShaderParameter("P", P, shader_globals);
     globals_desc.setShaderParameter("PInv", glm::inverse(P), shader_globals);
-    globals_desc.setShaderParameter("View", camera.get_view(), shader_globals);
+    globals_desc.setShaderParameter("View", V, shader_globals);
+    globals_desc.setShaderParameter("VInv", glm::inverse(V), shader_globals);
     globals_desc.setShaderParameter("CameraPos", camera.get_position(), shader_globals);
     globals_desc.setShaderParameter("CameraDir", camera.get_forward(), shader_globals);
 
@@ -534,10 +560,57 @@ void Renderer::render(const Camera &camera) {
     glDisable(GL_DITHER);
     glDisable(GL_STENCIL_TEST);
 
+    if (directional_lights.size() > 0) {
+        //set up shadow shader
+        depth_program.use();
+        d_buffer.bind();
+        //set up light's depth map
+        glViewport(0, 0, ShadowMapWidth, ShadowMapHeight);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        glm::vec3 directional_light_pos = camera.get_position() - 5.f * directional_lights[0].direction;
+        glm::mat4 LV =  glm::lookAt(directional_light_pos, camera.get_position(), camera.get_forward()) *
+                        glm::inverse(glm::translate(glm::identity<glm::mat4>(), directional_light_pos));
+        
+        std::array<glm::vec3, 8> worldPoints = camera.extract_frustum_corners(0.1f);
+        float minX = INFINITY, maxX = -INFINITY, minY = INFINITY, maxY = -INFINITY;
+        for (auto &point : worldPoints) {
+            glm::vec3 ls_point = LV * glm::vec4{point, 1.0};
+            if (ls_point.x < minX)
+                minX = ls_point.x;
+            else if (ls_point.x > maxX)
+                maxX = ls_point.x;
+            if (ls_point.y < minY)
+                minY = ls_point.y;
+            else if (ls_point.y > maxY)
+                maxY = ls_point.y;
+        }
+
+        glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY, 0.1f, 100.f);
+        light_vp = bias_mat * LO * LV;
+
+        //render scene
+        ev2::gl::glUniform(LO * LV, sdp_lpv_location);
+        for (auto &mPair : model_instances) {
+            auto& m = mPair.second;
+            if (m.drawable) {
+                ev2::gl::glUniform(m.transform, sdp_m_location);
+
+                m.drawable->draw(depth_program, m.material_override);
+            }
+        }
+
+        depth_program.unbind();
+        d_buffer.unbind();
+    }
+
+
     if (wireframe)
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     else
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+
 
     geometry_program.use();
     g_buffer.bind();
@@ -664,6 +737,14 @@ void Renderer::render(const Camera &camera) {
         ssao_kernel_color->bind();
         gl::glUniformSampler(4, lp_gao_location);
     }
+
+    if (lp_sdt_location >= 0) {
+        glActiveTexture(GL_TEXTURE5);
+        shadow_depth_tex->bind();
+        gl::glUniformSampler(5, lp_sdt_location);      
+    }
+
+        gl::glUniform(light_vp, lp_ls_location);
 
     for (auto& litr : directional_lights) {
         auto& l = litr.second;

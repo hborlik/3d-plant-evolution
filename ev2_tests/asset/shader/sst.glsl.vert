@@ -1,8 +1,8 @@
 #version 460 core
 
 out vec2 tex_coord;
-
 // from https://rauwendaal.net/2014/06/14/rendering-a-screen-covering-triangle-in-opengl/
+
 void main()
 {
     float x = -1.0 + float((gl_VertexID & 1) << 2);

@@ -265,6 +265,9 @@ public:
     float sun_position  = .0f;
     float cloud_speed   = .1f;
 
+    const uint32_t ShadowMapWidth = 1024;
+    const uint32_t ShadowMapHeight = 1024;
+
 private:
     // model, instance vertex data
     std::unordered_map<MID, std::shared_ptr<Drawable>> models;
@@ -295,8 +298,19 @@ private:
     int gp_m_location;
     int gp_g_location;
 
+    Program depth_program;
+    int sdp_m_location;
+    int sdp_lpv_location;
+
+    glm::mat4 bias_mat = {
+        glm::vec4{.5f, 0, 0, 0},
+        glm::vec4{0, .5f, 0, 0},
+        glm::vec4{0, 0, .5f, 0},
+        glm::vec4{.5f, .5f, .5f - 0.001f, 0}
+    };
+
     Program directional_lighting_program;
-    int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location;
+    int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location, lp_ls_location, lp_sdt_location;
 
     Program point_lighting_program;
     int plp_p_location, plp_n_location, plp_as_location, plp_mt_location, plp_m_location, plp_light_p_location, plp_light_c_location, plp_k_c_loc, plp_k_l_loc, plp_k_q_loc;
@@ -313,9 +327,15 @@ private:
     FBO g_buffer;
     FBO ssao_buffer;
     FBO lighting_buffer;
+    FBO d_buffer;
     
     VertexBuffer sst_vb;
 
+    GLuint depthMapFBO;
+	const GLuint S_WIDTH = 1024, S_HEIGHT = 1024;
+	GLuint depthMap;
+
+    std::shared_ptr<Texture> shadow_depth_tex;
     std::shared_ptr<Texture> material_tex;
     std::shared_ptr<Texture> albedo_spec;
     std::shared_ptr<Texture> normals;
