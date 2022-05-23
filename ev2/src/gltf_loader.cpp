@@ -123,7 +123,7 @@ Ref<GLTFScene> ResourceManager::loadGLTF(const std::filesystem::path& filename, 
         return {};
     }
 
-    Ref<GLTFScene> scene = make_referenced<GLTFScene>(filename);
+    Ref<GLTFScene> scene = make_referenced<GLTFScene>(filename.generic_string());
     VertexBuffer* state = scene->get_vertex_buffer();
     VBID vertex_buffer_id = scene->get_vertex_buffer_id();    
 

@@ -398,14 +398,16 @@ public:
                 if (down) {
                     show_debug = !show_debug;
                     ev2::window::setMouseCaptured(!show_debug);
+                    ev2::input::SetInputEnabled(!show_debug);
                 } 
                 break;
             default:
                 break;
         }
-        if (!io.WantCaptureMouse) {
+        if (!show_debug) {
+            ev2::input::SetKeyState(key, mods, down);
             switch (key) {
-                case ev2::input::Key::Tab:                      
+                case ev2::input::Key::Tab:
                     break;
                 case ev2::input::Key::KeyP:
                     break;
@@ -432,7 +434,6 @@ public:
                     {
                         placeChild = true;
                     }
-                        
                     break;
                 default:
                     break;

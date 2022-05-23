@@ -2,17 +2,23 @@
 
 namespace ev2::input {
 
+struct KeyAndMods {
+    uint8_t down = false;
+    Modifier mods{};
+};
+
 struct InputState {
     bool input_enabled = true;
 
-    uint8_t key_state[Key::Enum::Count] = {};
+    KeyAndMods key_state[Key::Enum::Count] = {};
     Modifier modifiers;
 };
 
 static InputState State;
 
-void SetKeyState(Key::Enum key, bool down) {
-    State.key_state[key] = down;
+void SetKeyState(Key::Enum key, Modifier mods, bool down) {
+    State.key_state[key].down = down;
+    State.key_state[key].mods = mods;
 }
 
 void SetModifiers(Modifier modifiers) {
@@ -31,11 +37,13 @@ void EnableInput() {
     State.input_enabled = true;
 }
 
-bool GetKeyDown(Key key, Modifier modifiers) {
-    if (State.input_enabled) {
+void SetInputEnabled(bool enabled) {
+    State.input_enabled = enabled;
+}
 
-    }
-    return false;
+bool GetKeyDown(Key::Enum key, Modifier modifiers) {
+    KeyAndMods& key_state = State.key_state[key];
+    return State.input_enabled && key_state.down && (modifiers.mods & key_state.mods.mods);
 }
 
 }

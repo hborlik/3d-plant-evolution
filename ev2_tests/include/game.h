@@ -33,9 +33,9 @@ public:
 
     Ref<RigidBody> ground_plane;
 
-    float game_time = 0.0f;
+    float time_day = 0.0f;
     float time_speed = 1.0f;
-    const float DayLength = 25.0f;
+    const float DayLength = 60.0f;
 
     void update(float dt);
 

@@ -151,13 +151,14 @@ struct Key {
     Key() = delete;
 };
 
-void SetKeyState(Key::Enum key, bool down);
+void SetKeyState(Key::Enum key, Modifier mods, bool down);
 void SetModifiers(Modifier modifiers);
 void ClearModifiers(Modifier modifiers);
 void DisableInput();
 void EnableInput();
+void SetInputEnabled(bool enabled);
 
-bool GetKeyDown(Key key, Modifier modifiers = {});
+bool GetKeyDown(Key::Enum key, Modifier modifiers = {});
 
 }
 

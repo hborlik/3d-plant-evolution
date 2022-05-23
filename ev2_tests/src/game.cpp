@@ -92,8 +92,8 @@ GameState::GameState() {
 
 void GameState::update(float dt) {
     scene->update(dt);
-    game_time += time_speed * dt;
-    const float sun_rads = 2.0 * M_PI * game_time / DayLength;
+    time_day += time_speed * dt / DayLength;
+    const float sun_rads = 2.0 * M_PI * time_day;
     Renderer::get_singleton().sun_position = sun_rads;
 
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
