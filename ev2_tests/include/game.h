@@ -10,6 +10,7 @@
 #include <scene.h>
 #include <renderer.h>
 #include <physics.h>
+#include <player.h>
 
 using namespace ev2;
 
@@ -23,6 +24,10 @@ public:
     Ref<Scene> scene;
     std::pair<std::shared_ptr<ev2::Material>, int32_t> tree_bark;
     std::pair<std::shared_ptr<ev2::Material>, int32_t> highlight_material;
+
+    ev2::Ref<ev2::CameraNode> cam_first_person{};
+    ev2::Ref<ev2::VisualInstance> marker{};
+    ev2::Ref<Player> player;
 
     Ref<DirectionalLightNode> sun_light;
 

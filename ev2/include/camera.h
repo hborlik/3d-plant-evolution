@@ -26,12 +26,12 @@ public:
             force_update_internal();
         const mat4& comp = p_v;
         Frustum f{};
-        auto& Left = f.left();
-        auto& Right = f.right();
-        auto& Top = f.top();
-        auto& Bottom = f.bottom();
-        auto& Near = f.near();
-        auto& Far = f.far();
+        auto& Left = f.get_left();
+        auto& Right = f.get_right();
+        auto& Top = f.get_top();
+        auto& Bottom = f.get_bottom();
+        auto& Near = f.get_near();
+        auto& Far = f.get_far();
 
         Left.p.x = comp[0][3] + comp[0][0]; 
         Left.p.y = comp[1][3] + comp[1][0]; 

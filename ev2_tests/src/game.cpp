@@ -54,15 +54,46 @@ GameState::GameState() {
     g_node->transform.scale = glm::vec3{100, 0.1, 100};
 
     ground_plane = scene->create_node<RigidBody>("Ground Collider");
-    ground_plane->add_shape(make_referenced<BoxShape>(glm::vec3{100, 0.05, 100}));
+    ground_plane->add_shape(make_referenced<BoxShape>(glm::vec3{50, 0.05, 50}));
     ground_plane->add_child(g_node);
     ground_plane->transform.position = glm::vec3{0, 0, 0};
+
     ground_plane->get_body()->setType(reactphysics3d::BodyType::STATIC);
+    auto& material = ground_plane->get_collider(0)->getMaterial();
+    material.setBounciness(0.01f);
+
+    ev2::MID hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
+    ev2::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "low_poly_houses.obj");
+    ev2::MID sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
+
+    marker = scene->create_node<ev2::VisualInstance>("marker");
+    marker->set_model(ground);
+    marker->transform.scale = glm::vec3{0.5, 0.5, 0.5};
+    marker->transform.position = glm::vec3{0, 3, 0};
+
+    auto h_node = scene->create_node<ev2::VisualInstance>("house");
+    h_node->set_model(hid);
+    h_node->transform.position = glm::vec3{30, 0, 0};
+    h_node->transform.rotate({0.1, 0.5, 0});
+    h_node->transform.scale = glm::vec3{0.1, 0.1, 0.1};
+
+    auto lh_node = scene->create_node<ev2::VisualInstance>("building");
+    lh_node->transform.position = glm::vec3{50, 1, -20};
+    lh_node->set_model(building0);
+
+    for (int n = 0; n < 20; n++)
+    {
+        spawn_random_tree(glm::vec3{}, 40, 10);
+    }
+
+    spawn_player({0, 20, 0});
+    cam_first_person = player->cam_first_person;
 }
 
 void GameState::update(float dt) {
+    scene->update(dt);
     game_time += time_speed * dt;
-    const float sun_rads = M_2_PI * game_time / DayLength;
+    const float sun_rads = 2.0 * M_PI * game_time / DayLength;
     Renderer::get_singleton().sun_position = sun_rads;
 
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
@@ -122,5 +153,6 @@ void GameState::spawn_box(const glm::vec3& position) {
 }
 
 void GameState::spawn_player(const glm::vec3& position) {
-
+    player = scene->create_node<Player>("player0");
+    player->transform.position = position;
 }

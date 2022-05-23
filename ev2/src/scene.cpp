@@ -11,8 +11,6 @@ void Scene::add_node(Ref<Node> n, Ref<Node> parent) {
     if (!p)
         p = Ref<Node>(this);
     p->add_child(n);
-    if (is_ready)
-        n->_ready();
 }
 
 void Scene::update(float dt) {
@@ -24,8 +22,19 @@ void Scene::update_pre_render() {
 }
 
 void Scene::ready() {
-    if (!is_ready)
+    if (!is_ready) {
+        is_ready = true;
         _ready();
+    }
+}
+
+void Scene::_notify_child_added(Ref<Node> child) {
+    if (is_ready)
+        child->_ready();
+}
+
+void Scene::_notify_child_removed(Ref<Node> child) {
+
 }
 
 } // namespace ev2

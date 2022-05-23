@@ -57,6 +57,10 @@ public:
      */
     virtual void on_destroy() {}
 
+    virtual void on_child_added(Ref<Node> child, int index) {}
+
+    virtual void on_child_removed(Ref<Node> child) {}
+
     /**
      * @brief call just before scene is rendered. Used to push changes to rendering server
      * 

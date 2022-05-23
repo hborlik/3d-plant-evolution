@@ -39,6 +39,21 @@ public:
     void ready();
 
 private:
+    friend class Node;
+
+    /**
+     * @brief used by nodes under this scene heirarchy to notify that a child was added
+     * 
+     * @param child 
+     */
+    void _notify_child_added(Ref<Node> child);
+
+    /**
+     * @brief used by nodes under this scene heirarchy to notify that a child was removed
+     * 
+     * @param child 
+     */
+    void _notify_child_removed(Ref<Node> child);
 
     bool is_ready = false;
 };

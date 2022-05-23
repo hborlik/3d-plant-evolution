@@ -76,7 +76,6 @@ public:
 
     ev2::Ref<ev2::CameraNode> cam_orbital{};
     ev2::Ref<ev2::Node> cam_orbital_root{};
-    ev2::Ref<ev2::CameraNode> cam_first_person{};
 
     std::unique_ptr<GameState> game;
 
@@ -84,9 +83,6 @@ public:
     Plant parentAlpha;
     Plant parentBeta;
     Plant child;
-    //ev2::Ref<TreeNode> tree{};
-
-    ev2::Ref<ev2::VisualInstance> marker{};
 
     glm::vec2 mouse_p{};
     glm::vec2 mouse_delta{};
@@ -99,20 +95,8 @@ public:
 
     bool show_debug = false;
 
-    enum CameraMode : uint8_t {
-        FirstPerson = 0,
-        Orbital
-    } camera_type = Orbital;
-
     ev2::Ref<ev2::CameraNode> getCameraNode() {
-        switch(camera_type) {
-            case Orbital:
-                return cam_orbital;
-            case FirstPerson:
-                return cam_first_person;
-            default:
-                return cam_orbital;
-        }
+        return cam_orbital;
     }
 
     void plantWindow(Plant * somePlant) {
@@ -230,9 +214,7 @@ public:
         }
     }
 
-void imgui(GLFWwindow * window) {
-        glfwPollEvents();
-
+    void imgui(GLFWwindow * window) {
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -243,10 +225,8 @@ void imgui(GLFWwindow * window) {
             show_settings_editor_window();
             show_game_debug_window(game.get());
         }
-   //ImGui::ShowDemoWindow(&show_demo_window);
 
-
-           // Rendering
+        // Rendering
         ImGui::Render();
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
@@ -260,38 +240,10 @@ void imgui(GLFWwindow * window) {
         parentAlpha.ID = NULL;
         parentBeta.ID = NULL;
 
-
-        ev2::MID hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
-        ev2::MID ground = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
-        ev2::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "low_poly_houses.obj");
-        ev2::MID sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
-
-        marker = game->scene->create_node<ev2::VisualInstance>("marker");
-        marker->set_model(ground);
-        marker->transform.scale = glm::vec3{0.5, 0.5, 0.5};
-        marker->transform.position = glm::vec3{0, 3, 0};
-
-        auto h_node = game->scene->create_node<ev2::VisualInstance>("house");
-        h_node->set_model(hid);
-        h_node->transform.position = glm::vec3{30, 0, 0};
-        h_node->transform.rotate({0.1, 0.5, 0});
-        h_node->transform.scale = glm::vec3{0.1, 0.1, 0.1};
-
-        auto lh_node = game->scene->create_node<ev2::VisualInstance>("building");
-        lh_node->transform.position = glm::vec3{50, 1, -20};
-        lh_node->set_model(building0);
-
         cam_orbital      = game->scene->create_node<ev2::CameraNode>("Orbital");
         cam_orbital_root = game->scene->create_node<ev2::Node>("cam_orbital_root");
-        cam_first_person = game->scene->create_node<ev2::CameraNode>("FP");
 
         cam_orbital_root->add_child(cam_orbital);
-
-        
-        for (int n = 0; n < 20; n++)
-        {
-            game->spawn_random_tree(glm::vec3{}, 40, 10);
-        }
 
         ev2::ResourceManager::get_singleton().loadGLTF(fs::path("models") / "Box.gltf");
        
@@ -338,7 +290,10 @@ void imgui(GLFWwindow * window) {
             ev2::Physics::get_singleton().simulate(dt);
             game->scene->update_pre_render();
             ev2::ResourceManager::get_singleton().pre_render();
-            ev2::Renderer::get_singleton().render(getCameraNode()->get_camera());
+            auto camera_node = getCameraNode();
+            if (!show_debug)
+                camera_node = game->cam_first_person;
+            ev2::Renderer::get_singleton().render(camera_node->get_camera());
             imgui(window);
             dt = float(ev2::window::getFrameTime());
         }
@@ -377,7 +332,6 @@ void imgui(GLFWwindow * window) {
             {"w_r", ((paramsA.find("w_r")->second + paramsB.find("w_r")->second)/randomGeneWeight)}
         };
         return retParams;
-
     }
 
     void placeCross(glm::vec3 somePos) {
@@ -407,35 +361,9 @@ void imgui(GLFWwindow * window) {
     }
 
 
-    void placePlant(Plant somePlant, glm::vec3 somePos) {
-        
-        int unique_id = (int)randomFloatTo(9999999);
-        std::string unique_hit_tag = std::string("Tree_hit") += std::to_string(unique_id);
-        
-        ev2::Ref<TreeNode> tree = game->scene->create_node<TreeNode>("Tree");
-        
-        SuperSphere supershape(1.0f, 20, 20);
-
-        std::map<std::string, float> params = somePlant.tree->getParams();
-        
-        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = game->scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
-        tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
-        tree_hit_sphere->transform.position = somePos;
-        tree_hit_sphere->add_child(tree);
-
-        tree->thickness = somePlant.tree->thickness;
-        tree->c0 = somePlant.tree->c0;
-        tree->c1 = somePlant.tree->c1;
-        tree->set_material_override(ev2::ResourceManager::get_singleton().get_material_id("bark"));
-        tree->setParams(params, somePlant.iterations);
-
-        plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
-        placeChild = false;
-    }
-
     void update(float dt, ImGuiIO& io) {
 
-        if ((right_mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) {
+        if (show_debug && (right_mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) {
             mouse_delta = ev2::window::getCursorPosition() - mouse_p;
             mouse_p = ev2::window::getCursorPosition();
             cam_x += mouse_delta.x * -.005f;
@@ -451,19 +379,8 @@ void imgui(GLFWwindow * window) {
         cam_orbital->transform.position = boom;
         cam_orbital->transform.rotation = glm::quatLookAt(-glm::normalize(boom), glm::vec3{0, 1, 0});
 
-        cam_first_person->transform.rotation = glm::rotate(glm::rotate(glm::identity<glm::quat>(), (float)cam_x, glm::vec3{0, 1, 0}), (float)cam_y, glm::vec3{1, 0, 0});
-        if (camera_type == FirstPerson && glm::length(move_input) > 0.0f) {
-            glm::vec2 input = glm::normalize(move_input);
-            glm::vec3 cam_forward = glm::normalize(cam_first_person->get_camera().get_forward() * glm::vec3{1, 0, 1});
-            glm::vec3 cam_right = glm::normalize(cam_first_person->get_camera().get_right() * glm::vec3{1, 0, 1});
-            cam_first_person->transform.position = glm::vec3(
-                cam_first_person->transform.position * glm::vec3{1, 0, 1} + 
-                glm::vec3{0, 2, 0} + 
-                cam_forward * 10.0f * dt * input.y + 
-                cam_right * 10.0f * dt * input.x
-            ); // force camera movement on y plane
-        }
-        else if (camera_type == Orbital && glm::length(move_input) > 0.0f) {
+        
+        if (show_debug && glm::length(move_input) > 0.0f) {
             glm::vec2 input = glm::normalize(move_input);
             glm::vec3 cam_forward = glm::normalize(cam_orbital->get_camera().get_forward() * glm::vec3{1, 0, 1});
             glm::vec3 cam_right = glm::normalize(cam_orbital->get_camera().get_right() * glm::vec3{1, 0, 1});
@@ -472,61 +389,6 @@ void imgui(GLFWwindow * window) {
                 cam_right * 1.0f * cam_boom_length * dt * input.x
             ; // camera movement on y plane
         }
-
-        if (getCameraNode()) {
-            const ev2::Camera& cam = getCameraNode()->get_camera();
-            glm::vec2 scr_size = ev2::window::getWindowSize();
-            glm::vec2 s_pos = ev2::window::getCursorPosition() / scr_size;
-            
-            if ((left_mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) 
-                {
-                ev2::Ray cast = cam.screen_pos_to_ray(s_pos);
-                auto si = ev2::Physics::get_singleton().raycast_scene(cast, 200.0f);
-                if (si) {
-                    std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl; 
-                        
-                if (strstr(si->hit.ref_cast<ev2::Node>()->get_path().c_str(), std::string("Tree").c_str()))
-                {
-                    for (auto it=plantlist.begin(); it!=plantlist.end(); ++it)
-                    {
-                        size_t i = 0;
-                        std::string path = si->hit.ref_cast<ev2::Node>()->get_path();
-                        int length = path.length();
-                        for ( i = 0; i < length; i++) 
-                            {
-                            if ( isdigit(path[i])) 
-                                break;
-                            }
-                        std::string subPath = path.substr(i, path.length() - i);
-                        int hitID = std::atoi(subPath.c_str());
-                        if (it->ID == hitID) {
-                            std::cout << path << std::endl;
-                            child = *it; 
-                            it->selected = true; 
-                            break;
-                        }
-                    }                   
-                } else if (placeChild == true)
-                    {
-                        if ((parentAlpha.ID != NULL) && (parentAlpha.ID != NULL))
-                        {
-                            placeCross(si->point);
-                        } else
-                        {
-                            placePlant(child, si->point);
-                        }
-                    } 
-                marker->transform.position = si->point + glm::vec3{0, .25f, 0};
-    //                if (si->hit.ref_cast<TreeNode>())
-    //                    std::cout << si->hit.ref_cast<TreeNode>()->get_path() << std::endl;
-
-                } 
-            }
-  
-        }
-
-        // update scene
-        game->scene->update(dt);
     }
 
     void onKey(ev2::input::Key::Enum key, ev2::input::Modifier mods, bool down) override {
@@ -535,6 +397,7 @@ void imgui(GLFWwindow * window) {
             case ev2::input::Key::Esc:
                 if (down) {
                     show_debug = !show_debug;
+                    ev2::window::setMouseCaptured(!show_debug);
                 } 
                 break;
             default:
@@ -542,16 +405,11 @@ void imgui(GLFWwindow * window) {
         }
         if (!io.WantCaptureMouse) {
             switch (key) {
-                case ev2::input::Key::Tab:
-                    if (down)
-                        ev2::window::setMouseCaptured(!ev2::window::getMouseCaptured());
+                case ev2::input::Key::Tab:                      
                     break;
                 case ev2::input::Key::KeyP:
                     break;
                 case ev2::input::Key::KeyF:
-                    if (down) {
-                        camera_type = CameraMode((camera_type + 1) % 2);
-                    }
                     break;
                 case ev2::input::Key::KeyZ:
                     if (down)

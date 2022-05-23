@@ -244,19 +244,19 @@ struct Frustum {
     // 6 inward pointing planes
     Plane planes[6];
 
-    Plane& left() noexcept  {return planes[0];}
-    Plane& right() noexcept {return planes[1];}
-    Plane& top() noexcept   {return planes[2];}
-    Plane& bottom() noexcept{return planes[3];}
-    Plane& near() noexcept  {return planes[4];}
-    Plane& far() noexcept   {return planes[5];}
+    Plane& get_left() noexcept  {return planes[0];}
+    Plane& get_right() noexcept {return planes[1];}
+    Plane& get_top() noexcept   {return planes[2];}
+    Plane& get_bottom() noexcept{return planes[3];}
+    Plane& get_near() noexcept  {return planes[4];}
+    Plane& get_far() noexcept   {return planes[5];}
 
-    const Plane& left() const noexcept  {return planes[0];}
-    const Plane& right() const noexcept {return planes[1];}
-    const Plane& top() const noexcept   {return planes[2];}
-    const Plane& bottom() const noexcept{return planes[3];}
-    const Plane& near() const noexcept  {return planes[4];}
-    const Plane& far() const noexcept   {return planes[5];}
+    const Plane& get_left() const noexcept  {return planes[0];}
+    const Plane& get_right() const noexcept {return planes[1];}
+    const Plane& get_top() const noexcept   {return planes[2];}
+    const Plane& get_bottom() const noexcept{return planes[3];}
+    const Plane& get_near() const noexcept  {return planes[4];}
+    const Plane& get_far() const noexcept   {return planes[5];}
 
     void normalize() noexcept {
         for (int i = 0; i < 6; ++i) {

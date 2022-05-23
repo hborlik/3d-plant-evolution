@@ -7,6 +7,8 @@
 #ifndef EV2_INPUT_H
 #define EV2_INPUT_H
 
+#include <stdint.h>
+
 namespace ev2::input {
 
 struct MouseButton {
@@ -34,7 +36,7 @@ struct Modifier {
         LeftMeta = 0x40,
         RightMeta = 0x80,
     };
-    uint8_t mods;
+    uint8_t mods = Empty;
 };
 
 struct Key {
@@ -148,6 +150,14 @@ struct Key {
 
     Key() = delete;
 };
+
+void SetKeyState(Key::Enum key, bool down);
+void SetModifiers(Modifier modifiers);
+void ClearModifiers(Modifier modifiers);
+void DisableInput();
+void EnableInput();
+
+bool GetKeyDown(Key key, Modifier modifiers = {});
 
 }
 
