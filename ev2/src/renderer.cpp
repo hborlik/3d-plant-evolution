@@ -117,6 +117,10 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
         throw engine_exception{"Framebuffer is not complete"};
 
     // set up FBO textures
+    shadow_depth_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    shadow_depth_tex->set_data2D(gl::TextureInternalFormat::R8UI, width, height, gl::PixelFormat::RED_INTEGER, gl::PixelType::UNSIGNED_BYTE, nullptr);
+    g_buffer.attach(shadow_depth_tex, gl::FBOAttachment::COLOR3, 5);
+
     material_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     material_tex->set_data2D(gl::TextureInternalFormat::R8UI, width, height, gl::PixelFormat::RED_INTEGER, gl::PixelType::UNSIGNED_BYTE, nullptr);
     g_buffer.attach(material_tex, gl::FBOAttachment::COLOR3, 3);
@@ -144,12 +148,23 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     ev2::ShaderPreprocessor prep{asset_path / "shader"};
     prep.load_includes();
 
+
+
     geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "geometry.glsl.vert", prep);
     geometry_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "geometry.glsl.frag", prep);
     geometry_program.link();
 
     gp_m_location = geometry_program.getUniformInfo("M").Location;
     gp_g_location = geometry_program.getUniformInfo("G").Location;
+
+    // Initialize the GLSL programs
+    DepthProg.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "simpleDepth.glsl.vert", prep);
+    DepthProg.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "simpleDepth.glsl.frag", prep);
+    DepthProg.link();
+
+    sdp_m_location = DepthProg.getUniformInfo("M").Location;
+    sdp_lp_location = DepthProg.getUniformInfo("LP").Location;
+    sdp_lv_location = DepthProg.getUniformInfo("LV").Location;
 
 
     directional_lighting_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
@@ -161,6 +176,8 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     lp_as_location = directional_lighting_program.getUniformInfo("gAlbedoSpec").Location;
     lp_mt_location = directional_lighting_program.getUniformInfo("gMaterialTex").Location;
     lp_gao_location = directional_lighting_program.getUniformInfo("gAO").Location;
+    lp_ls_location = directional_lighting_program.getUniformInfo("LS").Location;
+    lp_sdt_location = directional_lighting_program.getUniformInfo("shadowDepth").Location;
 
 
     ssao_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
@@ -173,6 +190,28 @@ Renderer::Renderer(uint32_t width, uint32_t height, const std::filesystem::path&
     ssao_radius_loc = ssao_program.getUniformInfo("radius").Location;
     ssao_bias_loc = ssao_program.getUniformInfo("bias").Location;
     ssao_nSamples_loc = ssao_program.getUniformInfo("nSamples").Location;
+
+    //generate the FBO for the shadow depth
+    glGenFramebuffers(1, &depthMapFBO);
+
+    //generate the texture
+    glGenTextures(1, &depthMap);
+    glBindTexture(GL_TEXTURE_2D, depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, S_WIDTH, S_HEIGHT,
+                    0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    //bind with framebuffer's depth buffer
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 5);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 5);
+
 
     // program block inputs
     globals_desc = geometry_program.getUniformBlockInfo("Globals");
@@ -385,6 +424,7 @@ void Renderer::set_instance_transform(IID iid, const glm::mat4& transform) {
 }
 
 void Renderer::render(const Camera &camera) {
+    glm::mat4 LSpace;
 
     // update globals buffer with frame info
     globals_desc.setShaderParameter("P", camera.get_projection(), shader_globals);
@@ -406,6 +446,51 @@ void Renderer::render(const Camera &camera) {
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		if (bool shadow = true) {
+			//set up light's depth map
+			glViewport(0, 0, S_WIDTH, S_HEIGHT);
+			glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+			glClear(GL_DEPTH_BUFFER_BIT);
+			glCullFace(GL_FRONT);
+
+			//set up shadow shader
+			//render scene
+			DepthProg.use();
+            glm::mat4 l_v = glm::inverse(glm::translate(glm::identity<glm::mat4>(), camera.get_position() + directional_lights[0].direction) * glm::lookAt((camera.get_position() + directional_lights[0].direction), camera.get_position(), glm::vec3(0.0f, 1.0f, 0.0f)));
+            std::array<glm::vec3, 8> worldPoints = camera.extract_frustum_corners();
+            float minX = worldPoints[0].x, maxX = worldPoints[0].x, minY = worldPoints[0].y, maxY = worldPoints[0].y;
+            for (auto &point : worldPoints) {
+                if (point.x < minX) 
+                    minX = point.x;
+                if (point.x > maxX)
+                    maxX = point.x;
+                if (point.y < minY)
+                    minY = point.y;
+                if (point.y > maxY)
+                    maxY = point.y;        
+            }
+			glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY);
+            
+            for (auto &mPair : model_instances) {
+                auto& m = mPair.second;
+                if (m.drawable) {
+                    const glm::mat3 G = glm::inverse(glm::transpose(glm::mat3(m.transform)));
+
+                    ev2::gl::glUniform(m.transform, gp_m_location);
+                    ev2::gl::glUniform(G, gp_g_location);
+
+                    m.drawable->draw(DepthProg, m.material_override);
+                }
+            }
+
+			DepthProg.unbind();
+			glCullFace(GL_BACK);
+
+			LSpace = LO * l_v;
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
 
 
     // bind global shader UBO to shader
@@ -518,6 +603,23 @@ void Renderer::render(const Camera &camera) {
         ssao_kernel_color->bind();
         gl::glUniformSampler(4, lp_gao_location);
     }
+
+    if (lp_sdt_location >= 0) {
+        glActiveTexture(GL_TEXTURE5);
+        shadow_depth_tex->bind();
+        gl::glUniformSampler(5, lp_sdt_location);      
+    }
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, depthMap);
+		glUniform1i(directional_lighting_program.getUniformInfo("shadowDepth").Location, 2);
+		glUniform3f(directional_lighting_program.getUniformInfo("lightDir").Location, 1, 1, 1);
+		//render scene
+		//SetProjectionMatrix(ShadowProg);
+		//SetView(ShadowProg);
+		glUniformMatrix4fv(directional_lighting_program.getUniformInfo("LS").Location, 1, GL_FALSE, value_ptr(LSpace)) ;
+//		drawScene(ShadowProg, ShadowProg->getUniform("normalTex"), ShadowProg->getUniform("colorTex"), true, true);
+
 
     for (auto& litr : directional_lights) {
         auto& l = litr.second;

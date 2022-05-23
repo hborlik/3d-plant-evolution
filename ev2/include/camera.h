@@ -71,12 +71,28 @@ public:
 
         return f;
     }
+    
 
-    std::array<glm::vec3, 8> extract_frustum_corners() {
+    std::array<glm::vec3, 8> extract_frustum_corners() const noexcept {
         using namespace glm;
         if (dirty)
             force_update_internal();
-            
+        std::array<glm::vec3, 8> ndcPoints = {
+            glm::vec3(-1, -1, 1),
+            glm::vec3(1, -1, 1),
+            glm::vec3(-1, 1, 1),
+            glm::vec3(1, 1, 1),
+            glm::vec3(-1, -1, -1),
+            glm::vec3(1, -1, -1),
+            glm::vec3(-1, 1, -1),
+            glm::vec3(1, 1, -1)
+        };    
+        std::array<glm::vec3, 8> worldPoints;
+        for (int i = 0; i < 8; i++)
+        {
+            worldPoints[0] = inv_pv() * vec4(ndcPoints[0], 1.0);
+        }
+        return worldPoints;
         // TODO
     }
 

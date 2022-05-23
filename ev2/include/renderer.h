@@ -177,8 +177,17 @@ private:
     int gp_m_location;
     int gp_g_location;
 
+    Program DepthProg;
+
+    int sdp_m_location;
+    int sdp_lp_location;
+    int sdp_lv_location;
+
+//    int gp_m_location;
+//    int gp_g_location;
+
     Program directional_lighting_program;
-    int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location;
+    int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location, lp_ls_location, lp_sdt_location;
 
     Program ssao_program;
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
@@ -188,6 +197,11 @@ private:
     
     VertexBuffer sst_vb;
 
+    GLuint depthMapFBO;
+	const GLuint S_WIDTH = 1024, S_HEIGHT = 1024;
+	GLuint depthMap;
+
+    std::shared_ptr<Texture> shadow_depth_tex;
     std::shared_ptr<Texture> material_tex;
     std::shared_ptr<Texture> albedo_spec;
     std::shared_ptr<Texture> normals;
