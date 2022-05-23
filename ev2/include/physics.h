@@ -179,6 +179,7 @@ public:
     float get_mass() const;
     
     void apply_force(const glm::vec3& force);
+    void apply_local_force(const glm::vec3& force);
 
     reactphysics3d::RigidBody* get_body() {return body;}
 
