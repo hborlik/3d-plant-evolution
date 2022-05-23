@@ -20,19 +20,26 @@ uniform vec3 lightAmbient;
 
 /* returns 1 if shadowed */
 /* called with the point projected into the light's coordinate space */
-float TestShadow(vec3 LSfPos, vec3 nor) {
+float TestShadow(vec3 LSfPos, vec3 Normal) {
+    // pcss
+    vec3 X = vec3(1, 0, 0);
+    vec3 Y = normalize(cross(Normal, X));
+    X = normalize(cross(Y, Normal));
 
-  //1: shift the coordinates from -1, 1 to 0 ,1
-  float bias = 0.03;
-  //2: read off the stored depth (.) from the ShadowDepth, using the shifted.xy 
-  float curD = LSfPos.z;
-  float lightD = texture(shadowDepth, LSfPos.xy).r;
-  //3: compare to the current depth (.z) of the projected depth
-  //4: return 1 if the point is shadowed
-  if (curD - bias > lightD)
-    return 1.0;
-  else
-    return 0.0;
+    mat3 TBN = mat3(X, Y, Normal);
+
+    vec2 texelScale = 1.0 / textureSize(shadowDepth, 0);
+    float percentShadow = 0.0f;
+    // 5x5 sampling
+    for (int i = -2; i <= 2; i++)
+        for (int j = -2; j <= 2; j++) {
+            const vec3 spos = TBN * vec3(vec2(i, j) * texelScale, 0);
+            const float lightDepth = texture(shadowDepth, LSfPos.xy + spos.xy).r;
+            if (LSfPos.z - spos.z * 1.5f > lightDepth)
+                percentShadow += 1.0f;
+        }
+
+    return percentShadow / 25.0f;
 }
 
 // BRDF shader interface

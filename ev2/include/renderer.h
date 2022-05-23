@@ -265,8 +265,8 @@ public:
     float sun_position  = .0f;
     float cloud_speed   = .1f;
 
-    const uint32_t ShadowMapWidth = 1024;
-    const uint32_t ShadowMapHeight = 1024;
+    const uint32_t ShadowMapWidth = 4096;
+    const uint32_t ShadowMapHeight = 4096;
 
 private:
     // model, instance vertex data
@@ -306,7 +306,7 @@ private:
         glm::vec4{.5f, 0, 0, 0},
         glm::vec4{0, .5f, 0, 0},
         glm::vec4{0, 0, .5f, 0},
-        glm::vec4{.5f, .5f, .5f - 0.001f, 0}
+        glm::vec4{.5f, .5f, .5f - 0.005f, 0}
     };
 
     Program directional_lighting_program;
@@ -330,10 +330,6 @@ private:
     FBO d_buffer;
     
     VertexBuffer sst_vb;
-
-    GLuint depthMapFBO;
-	const GLuint S_WIDTH = 1024, S_HEIGHT = 1024;
-	GLuint depthMap;
 
     std::shared_ptr<Texture> shadow_depth_tex;
     std::shared_ptr<Texture> material_tex;

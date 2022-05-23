@@ -126,7 +126,7 @@ void Renderer::init() {
 
     // set up FBO textures
     shadow_depth_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
-    shadow_depth_tex->set_data2D(gl::TextureInternalFormat::DEPTH_COMPONENT, ShadowMapWidth, ShadowMapHeight, gl::PixelFormat::DEPTH_COMPONENT, gl::PixelType::FLOAT, nullptr);
+    shadow_depth_tex->set_data2D(gl::TextureInternalFormat::DEPTH_COMPONENT16, ShadowMapWidth, ShadowMapHeight, gl::PixelFormat::DEPTH_COMPONENT, gl::PixelType::FLOAT, nullptr);
     shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::CLAMP_TO_BORDER);
     shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::CLAMP_TO_BORDER);
     shadow_depth_tex->set_border_color(glm::vec4{1.0f});
@@ -579,11 +579,11 @@ void Renderer::render(const Camera &camera) {
             glm::vec3 ls_point = LV * glm::vec4{point, 1.0};
             if (ls_point.x < minX)
                 minX = ls_point.x;
-            else if (ls_point.x > maxX)
+            if (ls_point.x > maxX)
                 maxX = ls_point.x;
             if (ls_point.y < minY)
                 minY = ls_point.y;
-            else if (ls_point.y > maxY)
+            if (ls_point.y > maxY)
                 maxY = ls_point.y;
         }
 
