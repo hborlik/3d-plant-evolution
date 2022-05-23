@@ -44,11 +44,11 @@ public:
     void set_fov(float fov) noexcept {this->fov = fov;}
     float get_fov() noexcept {return fov;}
 
-    void set_near_clip(float near) noexcept {this->near = near;}
-    float get_near_clip() noexcept {return near;}
+    void set_near_clip(float m_near) noexcept {this->m_near = m_near;}
+    float get_near_clip() noexcept {return m_near;}
 
-    void set_far_clip(float far) noexcept {this->far = far;}
-    float get_far_clip() noexcept {return far;}
+    void set_far_clip(float m_far) noexcept {this->m_far = m_far;}
+    float get_far_clip() noexcept {return m_far;}
 
     const Camera& get_camera() noexcept {
         update_internal();
@@ -61,7 +61,7 @@ private:
 
     Camera camera{};
     float fov = 60.0f;
-    float near = 0.1f, far = 500.0f;
+    float m_near = 0.1f, m_far = 500.0f;
     float aspect = 1.0f;
 };
 
