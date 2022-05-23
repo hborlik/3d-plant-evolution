@@ -8,15 +8,10 @@
 #include <glm/glm.hpp>
 
 #include <tiny_obj_loader.h>
+#include <stb_image.h>
 
 #include <buffer.h>
 #include <renderer.h>
-
-struct DrawObject {
-    size_t start;
-    size_t numTriangles;
-    size_t material_id;
-};
 
 namespace {
 
@@ -266,13 +261,14 @@ void computeSmoothingShapes(tinyobj::attrib_t &inattrib,
 } // namespace
 
 static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
-                        std::vector<DrawObject> *drawObjects,
+                        std::vector<ev2::DrawObject> *drawObjects,
                         std::vector<tinyobj::material_t> &materials,
                     //    std::map<std::string, GLuint> &textures,
                         std::vector<float> &buffer,
                         const std::string &filename,
                         std::string base_dir)
 {
+    using namespace ev2;
     tinyobj::attrib_t inattrib;
     std::vector<tinyobj::shape_t> inshapes;
 
@@ -631,27 +627,109 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
 
 namespace ev2 {
 
-std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager& rm);
-
 void ResourceManager::pre_render() {
     for (auto& m : materials) {
         m.second.update_internal();
     }
 }
 
-MID ResourceManager::get_model(const std::filesystem::path& filename) {
+MID ResourceManager::get_model(const std::filesystem::path& filename, bool cache) {
     auto itr = model_lookup.find(filename.generic_string());
-    if (itr != model_lookup.end()) { // already loaded
+    if (itr != model_lookup.end() && !cache) { // already loaded
         return itr->second;
     }
     auto base_dir = filename;
     base_dir.remove_filename();
-    std::shared_ptr<Model> loaded_model = loadObj(filename.filename().generic_string(), (asset_path / base_dir).generic_string(), *this);
+    std::shared_ptr<Model> loaded_model = loadObj(filename.filename().generic_string(), (asset_path / base_dir).generic_string(), this);
     if (loaded_model) {
-        MID id = ev2::Renderer::get_singleton().create_model(loaded_model);
-        models.insert(std::make_pair(id, loaded_model));
-        model_lookup.insert(std::make_pair(filename.generic_string(), id));
+        // create materials information
+        std::vector<Primitive> ev_prim(loaded_model->draw_objects.size());
+        size_t i = 0;
+        for (auto& dObj : loaded_model->draw_objects) {
+            int mat_id_obj = dObj.material_id;
+            if (mat_id_obj == -1)
+                mat_id_obj = 0;
+            auto& m = loaded_model->materials[mat_id_obj];
+            // copy used materials
+            int32_t mat_id = 0;
+            mat_id = get_material_id(m.name);
+            if (mat_id == -1) {
+                // create a new material
+                auto mat_id_pair = create_material(m.name);
+                auto mat = mat_id_pair.first;
+                *mat = m;
+                mat_id = mat_id_pair.second;
+            }
+
+            ev_prim[i++] = Primitive {
+                dObj.start * 3,
+                dObj.numTriangles * 3,
+                mat_id
+            };
+        }
+
+        std::shared_ptr<Drawable> d = std::make_shared<Drawable>(
+            VertexBuffer::vbInitArrayVertexData(loaded_model->buffer),
+            std::move(ev_prim),
+            loaded_model->bmin,
+            loaded_model->bmax,
+            gl::CullMode::BACK,
+            gl::FrontFacing::CCW
+        );
+        d->material_offset = 0;
+
+        MID id = ev2::Renderer::get_singleton().create_model(d);
+        if (cache)
+            model_lookup.insert(std::make_pair(filename.generic_string(), id));
         return id;
+    } else {
+        std::cerr << "Failed to load model " + filename.generic_string() << std::endl;
+        return {};
+    }
+}
+
+std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::path& filename) {
+    auto itr = textures.find(filename.generic_string());
+    if (itr != textures.end()) { // already loaded
+        return itr->second;
+    }
+
+    int w, h, ncomps;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char *data = stbi_load(filename.c_str(), &w, &h, &ncomps, 0);
+
+
+    if (data) {
+        gl::TextureInternalFormat internal_format;
+        gl::PixelFormat pixel_format;
+        switch(ncomps) {
+            case 1:
+                internal_format = gl::TextureInternalFormat::RED;
+                pixel_format = gl::PixelFormat::RED;
+                break;
+            case 2:
+                internal_format = gl::TextureInternalFormat::RG;
+                pixel_format = gl::PixelFormat::RG;
+                break;
+            case 3:
+                internal_format = gl::TextureInternalFormat::RGB;
+                pixel_format = gl::PixelFormat::RGB;
+                break;
+            case 4:
+                internal_format = gl::TextureInternalFormat::RGBA;
+                pixel_format = gl::PixelFormat::RGBA;
+                break;
+            default:
+                std::cerr << "Failed to load model " + filename.generic_string() << "invalid ncomps " << ncomps << std::endl;
+                return {};
+        }
+
+        std::shared_ptr<Texture> texture = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::LINEAR_MIPMAP_LINEAR);
+        texture->set_data2D(internal_format, w, h, pixel_format, gl::PixelType::BYTE, data);
+        texture->generate_mips();
+        stbi_image_free(data);
+        textures.insert({filename.generic_string(), texture});
+        return texture;
     } else {
         std::cerr << "Failed to load model " + filename.generic_string() << std::endl;
         return {};
@@ -691,70 +769,90 @@ int32_t ResourceManager::MaterialLocation::update_internal() {
     return material_id;
 }
 
-std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager& rm) {
+std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std::filesystem::path& base_dir, ResourceManager* rm) {
     glm::vec3 bmin, bmax;
-    std::vector<DrawObject> drawObjects;
     std::vector<tinyobj::material_t> materials;
     std::vector<float> buffer;
+    std::vector<DrawObject> drawObjects;
     std::cout << base_dir / filename << std::endl;
     bool success = LoadObjAndConvert(bmin, bmax, &drawObjects, materials, buffer, (base_dir / filename).generic_string(), base_dir.generic_string());
     if (success) {
-        std::vector<Mesh> ev_meshs(drawObjects.size());
+        std::vector<Material> ev_mat(materials.size());
+        std::size_t i = 0;
+        for (auto& m : materials) {
+            auto mat = Material{filename.generic_string() + "_" + m.name};
+            mat.diffuse = glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]};
+            mat.metallic = m.metallic;
+            mat.subsurface = glm::clamp(glm::length(glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}), 0.f, 1.f);
+            mat.specular = m.shininess;
+            mat.roughness = m.roughness;
+            mat.specularTint = 0;
+            mat.clearcoat = m.clearcoat_roughness;
+            mat.clearcoatGloss = m.clearcoat_thickness;
+            mat.anisotropic = m.anisotropy;
+            mat.sheen = m.sheen;
+            mat.sheenTint = 0.5f;
+            mat.ambient_texname = m.ambient_texname;
+            mat.diffuse_texname = m.diffuse_texname;
+            mat.specular_texname = m.specular_texname;
+            mat.specular_highlight_texname = m.specular_highlight_texname;
+            mat.bump_texname = m.bump_texname;
+            mat.displacement_texname = m.displacement_texname;
+            mat.alpha_texname = m.alpha_texname;
+            mat.reflection_texname = m.reflection_texname;
 
-        // copy index information
-        size_t i = 0;
-        for (auto& dObj : drawObjects) {
-            int mat_id_obj = dObj.material_id;
-            if (mat_id_obj == -1)
-                mat_id_obj = 0;
-            auto& m = materials[mat_id_obj];
-            // copy used materials
-            std::string material_name = filename.generic_string() + m.name;
-            int32_t mat_id = rm.get_material_id(material_name);
-            if (mat_id == -1) {
-                // create a new material
-                auto mat_id_pair = rm.create_material(material_name);
-                mat_id = mat_id_pair.second;
-                auto mat = mat_id_pair.first;
-                mat->diffuse = glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]};
-                mat->metallic = m.metallic;
-                mat->subsurface = glm::clamp(glm::length(glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}), 0.f, 1.f);
-                mat->specular = m.shininess;
-                mat->roughness = m.roughness;
-                mat->specularTint = 0;
-                mat->clearcoat = m.clearcoat_roughness;
-                mat->clearcoatGloss = m.clearcoat_thickness;
-                mat->anisotropic = m.anisotropy;
-                mat->sheen = m.sheen;
-                mat->sheenTint = 0.5f;
-                mat->ambient_texname = m.ambient_texname;
-                mat->diffuse_texname = m.diffuse_texname;
-                mat->specular_texname = m.specular_texname;
-                mat->specular_highlight_texname = m.specular_highlight_texname;
-                mat->bump_texname = m.bump_texname;
-                mat->displacement_texname = m.displacement_texname;
-                mat->alpha_texname = m.alpha_texname;
-                mat->reflection_texname = m.reflection_texname;
-            }
-
-            auto n_mesh = Mesh {
-                dObj.start * 3,
-                dObj.numTriangles * 3,
-                mat_id
-            };
-            ev_meshs[i++] = n_mesh;
+            ev_mat[i++] = mat;
         }
 
         return std::make_unique<Model>(
-            std::move(ev_meshs),
+            (base_dir / filename).generic_string(),
+            std::move(drawObjects),
+            std::move(ev_mat),
             bmin,
             bmax,
-            buffer,
+            std::move(buffer),
             VertexFormat::Array
         );
 
     }
     return {};
+}
+
+std::unique_ptr<Texture> load_texture2D(const std::filesystem::path& filename) {
+    std::unique_ptr<Texture> out;
+    bool error = false;
+    if(!filename.empty()) {
+        std::string file = filename.generic_string();
+        int width, height, nrChannels;
+        unsigned char *image = stbi_load(file.c_str(), &width, &height, &nrChannels, 0);
+        if(image) {
+            std::cout << "Loaded texture data: " << file << ", w = " << width
+                << ", h = " << height << ", channels = " << nrChannels << std::endl;
+
+            out = std::make_unique<Texture>(gl::TextureType::TEXTURE_2D);
+            if(nrChannels == 1) {
+                out->set_data2D(gl::TextureInternalFormat::RED, width, height, gl::PixelFormat::RED, gl::PixelType::UNSIGNED_BYTE, image);
+            } else if(nrChannels == 2) { // rg
+                out->set_data2D(gl::TextureInternalFormat::RG, width, height, gl::PixelFormat::RG, gl::PixelType::UNSIGNED_BYTE, image); 
+            } else if(nrChannels == 3) { // rgb
+                out->set_data2D(gl::TextureInternalFormat::RGB, width, height, gl::PixelFormat::RGB, gl::PixelType::UNSIGNED_BYTE, image);
+            } else if(nrChannels == 4) { // rgba
+                out->set_data2D(gl::TextureInternalFormat::RGBA, width, height, gl::PixelFormat::RGBA, gl::PixelType::UNSIGNED_BYTE, image);
+            } else {
+                error = true;
+                std::cerr << "unable to load unsupported texture format. " + file + " Channels:" + std::to_string(nrChannels) << std::endl;
+            }
+            stbi_image_free(image);
+            
+            out->generate_mips();
+        } else {
+            std::cerr << "Unable to load texture: " + file << std::endl;
+            error = true;
+        }
+    } else
+        error = true;
+    
+    return out;
 }
 
 } // namespace ev2

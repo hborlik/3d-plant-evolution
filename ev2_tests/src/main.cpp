@@ -20,9 +20,10 @@
 #include <application.h>
 #include <camera.h>
 #include <window.h>
-#include <mesh.h>
+#include <vertex_buffer.h>
 #include <resource.h>
 #include <Sphere.h>
+#include <physics.h>
 #include <renderer.h>
 #include <scene.h>
 #include <physics.h>
@@ -49,12 +50,12 @@ struct Plant {
     glm::quat rot;
     Sphere geometry;
     ev2::Ref<TreeNode> tree{};
-    ev2::Ref<ev2::Collider> tree_hit_sphere;
+    ev2::Ref<ev2::ColliderBody> tree_hit_sphere;
     Plant() 
     {
         ID = NULL;
     }
-    Plant(int IDin, glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn, ev2::Ref<ev2::Collider> tree_hit_sphere_In) 
+    Plant(int IDin, glm::vec3 pos, glm::vec3 col, Sphere geo, ev2::Ref<TreeNode> treeIn, ev2::Ref<ev2::ColliderBody> tree_hit_sphere_In) 
     {
         ID = IDin;
         position = pos;
@@ -74,12 +75,10 @@ ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 class TestApp : public ev2::Application {
 public:
-    TestApp() : RM{std::make_unique<ev2::ResourceManager>(asset_path)},
-                scene{std::make_unique<ev2::Scene>(RM)} {}
+    TestApp() : scene{std::make_unique<ev2::Scene>("scene0")} {}
     
     TestApp(const fs::path& asset_path) :   asset_path{asset_path}, 
-                                            RM{std::make_unique<ev2::ResourceManager>(asset_path)}, 
-                                            scene{std::make_unique<ev2::Scene>(RM)} {}
+                                            scene{std::make_unique<ev2::Scene>("scene0")} {}
 
     fs::path asset_path = fs::path("asset");
 
@@ -93,11 +92,10 @@ public:
     Plant parentBeta;
     Plant child;
     //ev2::Ref<TreeNode> tree{};
-    ev2::Ref<ev2::Collider> ground_plane;
+    ev2::Ref<ev2::RigidBody> ground_plane;
 
     ev2::Ref<ev2::VisualInstance> marker{};
 
-    std::shared_ptr<ev2::ResourceManager> RM;
     std::unique_ptr<ev2::Scene> scene;
 
     glm::vec2 mouse_p{};
@@ -111,6 +109,7 @@ public:
 
     bool show_material_editor = true;
     bool show_settings_editor = true;
+    bool enable_physics_simulation = false;
 
     enum CameraMode : uint8_t {
         FirstPerson = 0,
@@ -130,7 +129,7 @@ public:
 
     void show_material_editor_window() {
         ImGui::Begin("Material Editor", &show_material_editor);
-        for (auto& mas : RM->get_materials_locations()) {
+        for (auto& mas : ev2::ResourceManager::get_singleton().get_materials_locations()) {
             if (ImGui::CollapsingHeader(("Material " + std::to_string(mas.second.material_id) + " " + mas.first).c_str())) {
                 
                 if (ImGui::TreeNode("Color")) {
@@ -157,6 +156,7 @@ public:
         ImGui::Text("Application %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::DragFloat("ssao radius", &(ev2::Renderer::get_singleton().ssao_radius), 0.01f, 0.0f, 3.0f, "%.3f", 1.0f);
         ImGui::DragInt("ssao samples", (int32_t*)&(ev2::Renderer::get_singleton().ssao_kernel_samples), 1, 1, 64);
+        ImGui::Checkbox("Enable Physics Timestep", &enable_physics_simulation);
         ImGui::End();
     }
 
@@ -231,7 +231,7 @@ public:
             GUIParams.find("a_2")->second = ptree::degToRad(fieldDegree2);
             changed = true;
         } 
-        if (ImGui::SliderFloat("d (degrees)", &fieldDegree3, 0.5f, 60.0f))
+        if (ImGui::SliderFloat("d (degrees)", &fieldDegree3, 0.f, 360.0f))
         {
             GUIParams.find("d")->second = ptree::degToRad(fieldDegree3);
             changed = true;
@@ -322,13 +322,13 @@ void imgui(GLFWwindow * window) {
             {"R_2", randomFloatRange(.6f, 1.f)},
             {"a_0", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
             {"a_2", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
-            {"d",   ptree::degToRad(randomFloatRange(12.5f, 60.f))},
+            {"d",   ptree::degToRad(randomFloatRange(.0f, 360.f))},
             {"w_r", randomFloatRange(0.6f, 0.89f)}
         };
         
-        ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
-        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
-        tree_hit_sphere->transform.position = glm::vec3{randomFloatTo(500) - 250, 0, randomFloatTo(500) - 250};
+        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
+        tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
+        tree_hit_sphere->transform.position = glm::vec3{randomFloatTo(25) - 12.5, 0, randomFloatTo(25) - 12.5};
         tree_hit_sphere->add_child(tree);
         tree->set_material_override(tree_bark.second);
         tree->setParams(params, 10);
@@ -348,30 +348,46 @@ void imgui(GLFWwindow * window) {
         parentBeta.ID = NULL;
         
 
-        auto highlight_material = RM->create_material("highlight");
+        auto highlight_material = ev2::ResourceManager::get_singleton().create_material("highlight");
         highlight_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
         highlight_material.first->sheen = 1.0;
         highlight_material.first->metallic = 0.9;
 
 
-        ev2::MID hid = RM->get_model( fs::path("models") / "rungholt" / "house.obj");
-        ev2::MID ground = RM->get_model( fs::path("models") / "cube.obj");
-        ev2::MID building0 = RM->get_model( fs::path("models") / "low_poly_houses.obj");
-        ev2::MID sphere = RM->get_model( fs::path("models") / "sphere.obj");
+        ev2::MID hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
+        ev2::MID ground = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
+        ev2::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "low_poly_houses.obj");
+        ev2::MID sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
 
         marker = scene->create_node<ev2::VisualInstance>("marker");
         marker->set_model(ground);
         marker->transform.scale = glm::vec3{0.5, 0.5, 0.5};
-        marker->transform.position = glm::vec3{0, 5, 0};
+        marker->transform.position = glm::vec3{0, 3, 0};
         marker->set_material_override(highlight_material.second);
+
+        auto box_vis = scene->create_node<ev2::VisualInstance>("marker");
+        box_vis->set_model(ground);
+        box_vis->transform.scale = glm::vec3{0.5, 0.5, 0.5};
+        box_vis->transform.position = glm::vec3{0, 0, 0};
+        box_vis->set_material_override(highlight_material.second);
+
+        auto box = scene->create_node<ev2::RigidBody>("Box Rigidbody");
+        box->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{0.25, 0.25, 0.25}));
+        box->add_child(box_vis);
+        box->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
+        box->transform.position = glm::vec3{0, 14, 0};
 
         // ground_cube->materials[0].diffuse = {0.1, 0.6, 0.05};
         // ground_cube->materials[0].shininess = 0.02;
 
-        auto light = scene->create_node<ev2::DirectionalLightNode>("directional_light");
-        light->transform.position = glm::vec3{10, 100, 0};
+        auto dlight = scene->create_node<ev2::DirectionalLightNode>("directional_light");
+        dlight->transform.position = glm::vec3{10, 100, 0};
+        dlight->set_color(glm::vec3{5, 5, 5});
+        dlight->set_ambient({0.1, 0.1, 0.1});
+
+        auto light = scene->create_node<ev2::PointLightNode>("point_light");
+        light->transform.position = glm::vec3{0, 5, 0};
         light->set_color(glm::vec3{15, 15, 15});
-        light->set_ambient({0.1, 0.1, 0.1});
 
         auto h_node = scene->create_node<ev2::VisualInstance>("house");
         h_node->set_model(hid);
@@ -383,10 +399,10 @@ void imgui(GLFWwindow * window) {
         lh_node->transform.position = glm::vec3{50, 1, -20};
         lh_node->set_model(building0);
 
-        auto tree_bark = RM->create_material("bark");
+        auto tree_bark = ev2::ResourceManager::get_singleton().create_material("bark");
         tree_bark.first->diffuse = glm::vec3{0};
         tree_bark.first->metallic = 0;
-        // RM->push_material_changed("bark");
+        // ev2::ResourceManager::get_singleton().push_material_changed("bark");
 
         auto sphere_node = scene->create_node<ev2::VisualInstance>("sphere");
         sphere_node->transform.position = glm::vec3{50, 1, -30};
@@ -394,15 +410,15 @@ void imgui(GLFWwindow * window) {
         sphere_node->set_model(sphere);
         sphere_node->set_material_override(tree_bark.second);
 
-        auto ground_material = RM->create_material("ground_mat");
+        auto ground_material = ev2::ResourceManager::get_singleton().create_material("ground_mat");
         ground_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
         ground_material.first->sheen = 0.2;
-        // RM->push_material_changed("ground_mat");
+        // ev2::ResourceManager::get_singleton().push_material_changed("ground_mat");
 
         auto g_node = scene->create_node<ev2::VisualInstance>("ground");
         g_node->set_model(ground);
         g_node->set_material_override(ground_material.second);
-        g_node->transform.scale = glm::vec3{1000, 0.1, 1000};
+        g_node->transform.scale = glm::vec3{100, 0.1, 100};
 
         cam_orbital      = scene->create_node<ev2::CameraNode>("Orbital");
         cam_orbital_root = scene->create_node<ev2::Node>("cam_orbital_root");
@@ -410,19 +426,18 @@ void imgui(GLFWwindow * window) {
 
         cam_orbital_root->add_child(cam_orbital);
 
-        ground_plane = scene->create_node<ev2::Collider>("Ground Collider");
-        ground_plane->set_shape(ev2::make_referenced<ev2::PlaneShape>());
+        ground_plane = scene->create_node<ev2::RigidBody>("Ground Collider");
+        ground_plane->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{10, 0.05, 10}));
         ground_plane->add_child(g_node);
-        ground_plane->transform.position = glm::vec3{0, 0.4, 0};
+        ground_plane->transform.position = glm::vec3{0, 0, 0};
+        ground_plane->get_body()->setType(reactphysics3d::BodyType::STATIC);
         for (int n = 0; n < 10; n++)
         {
             initRandomPlant(tree_bark);
         }
-       
-    }
 
-    void updateShape(float dt, Sphere geometry) {
-        // cube = geometry.getModel();
+        ev2::ResourceManager::get_singleton().loadGLTF(fs::path("models") / "Box.gltf");
+       
     }
 
 
@@ -458,17 +473,23 @@ void imgui(GLFWwindow * window) {
 
         scene->set_active_camera(getCameraNode());
 
+        scene->ready();
+
         float dt = 0.05f;
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
             update(dt, io);
-            
+            if (enable_physics_simulation)
+                ev2::Physics::get_singleton().simulate(dt);
             scene->update_pre_render();
-            RM->pre_render();
+            ev2::ResourceManager::get_singleton().pre_render();
             ev2::Renderer::get_singleton().render(scene->get_active_camera()->get_camera());
             imgui(window);
             dt = float(ev2::window::getFrameTime());
         }
+
+        scene->destroy();
+
         ev2::Renderer::shutdown();      
         return 0;
     }
@@ -514,8 +535,8 @@ void imgui(GLFWwindow * window) {
 
         std::map<std::string, float> params = crossParams(parentAlpha.tree->getParams(), parentBeta.tree->getParams());
         
-        ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
-        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
+        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
+        tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
 
@@ -523,7 +544,7 @@ void imgui(GLFWwindow * window) {
 
         tree->c0 = glm::vec3(randomFloatRange(parentAlpha.tree->c0.r, parentBeta.tree->c0.r) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c0.g, parentBeta.tree->c0.g) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c0.b, parentBeta.tree->c0.b) + randomFloatRange(-.2f, .2f));
         tree->c1 = glm::vec3(randomFloatRange(parentAlpha.tree->c1.r, parentBeta.tree->c1.r) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c1.g, parentBeta.tree->c1.g) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c1.b, parentBeta.tree->c1.b) + randomFloatRange(-.2f, .2f));
-        tree->set_material_override(RM->get_material_id("bark"));
+        tree->set_material_override(ev2::ResourceManager::get_singleton().get_material_id("bark"));
         tree->setParams(params, (parentAlpha.iterations + parentBeta.iterations)/2);
 
         plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
@@ -542,15 +563,15 @@ void imgui(GLFWwindow * window) {
 
         std::map<std::string, float> params = somePlant.tree->getParams();
         
-        ev2::Ref<ev2::Collider> tree_hit_sphere = scene->create_node<ev2::Collider>(unique_hit_tag.c_str());
-        tree_hit_sphere->set_shape(ev2::make_referenced<ev2::Sphere>(glm::vec3{}, 2.0f));
+        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
+        tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
         tree_hit_sphere->transform.position = somePos;
         tree_hit_sphere->add_child(tree);
 
         tree->thickness = somePlant.tree->thickness;
         tree->c0 = somePlant.tree->c0;
         tree->c1 = somePlant.tree->c1;
-        tree->set_material_override(RM->get_material_id("bark"));
+        tree->set_material_override(ev2::ResourceManager::get_singleton().get_material_id("bark"));
         tree->setParams(params, somePlant.iterations);
 
         plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
@@ -605,7 +626,7 @@ void imgui(GLFWwindow * window) {
             if ((left_mouse_down || ev2::window::getMouseCaptured()) && !io.WantCaptureMouse) 
                 {
                 ev2::Ray cast = cam.screen_pos_to_ray(s_pos);
-                auto si = ev2::Physics::get_singleton().raycast_scene(cast);
+                auto si = ev2::Physics::get_singleton().raycast_scene(cast, 200.0f);
                 if (si) {
                     std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl; 
                         
@@ -811,7 +832,12 @@ int main(int argc, char *argv[]) {
     ev2::window::setApplication(app.get());
     //initAudio(asset_path);
     app->initialize();
+
     int rv = app->run();
+
+    // shutdown
+    ev2::window::setApplication(nullptr);
+    app = {};
     ev2::EV2_shutdown();
     return rv;
     //TODO: uninit audio device and decoder.

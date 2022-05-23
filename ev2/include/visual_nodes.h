@@ -8,7 +8,7 @@
 #define EV2_VISUAL_INSTANCE_H
 
 #include <node.h>
-#include <mesh.h>
+#include <vertex_buffer.h>
 #include <renderer.h>
 
 namespace ev2 {

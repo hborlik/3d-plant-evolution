@@ -8,7 +8,7 @@
 #define PLANT_GAME_TREE_H
 
 #include <visual_nodes.h>
-#include <mesh.h>
+#include <vertex_buffer.h>
 
 #include <procedural_tree.hpp>
 

@@ -5,16 +5,16 @@
 
 namespace ev2 {
 
-Scene::Scene(std::shared_ptr<ResourceManager> RM) : resource_manager{std::move(RM)} {
-    root = make_referenced<Node>("root");
-}
-
 void Scene::update(float dt) {
-    root->update(dt);
+    _update(dt);
 }
 
 void Scene::update_pre_render() {
-    root->update_pre_render();
+    _update_pre_render();
+}
+
+void Scene::ready() {
+    _ready();
 }
 
 } // namespace ev2

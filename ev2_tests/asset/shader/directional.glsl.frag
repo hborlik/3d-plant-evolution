@@ -66,7 +66,7 @@ void main() {
 
     vec3 color = AO * lightAmbient * (Albedo + materials[MaterialId].diffuse) + (1.0 - Shade) * lightColor * BRDF(lightDirV, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
     // fake hdr
-    color = color / (color + vec3(1.0)); // function asymptote y = 1 (maps to LDR range of [0, 1])
+    // color = color / (color + vec3(1.0)); // function asymptote y = 1 (maps to LDR range of [0, 1])
     // gamma
     color = pow(color, vec3(1.0/2.2));
     

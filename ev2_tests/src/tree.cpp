@@ -165,7 +165,7 @@ TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
     
     model = std::make_shared<ev2::Drawable>(
         ev2::VertexBuffer::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
-        std::vector<ev2::Mesh>{},
+        std::vector<ev2::Primitive>{},
         glm::vec3{}, // TODO
         glm::vec3{}, // TODO
         ev2::gl::CullMode::BACK,
@@ -226,10 +226,10 @@ void TreeNode::generate(int iterations) {
             g_vertices[i].color = sv.color;
         }
 
-        model->vertex_buffer.buffers[0].CopyData(g_vertices);
-        model->vertex_buffer.buffers[model->vertex_buffer.get_indexed()].CopyData(indices);
+        model->vertex_buffer.get_buffer(0).CopyData(g_vertices);
+        model->vertex_buffer.get_buffer(model->vertex_buffer.get_indexed()).CopyData(indices);
 
-        model->meshes.clear();
-        model->meshes.push_back(ev2::Mesh{0, indices.size(), 2});
+        model->primitives.clear();
+        model->primitives.push_back(ev2::Primitive{0, indices.size(), 2});
     }
 }

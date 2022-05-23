@@ -21,19 +21,36 @@ void Node::remove_child(Ref<Node> node) {
     }
 }
 
-void Node::update(float dt) {
+void Node::destroy() {
+    // cleanup children first
+    for (auto& c : children) {
+        c->destroy();
+    }
+
+    on_destroy();
+}
+
+void Node::_update(float dt) {
     on_process(dt);
 
     for (auto& c : children) {
-        c->update(dt);
+        c->_update(dt);
     }
 }
 
-void Node::update_pre_render() {
+void Node::_ready() {
+    on_ready();
+
+    for (auto& c : children) {
+        c->_ready();
+    }
+}
+
+void Node::_update_pre_render() {
     pre_render();
 
     for (auto& c : children) {
-        c->update_pre_render();
+        c->_update_pre_render();
     }
 }
 

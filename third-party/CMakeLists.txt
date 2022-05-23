@@ -16,6 +16,17 @@ if(glm_ADDED)
     target_include_directories(glm INTERFACE ${glm_SOURCE_DIR})
 endif()
 
+
+CPMAddPackage(
+    NAME reactphysics3d
+    GITHUB_REPOSITORY DanielChappuis/reactphysics3d
+    GIT_TAG v0.9.0
+)
+# if(reactphysics3d_ADDED)
+#     # add_library(glm INTERFACE IMPORTED)
+#     target_include_directories(glm INTERFACE ${glm_SOURCE_DIR})
+# endif()
+
 # ExternalProject_Add(GLM_UTIL
 #     PREFIX glm
 #     GIT_REPOSITORY https://github.com/g-truc/glm.git
@@ -64,3 +75,6 @@ find_package(OpenGL REQUIRED)
 
 add_subdirectory(glad)
 add_subdirectory(tinyobjloader)
+
+add_library(tinygltfloader INTERFACE)
+target_include_directories(tinygltfloader INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/tinygltfloader)

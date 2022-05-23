@@ -10,6 +10,7 @@
 #define EV2_GL_H
 
 #include <iostream>
+#include <unordered_map>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -373,6 +374,15 @@ namespace ev2 {
     constexpr uint32_t NORMAL_BINDING_LOCATION = 1;
     constexpr uint32_t COLOR_BINDING_LOCATION = 2;
     constexpr uint32_t TEXCOORD_BINDING_LOCATION = 3;
+
+    const std::unordered_map<std::string, uint32_t> attributes{
+        std::make_pair("POSITION", VERTEX_BINDING_LOCATION),
+        std::make_pair("NORMAL", NORMAL_BINDING_LOCATION),
+        std::make_pair("COLOR", COLOR_BINDING_LOCATION),
+        std::make_pair("TEXCOORD_0", TEXCOORD_BINDING_LOCATION)
+    };
+
+    inline uint32_t glBindingLocation(const std::string& attribute_name) {return attributes.at(attribute_name);}
 
     inline void glUniformSampler(const GLint& value, GLint location)      {glUniform1i(location, value);}
 
