@@ -153,6 +153,6 @@ void GameState::spawn_box(const glm::vec3& position) {
 }
 
 void GameState::spawn_player(const glm::vec3& position) {
-    player = scene->create_node<Player>("player0");
+    player = scene->create_node<Player>("player0", this);
     player->transform.position = position;
 }

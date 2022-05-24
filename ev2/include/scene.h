@@ -30,8 +30,8 @@ public:
 
     void add_node(Ref<Node> n, Ref<Node> parent = nullptr);
 
-    template<typename T>
-    Ref<T> create_node(const std::string& name);
+    template<typename T, typename... Args>
+    Ref<T> create_node(Args&&... args);
 
     void update(float dt);
     void update_pre_render();
@@ -58,9 +58,9 @@ private:
     bool is_ready = false;
 };
 
-template<typename T>
-Ref<T> Scene::create_node(const std::string& name) {
-    Ref<T> node = Node::create_node<T>(name);
+template<typename T, typename... Args>
+Ref<T> Scene::create_node(Args&&... args) {
+    Ref<T> node = Node::create_node<T>(std::forward<Args>(args)...);
     node->scene = this;
     add_child(node);
     return node;
