@@ -404,8 +404,9 @@ public:
             default:
                 break;
         }
-        if (!show_debug) {
+        if (!show_debug)
             ev2::input::SetKeyState(key, mods, down);
+        if (show_debug && !io.WantCaptureMouse) {
             switch (key) {
                 case ev2::input::Key::Tab:
                     break;
@@ -456,7 +457,11 @@ public:
     }
 
     void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {
-        
+        if (!show_debug) {
+            glm::vec2 scr_size = ev2::window::getWindowSize();
+            glm::vec2 s_pos = ev2::window::getCursorPosition() / scr_size;
+            ev2::input::SetMousePosition(s_pos);
+        }
     }
 
     void on_mouse_button(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos, ev2::input::MouseButton::Enum button, bool down) override {

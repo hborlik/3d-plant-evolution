@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#include <glm/glm.hpp>
+
 namespace ev2::input {
 
 struct MouseButton {
@@ -34,7 +36,7 @@ struct Modifier {
         LeftShift = 0x10,
         RightShift = 0x20,
         LeftMeta = 0x40,
-        RightMeta = 0x80,
+        RightMeta = 0x80
     };
     uint8_t mods = Empty;
 };
@@ -152,13 +154,15 @@ struct Key {
 };
 
 void SetKeyState(Key::Enum key, Modifier mods, bool down);
-void SetModifiers(Modifier modifiers);
-void ClearModifiers(Modifier modifiers);
+void SetModifiers(Key::Enum key, Modifier modifiers);
+void ClearModifiers(Key::Enum key, Modifier modifiers);
 void DisableInput();
 void EnableInput();
 void SetInputEnabled(bool enabled);
+void SetMousePosition(const glm::vec2& position);
 
 bool GetKeyDown(Key::Enum key, Modifier modifiers = {});
+glm::vec2 GetMousePosition();
 
 }
 

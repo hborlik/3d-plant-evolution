@@ -181,6 +181,8 @@ public:
     void apply_force(const glm::vec3& force);
     void apply_local_force(const glm::vec3& force);
 
+    glm::vec3 get_velocity() const;
+
     void reset_force();
 
     reactphysics3d::RigidBody* get_body() {return body;}

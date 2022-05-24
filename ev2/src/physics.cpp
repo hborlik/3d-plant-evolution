@@ -230,6 +230,10 @@ void RigidBody::apply_local_force(const glm::vec3& force) {
     body->applyLocalForceAtCenterOfMass(vec_cast(force));
 }
 
+glm::vec3 RigidBody::get_velocity() const {
+    return react_vec_cast(body->getLinearVelocity());
+}
+
 void RigidBody::reset_force() {
     body->resetForce();
 }
