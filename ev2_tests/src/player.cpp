@@ -21,8 +21,14 @@ void Player::on_process(float dt) {
     const glm::vec3 velocity = get_velocity() * glm::vec3{1, 0, 1};
     float vel_p = glm::length(velocity) / max_vel;
 
-    auto& material = get_collider(0)->getMaterial();
+    glm::vec2 s_pos = ev2::input::GetMousePosition();
+    glm::vec2 mouse_delta = (s_pos - last_mouse_position) * sensitivity;
+    cam_x -= mouse_delta.x;
+    cam_y = glm::clamp<float>(cam_y - mouse_delta.y, glm::radians(-85.0f), glm::radians(85.0f));
+    last_mouse_position = s_pos;
     cam_first_person->transform.rotation = glm::rotate(glm::rotate(glm::identity<glm::quat>(), (float)cam_x, glm::vec3{0, 1, 0}), (float)cam_y, glm::vec3{1, 0, 0});
+
+    auto& material = get_collider(0)->getMaterial();
     if (glm::length(move_input) > 0.0f) {
         const glm::vec2 input = glm::normalize(move_input);
         const glm::vec3 cam_forward = glm::normalize(cam_first_person->get_camera().get_forward() * glm::vec3{1, 0, 1});
@@ -39,20 +45,17 @@ void Player::on_process(float dt) {
         );
         material.setFrictionCoefficient(0.05f);
     } else {
-        material.setFrictionCoefficient(0.9f);
+        material.setFrictionCoefficient(1.9f);
     }
-
-    glm::vec2 s_pos = ev2::input::GetMousePosition();
-    glm::vec2 delta_mouse = s_pos - last_mouse_position;
-    last_mouse_position = s_pos;
     
-    ev2::Ray cast = cam_first_person->get_camera().screen_pos_to_ray(s_pos);
+    auto& cam = cam_first_person->get_camera();
+    ev2::Ray cast{cam.get_position(), cam.get_forward()};
     auto si = ev2::Physics::get_singleton().raycast_scene(cast, 200.0f);
     if (si) {        
         ev2::Ref<TreeNode> tree = si->hit.ref_cast<ev2::Node>()->get_child(0).ref_cast<TreeNode>();
         if (tree)
         {
-            std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;
+            // std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;
 
         } else {
             if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))

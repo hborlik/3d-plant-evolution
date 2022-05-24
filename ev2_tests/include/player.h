@@ -44,6 +44,7 @@ public:
     float cam_x = 0, cam_y = 0;
     bool left_mouse_down = false;
     const float max_vel = 10.0f;
+    float sensitivity = 2.5f;
     GameState* game;
     glm::vec2 last_mouse_position{};
 };
