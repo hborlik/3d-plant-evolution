@@ -26,12 +26,12 @@ public:
             force_update_internal();
         const mat4& comp = p_v;
         Frustum f{};
-        auto& Left = f.left();
-        auto& Right = f.right();
-        auto& Top = f.top();
-        auto& Bottom = f.bottom();
-        auto& Near = f.near();
-        auto& Far = f.far();
+        auto& Left = f.get_left();
+        auto& Right = f.get_right();
+        auto& Top = f.get_top();
+        auto& Bottom = f.get_bottom();
+        auto& Near = f.get_near();
+        auto& Far = f.get_far();
 
         Left.p.x = comp[0][3] + comp[0][0]; 
         Left.p.y = comp[1][3] + comp[1][0]; 
@@ -82,9 +82,9 @@ public:
         using namespace glm;
         if (dirty)
             force_update_internal();
-        const float f_n = far - near;
-        const float f_view = f_n * frustum_extent_far + near;
-        const float ndc_far = (far + near) / f_n + 2 * far * near / (f_n * -f_view);
+        const float f_n = m_far - m_near;
+        const float f_view = f_n * frustum_extent_far + m_near;
+        const float ndc_far = (m_far + m_near) / f_n + 2 * m_far * m_near / (f_n * -f_view);
         std::array<glm::vec3, 8> ndcPoints = {
             glm::vec3(-1, -1,  ndc_far),
             glm::vec3( 1, -1,  ndc_far),
@@ -145,9 +145,9 @@ public:
     void set_projection(float _fov, float _aspect, float _near, float _far) {
         fov = _fov;
         aspect = _aspect;
-        near = _near;
-        far = _far;
-        projection = glm::perspective(glm::radians(fov), aspect, near, far);
+        m_near = _near;
+        m_far = _far;
+        projection = glm::perspective(glm::radians(fov), aspect, m_near, m_far);
         dirty = true;
     }
 
@@ -209,7 +209,7 @@ private:
     mutable bool dirty = true;
 
     float fov = 60.0f;
-    float near = 0.1f, far = 500.0f;
+    float m_near = 0.1f, m_far = 500.0f;
     float aspect = 1.0f;
 };
 

@@ -57,6 +57,10 @@ public:
      */
     virtual void on_destroy() {}
 
+    virtual void on_child_added(Ref<Node> child, int index) {}
+
+    virtual void on_child_removed(Ref<Node> child) {}
+
     /**
      * @brief call just before scene is rendered. Used to push changes to rendering server
      * 
@@ -72,7 +76,15 @@ public:
      * @param index 
      * @return Ref<Node> 
      */
-    Ref<Node> get_child(int index);
+    Ref<Node> get_child(int index) {
+        if (index > children.size())
+            return {};
+        int i = 0;
+        auto itr = children.begin();
+        for (; i < index; itr++, i++)
+            ;
+        return *itr;
+    }
     size_t get_n_children() const noexcept {return children.size();}
 
     Ref<Node> get_parent() const {

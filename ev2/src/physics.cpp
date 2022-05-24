@@ -31,6 +31,13 @@ Physics::Physics() {
 
     world = physicsCommon.createPhysicsWorld(settings);
     world->setEventListener(&pel);
+
+    // Get a reference to the debug renderer 
+    DebugRenderer& debugRenderer = world->getDebugRenderer(); 
+    
+    // Select the contact points and contact normals to be displayed 
+    debugRenderer.setIsDebugItemDisplayed(DebugRenderer::DebugItem::CONTACT_POINT, true); 
+    debugRenderer.setIsDebugItemDisplayed(DebugRenderer::DebugItem::CONTACT_NORMAL, true);
 }
 
 Physics::~Physics() {
@@ -124,6 +131,10 @@ std::optional<SurfaceInteraction> Physics::raycast_scene(const Ray& ray, float d
     return {};
 }
 
+void Physics::enable_debug_renderer(bool enable) {
+    world->setIsDebugRenderingEnabled(enable);
+}
+
 // Collider
 
 reactphysics3d::Transform PhysicsNode::get_physics_transform() const {
@@ -171,7 +182,6 @@ void ColliderBody::on_destroy() {
 }
 
 void ColliderBody::pre_render() {
-    // set_cur_transform(body->getTransform());
     body->setTransform(get_physics_transform());
 }
 
@@ -211,7 +221,11 @@ void RigidBody::on_destroy() {
 }
 
 void RigidBody::pre_render() {
-    set_cur_transform(body->getTransform());
+    if (body->getType() == reactphysics3d::BodyType::DYNAMIC)
+        set_cur_transform(body->getTransform());
+    else {
+        body->setTransform(get_physics_transform());
+    }
 }
 
 void RigidBody::set_mass(float mass) {
@@ -228,6 +242,14 @@ void RigidBody::apply_force(const glm::vec3& force) {
 
 void RigidBody::apply_local_force(const glm::vec3& force) {
     body->applyLocalForceAtCenterOfMass(vec_cast(force));
+}
+
+glm::vec3 RigidBody::get_velocity() const {
+    return react_vec_cast(body->getLinearVelocity());
+}
+
+void RigidBody::reset_force() {
+    body->resetForce();
 }
 
 void RigidBody::add_shape(Ref<ColliderShape> shape, const glm::vec3& pos) {

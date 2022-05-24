@@ -30,8 +30,8 @@ public:
 
     void add_node(Ref<Node> n, Ref<Node> parent = nullptr);
 
-    template<typename T>
-    Ref<T> create_node(const std::string& name);
+    template<typename T, typename... Args>
+    Ref<T> create_node(Args&&... args);
 
     void update(float dt);
     void update_pre_render();
@@ -39,13 +39,28 @@ public:
     void ready();
 
 private:
+    friend class Node;
+
+    /**
+     * @brief used by nodes under this scene heirarchy to notify that a child was added
+     * 
+     * @param child 
+     */
+    void _notify_child_added(Ref<Node> child);
+
+    /**
+     * @brief used by nodes under this scene heirarchy to notify that a child was removed
+     * 
+     * @param child 
+     */
+    void _notify_child_removed(Ref<Node> child);
 
     bool is_ready = false;
 };
 
-template<typename T>
-Ref<T> Scene::create_node(const std::string& name) {
-    Ref<T> node = Node::create_node<T>(name);
+template<typename T, typename... Args>
+Ref<T> Scene::create_node(Args&&... args) {
+    Ref<T> node = Node::create_node<T>(std::forward<Args>(args)...);
     node->scene = this;
     add_child(node);
     return node;

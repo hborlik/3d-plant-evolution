@@ -36,6 +36,8 @@ public:
 
     void enable_simulation(bool enable) noexcept {enable_timestep = enable;}
 
+    void enable_debug_renderer(bool enable);
+
 private:
     bool enable_timestep = true;
     double interp_factor = 0.f;
@@ -180,6 +182,10 @@ public:
     
     void apply_force(const glm::vec3& force);
     void apply_local_force(const glm::vec3& force);
+
+    glm::vec3 get_velocity() const;
+
+    void reset_force();
 
     reactphysics3d::RigidBody* get_body() {return body;}
 

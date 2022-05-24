@@ -696,8 +696,8 @@ std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::pat
 
     int w, h, ncomps;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load(filename.c_str(), &w, &h, &ncomps, 0);
-
+    std::string input_file = filename.generic_string();
+    unsigned char *data = stbi_load(input_file.c_str(), &w, &h, &ncomps, 0);
 
     if (data) {
         gl::TextureInternalFormat internal_format;

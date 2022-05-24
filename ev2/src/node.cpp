@@ -1,4 +1,5 @@
 #include <node.h>
+#include <scene.h>
 
 #include <algorithm>
 
@@ -9,9 +10,15 @@ void Node::add_child(Ref<Node> node) {
         return;
     if (node->parent)
         node->parent->remove_child(node);
+    int ind = children.size();
     children.push_back(node);
     node->parent = this;
     node->scene = scene;
+
+    if (scene)
+        scene->_notify_child_added(node);
+
+    on_child_added(node, ind);
 }
 
 void Node::remove_child(Ref<Node> node) {
@@ -19,7 +26,14 @@ void Node::remove_child(Ref<Node> node) {
     if (itr != children.end()) {
         (*itr)->parent = nullptr;
         children.erase(itr);
+    } else {
+        throw engine_exception{"Node: " + name + " does not have child " + node->name};
     }
+
+    if (scene)
+        scene->_notify_child_removed(node);
+
+    on_child_removed(node);
 }
 
 void Node::destroy() {

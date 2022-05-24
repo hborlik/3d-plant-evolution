@@ -49,7 +49,7 @@ void show_settings_editor_window() {
 
 void show_game_debug_window(GameState* game) {
     ImGui::Begin("Game Settings");
-    ImGui::Text("Time %.3f", game->game_time);
+    ImGui::Text("Time %.3f", game->time_day);
     ImGui::DragFloat("Time Speed", &(game->time_speed), 0.01f, 0.05f, 5.0f, "%.3f", 1.0f);
     ImGui::End();
 }

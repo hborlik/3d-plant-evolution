@@ -43,7 +43,7 @@ struct Ref {
 
     Ref() noexcept = default;
 
-    Ref(nullptr_t) noexcept : Ref() {}
+    Ref(std::nullptr_t) noexcept : Ref() {}
 
     explicit Ref(ReferenceCounted<T>* obj) : _ref{dynamic_cast<T*>(obj)} {
         if (_ref)
