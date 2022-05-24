@@ -36,6 +36,8 @@ public:
 
     void enable_simulation(bool enable) noexcept {enable_timestep = enable;}
 
+    void enable_debug_renderer(bool enable);
+
 private:
     bool enable_timestep = true;
     double interp_factor = 0.f;

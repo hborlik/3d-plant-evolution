@@ -31,6 +31,13 @@ Physics::Physics() {
 
     world = physicsCommon.createPhysicsWorld(settings);
     world->setEventListener(&pel);
+
+    // Get a reference to the debug renderer 
+    DebugRenderer& debugRenderer = world->getDebugRenderer(); 
+    
+    // Select the contact points and contact normals to be displayed 
+    debugRenderer.setIsDebugItemDisplayed(DebugRenderer::DebugItem::CONTACT_POINT, true); 
+    debugRenderer.setIsDebugItemDisplayed(DebugRenderer::DebugItem::CONTACT_NORMAL, true);
 }
 
 Physics::~Physics() {
@@ -122,6 +129,10 @@ std::optional<SurfaceInteraction> Physics::raycast_scene(const Ray& ray, float d
         return {closest_hit};
     }
     return {};
+}
+
+void Physics::enable_debug_renderer(bool enable) {
+    world->setIsDebugRenderingEnabled(enable);
 }
 
 // Collider
