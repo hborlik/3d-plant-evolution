@@ -1,9 +1,9 @@
 #include "globals.glslinc"
 
-in vec3 VertPos;
-in vec3 Normal;
-in vec3 VertCol;
-in vec2 TexPos;
+in layout(location = 0) vec3 VertPos;
+in layout(location = 1) vec3 Normal;
+in layout(location = 2) vec3 VertCol;
+in layout(location = 3) vec2 TexPos;
 
 uniform mat4 M;
 uniform mat3 G;
