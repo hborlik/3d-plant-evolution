@@ -68,7 +68,7 @@ GameState::GameState() {
 
     marker = scene->create_node<ev2::VisualInstance>("marker");
     marker->set_model(ground);
-    marker->transform.scale = glm::vec3{0.5, 0.5, 0.5};
+    marker->transform.scale = glm::vec3{0.2, 0.2, 0.2};
     marker->transform.position = glm::vec3{0, 3, 0};
 
     auto h_node = scene->create_node<ev2::VisualInstance>("house");

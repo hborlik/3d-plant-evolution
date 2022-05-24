@@ -171,7 +171,6 @@ void ColliderBody::on_destroy() {
 }
 
 void ColliderBody::pre_render() {
-    // set_cur_transform(body->getTransform());
     body->setTransform(get_physics_transform());
 }
 
@@ -211,7 +210,11 @@ void RigidBody::on_destroy() {
 }
 
 void RigidBody::pre_render() {
-    set_cur_transform(body->getTransform());
+    if (body->getType() == reactphysics3d::BodyType::DYNAMIC)
+        set_cur_transform(body->getTransform());
+    else {
+        body->setTransform(get_physics_transform());
+    }
 }
 
 void RigidBody::set_mass(float mass) {
