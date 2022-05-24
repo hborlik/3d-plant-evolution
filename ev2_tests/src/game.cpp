@@ -101,7 +101,7 @@ void GameState::update(float dt) {
 
 void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations) {
     int unique_id = (int)randomFloatTo(9999999);
-    std::string unique_hit_tag = std::string("Tree_hit") + std::to_string(unique_id);
+    std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
     ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
     
