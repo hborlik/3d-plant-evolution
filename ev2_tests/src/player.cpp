@@ -51,7 +51,7 @@ void Player::on_process(float dt) {
     
     if (ev2::input::GetKeyDown(ev2::input::Key::Space)){
         auto& cam = cam_first_person->get_camera();
-        ev2::Ray cast{cam.get_position(), cam.get_forward()};
+        ev2::Ray cast{cam.get_position() + glm::vec3(0, -1.0f, 0), cam.get_forward()};
         auto si = ev2::Physics::get_singleton().raycast_scene(cast, 200.0f);
         if (si) {        
             ev2::Ref<TreeNode> tree = si->hit.ref_cast<ev2::Node>()->get_child(0).ref_cast<TreeNode>();

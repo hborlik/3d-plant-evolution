@@ -73,7 +73,7 @@ GameState::GameState() {
     lh_node->transform.position = glm::vec3{50, 1, -20};
     lh_node->set_model(building0);
 
-    for (int n = 0; n < 20; n++)
+    for (int n = 0; n < 2; n++)
     {
         spawn_random_tree(glm::vec3{}, 40, 10);
     }
@@ -87,9 +87,26 @@ void GameState::update(float dt) {
     time_day += time_speed * dt / DayLength;
     const float sun_rads = 2.0 * M_PI * time_day;
     Renderer::get_singleton().sun_position = sun_rads;
-
-    //Growtrees()
-
+    
+    if (time_accumulator > 0.005f) {
+        if (startedA && startedB)
+        {
+            //probably not very efficient, maybe use a queue for ungrown plants?
+            for (int i = 0; i < scene->get_n_children(); i++) {
+                ev2::Ref<TreeNode> tree = scene->get_child(i).ref_cast<Node>()->get_child(0).ref_cast<TreeNode>();
+                if (tree) {
+                    tree->growth_current = tree->growth_current + tree->growth_rate;
+                    if (tree->growth_current < tree->growth_max) {
+                        tree->setParams(tree->getParams(), tree->plantInfo.iterations, tree->growth_current);
+                    }
+                }
+            }
+        //Growtrees()
+        }
+        time_accumulator = 0.0f;
+    } {
+        time_accumulator += time_speed * dt / DayLength;
+    }
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
 }
 
@@ -98,6 +115,7 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
     ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
+    auto debug = tree->get_parent();
     tree->plantInfo.ID = unique_id;
     tree->plantInfo.iterations = iterations;
     SuperSphere supershape(1.0f, 20, 20);
@@ -111,7 +129,7 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
 
     tree->c0 = color_0;
     tree->c1 = color_1;
-    tree->setParams(params, iterations);
+    tree->setParams(params, iterations, tree->growth_current);
 
     if (!startedA) {
         selected_tree_1 = tree;

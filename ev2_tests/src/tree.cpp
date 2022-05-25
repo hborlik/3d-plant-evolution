@@ -185,10 +185,18 @@ void TreeNode::on_init() {
     set_model(tree_geometry);
 }
 
-void TreeNode::setParams(std::map<std::string, float> paramsNew, int iterations) {
-    params = paramsNew;
-    thickness = params.at("thickness");
+void TreeNode::setParams(std::map<std::string, float> paramsNew, int iterations, float growth) {
+    std::map<std::string, float> grown_params = paramsNew;
+    if (growth_current < growth_max)
+    {
+        for (auto itr = grown_params.begin(); itr != grown_params.end(); itr++) {
+            itr->second = itr->second * growth_current;
+        }
+    }
+
+    params = grown_params;
     this->generate(iterations);
+    params = paramsNew;
 }
 
 void TreeNode::generate(int iterations) {

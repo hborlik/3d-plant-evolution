@@ -19,6 +19,7 @@ struct PlantInfo {
     bool parent = false;
     int ID;
     int iterations = 10;
+
     glm::vec3 position;
     glm::vec3 color;
     glm::quat rot;
@@ -50,8 +51,13 @@ public:
     void on_init() override;
 
     void generate(int iterations);
-    void setParams(std::map<std::string, float> params, int iterations);
+    void setParams(std::map<std::string, float> params, int iterations, float growth);
     std::map<std::string, float> getParams() {return params;}
+
+    float growth_current = 0;
+    float growth_rate = 0.1;
+    float growth_max = 1;
+    
 
     float thickness = 1.0f;
     glm::vec3 c0, c1;

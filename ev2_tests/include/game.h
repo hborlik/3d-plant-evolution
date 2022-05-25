@@ -36,6 +36,7 @@ public:
     bool startedA = false;
     bool startedB = false;
 
+    float time_accumulator = 0.0f;
     float time_day = 0.0f;
     float time_speed = 1.0f;
     const float DayLength = 60.0f;

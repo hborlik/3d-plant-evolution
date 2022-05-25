@@ -127,7 +127,7 @@ void show_game_debug_window(GameState* game) {
         }
         if (changed) 
         {                                               
-            selected_tree->setParams(GUIParams, selected_tree->plantInfo.iterations);
+            selected_tree->setParams(GUIParams, selected_tree->plantInfo.iterations, selected_tree->growth_current);
             changed = false;           // Edit 1 float using a slider from 0.0f to 1.0f
         }
 
