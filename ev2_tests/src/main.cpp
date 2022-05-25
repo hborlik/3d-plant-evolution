@@ -99,121 +99,6 @@ public:
         return cam_orbital;
     }
 
-    void plantWindow(Plant * somePlant) {
-
-        std::map<std::string, float> GUIParams = somePlant->tree->getParams();
-        float fieldA = GUIParams.find("R_1")->second;
-        float fieldB = GUIParams.find("R_2")->second;
-        float fieldC = GUIParams.find("w_r")->second;
-        float fieldDegree = ptree::radToDeg(GUIParams.find("a_0")->second);
-        float fieldDegree2 = ptree::radToDeg(GUIParams.find("a_2")->second);
-        float fieldDegree3 = ptree::radToDeg(GUIParams.find("d")->second);
-
-        int counter = somePlant->iterations;
-        bool changed = false;
-        
-        ImGui::Begin(std::to_string(somePlant->ID).c_str(), &somePlant->selected);                          // Create a window called "Hello, world!" and append into it.
-
-        ImGui::Text("A preliminary editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
-        
-        if (ImGui::Checkbox("Make Parent?", &somePlant->parent))
-        {
-            if (somePlant->parent)
-            {
-                if (parentAlpha.ID == NULL)
-                {
-                    parentAlpha = *somePlant;
-                } else if (parentBeta.ID == NULL)
-                {
-                    parentBeta = *somePlant;
-                } else
-                {
-                    somePlant->parent = false;
-                }
-            } else if (parentAlpha.ID == somePlant->ID)
-            {
-                parentAlpha.ID = NULL;
-            } else if (parentBeta.ID == somePlant->ID)
-            {
-                parentBeta.ID = NULL;
-            }
-        }
-        //ImGui::Checkbox("Breed Plant?", (childa));
-        if (ImGui::TreeNode("Color")) {
-            changed |= ImGui::ColorPicker3("diffuse color 0", glm::value_ptr(somePlant->tree->c0), ImGuiColorEditFlags_InputRGB);
-            changed |= ImGui::ColorPicker3("diffuse color 1", glm::value_ptr(somePlant->tree->c1), ImGuiColorEditFlags_InputRGB);
-            ImGui::TreePop();
-        }
-
-        if (ImGui::SliderFloat("R_1", &fieldA, 0.001f, 1.0f))
-        {
-            GUIParams.find("R_1")->second = fieldA;
-            changed = true;
-        } 
-        if (ImGui::SliderFloat("R_2", &fieldB, 0.001f, 2.0f))
-        {
-            GUIParams.find("R_2")->second = fieldB;
-            changed = true;
-        } 
-        if (ImGui::SliderFloat("w_r", &fieldC, 0.001f, 1.0f))
-        {
-            GUIParams.find("w_r")->second = fieldC;
-            changed = true;
-        } 
-        if (ImGui::SliderFloat("a_0 (degrees)", &fieldDegree, .5f, 60.0f))  
-        {
-            GUIParams.find("a_0")->second = ptree::degToRad(fieldDegree);
-            changed = true;
-        } 
-        if (ImGui::SliderFloat("a_2 (degrees)", &fieldDegree2, .5f, 60.0f))
-        {
-            GUIParams.find("a_2")->second = ptree::degToRad(fieldDegree2);
-            changed = true;
-        } 
-        if (ImGui::SliderFloat("d (degrees)", &fieldDegree3, 0.f, 360.0f))
-        {
-            GUIParams.find("d")->second = ptree::degToRad(fieldDegree3);
-            changed = true;
-        }
-        if (ImGui::SliderFloat("thickness", &(somePlant->tree->thickness), 0.2f, 10.0f))
-        {
-            changed = true;
-        }
-        if (changed) 
-        {                                               
-            somePlant->tree->setParams(GUIParams, somePlant->iterations);
-            changed = false;           // Edit 1 float using a slider from 0.0f to 1.0f
-        }
-
-        if (ImGui::Button("Increase iterations."))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-        {
-            somePlant->iterations++;
-            //tree->generate(counter + 1);
-            somePlant->tree->setParams(GUIParams, somePlant->iterations);
-        }
-
-        if (ImGui::Button("Decrease iterations."))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-        {
-            somePlant->iterations--;
-            if (somePlant->iterations <= 0) {somePlant->iterations = 0;}
-            //tree->generate(somePlant->iterations + 1);
-            somePlant->tree->setParams(GUIParams, somePlant->iterations);
-        }
-        ImGui::Text("P = %d", somePlant->iterations);
-        ImGui::End();
-    
-
-        // 3. Show another simple window.
-        if (show_another_window)
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
-    }
-
     void imgui(GLFWwindow * window) {
         // Start the Dear ImGui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -224,6 +109,12 @@ public:
             show_material_editor_window();
             show_settings_editor_window();
             show_game_debug_window(game.get());
+        }
+        if (game->selected_tree_1->plantInfo.ID != NULL) {
+            show_tree_window(game.get(), game->selected_tree_1);
+        }
+        if (game->selected_tree_2->plantInfo.ID != NULL) {
+            show_tree_window(game.get(), game->selected_tree_2);
         }
 
         // Rendering
@@ -308,17 +199,6 @@ public:
         static bool enabled = false;
         enabled = !enabled;
         ev2::Renderer::get_singleton().set_wireframe(enabled);
-    }
-
-    float randomCoinFlip (float a, float b) {
-        srand(time(NULL));
-
-        int r = rand()%2;
-
-        if(r==0)
-            return a;
-        else
-            return b;        
     }
 
     std::map<std::string, float> crossParams(std::map<std::string, float> paramsA, std::map<std::string, float> paramsB) {

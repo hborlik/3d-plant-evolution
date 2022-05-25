@@ -2,6 +2,7 @@
 
 #include <game.h>
 #include <tree.h>
+#include <debug.h>
 
 void Player::on_process(float dt) {
     ev2::RigidBody::on_process(dt);
@@ -56,7 +57,14 @@ void Player::on_process(float dt) {
         if (tree)
         {
             // std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;
-
+            if (game->selected_tree_1->plantInfo.ID == -1) {
+                game->selected_tree_1 = tree;
+            } else if (game->selected_tree_2->plantInfo.ID == -1) {
+                game->selected_tree_2 = tree;
+            } else {
+                game->selected_tree_1 = game->selected_tree_2;
+                game->selected_tree_2 = tree; 
+            }
         } else {
             if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))
                 game->spawn_random_tree(si->point, 0, 10);

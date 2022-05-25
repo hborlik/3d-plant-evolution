@@ -11,16 +11,13 @@
 #include <renderer.h>
 #include <physics.h>
 #include <player.h>
+#include <tree.h>
 
 using namespace ev2;
-
-float randomFloatTo(float limit);
-float randomFloatRange(float low, float high);
 
 class GameState {
 public:
     GameState();
-
     Ref<Scene> scene;
     std::pair<std::shared_ptr<ev2::Material>, int32_t> tree_bark;
     std::pair<std::shared_ptr<ev2::Material>, int32_t> highlight_material;
@@ -32,6 +29,12 @@ public:
     Ref<DirectionalLightNode> sun_light;
 
     Ref<RigidBody> ground_plane;
+
+    ev2::Ref<TreeNode> selected_tree_1;
+    ev2::Ref<TreeNode> selected_tree_2;
+
+    bool startedA = false;
+    bool startedB = false;
 
     float time_day = 0.0f;
     float time_speed = 1.0f;

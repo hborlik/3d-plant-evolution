@@ -8,14 +8,6 @@
 
 namespace fs = std::filesystem;
 
-float randomFloatTo(float limit) {
-    return static_cast <float> (rand()) / (static_cast <float> (RAND_MAX/limit));
-}
-
-float randomFloatRange(float low, float high) {
-    return rand() / static_cast<float>(RAND_MAX) * (high - low) + low;
-}
-
 GameState::GameState() {
     scene = make_referenced<Scene>("scene0");
 
@@ -96,6 +88,8 @@ void GameState::update(float dt) {
     const float sun_rads = 2.0 * M_PI * time_day;
     Renderer::get_singleton().sun_position = sun_rads;
 
+    //Growtrees()
+
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
 }
 
@@ -104,7 +98,8 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
     ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
-    
+    tree->plantInfo.ID = unique_id;
+    tree->plantInfo.iterations = iterations;
     SuperSphere supershape(1.0f, 20, 20);
     
     ev2::Ref<ev2::RigidBody> tree_hit_sphere = scene->create_node<ev2::RigidBody>(unique_hit_tag.c_str());
@@ -117,6 +112,14 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     tree->c0 = glm::vec3{randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f)};
     tree->c1 = glm::vec3{randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f)};
     tree->setParams(params, iterations);
+
+    if (!startedA) {
+        selected_tree_1 = tree;
+        startedA = true;
+    } else if (!startedB) {
+        selected_tree_2 = tree;
+        startedB = true;
+    }
 }
 
 void GameState::spawn_random_tree(const glm::vec3& position, float range_extent, int iterations) {
