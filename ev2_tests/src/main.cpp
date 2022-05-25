@@ -293,21 +293,20 @@ public:
             auto camera_node = getCameraNode();
             if (!show_debug)
                 camera_node = game->cam_first_person;
-            ev2::Renderer::get_singleton().render(camera_node->get_camera());
+            ev2::renderer::Renderer::get_singleton().render(camera_node->get_camera());
             imgui(window);
             dt = float(ev2::window::getFrameTime());
         }
 
         game->scene->destroy();
-
-        ev2::Renderer::shutdown();      
+     
         return 0;
     }
 
     void toggleWireframe() {
         static bool enabled = false;
         enabled = !enabled;
-        ev2::Renderer::get_singleton().set_wireframe(enabled);
+        ev2::renderer::Renderer::get_singleton().set_wireframe(enabled);
     }
 
     float randomCoinFlip (float a, float b) {
@@ -353,7 +352,7 @@ public:
 
         tree->c0 = glm::vec3(randomFloatRange(parentAlpha.tree->c0.r, parentBeta.tree->c0.r) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c0.g, parentBeta.tree->c0.g) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c0.b, parentBeta.tree->c0.b) + randomFloatRange(-.2f, .2f));
         tree->c1 = glm::vec3(randomFloatRange(parentAlpha.tree->c1.r, parentBeta.tree->c1.r) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c1.g, parentBeta.tree->c1.g) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c1.b, parentBeta.tree->c1.b) + randomFloatRange(-.2f, .2f));
-        tree->set_material_override(ev2::ResourceManager::get_singleton().get_material_id("bark"));
+        tree->set_material_override(ev2::ResourceManager::get_singleton().get_material("bark")->get_material());
         tree->setParams(params, (parentAlpha.iterations + parentBeta.iterations)/2);
 
         plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
@@ -473,8 +472,8 @@ public:
     }
 
     void on_window_size_change(int32_t width, int32_t height) override {
-        if (ev2::Renderer::is_initialized())
-            ev2::Renderer::get_singleton().set_resolution(width, height);
+        if (ev2::renderer::Renderer::is_initialized())
+            ev2::renderer::Renderer::get_singleton().set_resolution(width, height);
     }
 
     void on_drop_file(const std::string& path) override {}

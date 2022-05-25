@@ -24,11 +24,11 @@ public:
 
     void pre_render() override;
 
-    void set_model(MID model);
-    void set_material_override(int32_t material_override);
+    void set_model(renderer::MID model);
+    void set_material_override(renderer::Material* material_override);
 
 private:
-    IID iid{};
+    renderer::IID iid{};
 };
 
 class CameraNode : public Node {
@@ -80,7 +80,7 @@ public:
     void set_color(const glm::vec3& color);
 
 private:
-    LID lid{};
+    renderer::LID lid{};
 };
 
 class DirectionalLightNode : public Node {
@@ -98,7 +98,7 @@ public:
     void set_ambient(const glm::vec3& color);
 
 private:
-    LID lid{};
+    renderer::LID lid{};
 };
 
 }

@@ -8,7 +8,7 @@
 #define PLANT_GAME_H
 
 #include <scene.h>
-#include <renderer.h>
+#include <resource.h>
 #include <physics.h>
 #include <player.h>
 
@@ -22,8 +22,8 @@ public:
     GameState();
 
     Ref<Scene> scene;
-    std::pair<std::shared_ptr<ev2::Material>, int32_t> tree_bark;
-    std::pair<std::shared_ptr<ev2::Material>, int32_t> highlight_material;
+    ev2::Ref<ev2::MaterialResource> tree_bark;
+    ev2::Ref<ev2::MaterialResource> highlight_material;
 
     ev2::Ref<ev2::CameraNode> cam_first_person{};
     ev2::Ref<ev2::VisualInstance> marker{};

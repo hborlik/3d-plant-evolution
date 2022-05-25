@@ -2,59 +2,72 @@
 
 #include <random>
 #include <cmath>
+#include <chrono>
 
 #include <resource.h>
 
-namespace ev2 {
+namespace ev2::renderer {
 
-void Drawable::draw(const Program& prog, int32_t material_override) {
-    vertex_buffer.bind();
-    if (cull_mode == gl::CullMode::NONE) {
+void Renderer::draw(Drawable* dr, const Program& prog, int32_t material_override) {
+    if (dr->cull_mode == gl::CullMode::NONE) {
         glDisable(GL_CULL_FACE);
     } else {
         glEnable(GL_CULL_FACE);
-        glCullFace((GLenum)cull_mode);
+        glCullFace((GLenum)dr->cull_mode);
     }
-    glFrontFace((GLenum)front_facing);
+    glFrontFace((GLenum)dr->front_facing);
     // TODO: support for multiple index buffers
-    if (vertex_buffer.get_indexed() != -1) {
+    dr->vertex_buffer.bind();
+    if (dr->vertex_buffer.get_indexed() != -1) {
         // draw indexed arrays
-        for (auto& m : primitives) {
+        for (auto& m : dr->primitives) {
             // prog.applyMaterial(materials[m.material_id]);
 
             // TODO does this go here?
             int loc = prog.getUniformInfo("materialId").Location;
             if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1ui(loc, material_override > -1 ? material_override : m.material_id + material_offset));
+                mat_id_t material_slot = 0;
+                if (material_override < 0) {
+                    material_slot = materials.at(dr->materials[m.material_ind]->material_id).slot;
+                } else {
+                    material_slot = materials.at(material_override).slot;
+                }
+                GL_CHECKED_CALL(glUniform1ui(loc, material_slot));
             }
 
             loc = prog.getUniformInfo("vertex_color_weight").Location;
             if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1f(loc, vertex_color_weight));
+                GL_CHECKED_CALL(glUniform1f(loc, dr->vertex_color_weight));
             }
 
-            vertex_buffer.get_buffer(vertex_buffer.get_indexed()).Bind(); // bind index buffer (again, @Windows)
+            dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed()).Bind(); // bind index buffer (again, @Windows)
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
         }
     } else {
-        for (auto& m : primitives) {
+        for (auto& m : dr->primitives) {
             // prog.applyMaterial(materials[m.material_id]);
 
             // TODO does this go here?
             int loc = prog.getUniformInfo("materialId").Location;
             if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1ui(loc, material_override > -1 ? material_override : m.material_id + material_offset));
+                mat_id_t material_slot = 0;
+                if (material_override < 0) {
+                    material_slot = materials.at(dr->materials[m.material_ind]->material_id).slot;
+                } else {
+                    material_slot = materials.at(material_override).slot;
+                }
+                GL_CHECKED_CALL(glUniform1ui(loc, material_slot));
             }
 
             loc = prog.getUniformInfo("vertex_color_weight").Location;
             if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1f(loc, vertex_color_weight));
+                GL_CHECKED_CALL(glUniform1f(loc, dr->vertex_color_weight));
             }
 
             glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
         }
     }
-    vertex_buffer.unbind();
+    dr->vertex_buffer.unbind();
 }
 
 Renderer::Renderer(uint32_t width, uint32_t height) : 
@@ -72,6 +85,21 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
     ssao_kernel_buffer{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     width{width}, 
     height{height} {
+
+    // material id queue
+    for (mat_id_t i = 1; i < MAX_N_MATERIALS; i++) {
+        free_material_slots.push(i);
+    }
+
+    // create default material
+    materials[0] = {};
+
+    for (auto& mat : material_data_buffer) {
+        mat = {};
+    }
+}
+
+Renderer::~Renderer() {
 
 }
 
@@ -255,11 +283,9 @@ void Renderer::init() {
     ssao_kernel_buffer.Allocate(ssao_kernel_desc.block_size);
     auto tgt_layout = ssao_kernel_desc.getLayout("samples[0]");
     ssao_kernel_buffer.SubData(ssaoKernel, tgt_layout.Offset, tgt_layout.ArrayStride);
-
-    materials = std::vector<MaterialData>(100, MaterialData{});
     
     int i = 0;
-    for (auto& m : materials) {
+    for (auto& m : material_data_buffer) {
         update_material(i, m);
     }
 
@@ -272,29 +298,43 @@ void Renderer::init() {
     point_light_geom_tr = glm::scale(glm::identity<glm::mat4>(), scaling);
 }
 
-void Renderer::update_material(int32_t material_id, const MaterialData& material) {
-    materials[material_id] = material;
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].diffuse", material.diffuse, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].metallic", material.metallic, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].subsurface", material.subsurface, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].specular", material.specular, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].roughness", material.roughness, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].specularTint", material.specularTint, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].clearcoat", material.clearcoat, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].clearcoatGloss", material.clearcoatGloss, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].anisotropic", material.anisotropic, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].sheen", material.sheen, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_id) + "].sheenTint", material.sheenTint, lighting_materials);
-
+void Renderer::update_material(mat_id_t material_slot, const MaterialData& material) {
+    material_data_buffer[material_slot] = material;
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].diffuse", material.diffuse, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].metallic", material.metallic, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].subsurface", material.subsurface, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].specular", material.specular, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].roughness", material.roughness, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].specularTint", material.specularTint, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].clearcoat", material.clearcoat, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].clearcoatGloss", material.clearcoatGloss, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].anisotropic", material.anisotropic, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].sheen", material.sheen, lighting_materials);
+    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].sheenTint", material.sheenTint, lighting_materials);
 }
 
-int32_t Renderer::create_material(const MaterialData& material) {
-    if (next_free_mat < materials.size()) {
-        int32_t mat_id = next_free_mat++;
-        update_material(mat_id, material);
-        return mat_id;
-    } else
-        return -1;
+Material* Renderer::create_material() {
+    if (free_material_slots.size() > 0) {
+        int32_t id = next_material_id++;
+        mat_id_t slot = free_material_slots.front();
+        free_material_slots.pop();
+        Material* new_material = &materials[id];
+        new_material->material_id = id;
+        new_material->internal_material = &material_data_buffer[slot];
+        new_material->slot = slot;
+        return new_material;
+    }
+    return nullptr;
+}
+
+void Renderer::destroy_material(Material* material) {
+    assert(material);
+    material_data_buffer[material->slot] = {};
+    free_material_slots.push(material->slot);
+    material->internal_material = nullptr;
+    material->slot = 0;
+    material->material_id = -1;
+    materials.erase(material->material_id);
 }
 
 LID Renderer::create_point_light() {
@@ -416,13 +456,13 @@ void Renderer::set_instance_model(IID iid, MID mid) {
     }
 }
 
-void Renderer::set_instance_material_override(IID iid, int32_t material_override) {
-    if (!iid.is_valid())
+void Renderer::set_instance_material_override(IID iid, Material* material) {
+    if (!iid.is_valid() || !material)
         return;
     
     auto mi = model_instances.find(iid.v);
     if (mi != model_instances.end()) {
-        mi->second.material_override = material_override;
+        mi->second.material_id_override = material->material_id;
     }
 }
 
@@ -544,7 +584,19 @@ void Renderer::destroy_mesh_instance(MSIID msiid) {
 }
 
 void Renderer::render(const Camera &camera) {
-    glm::mat4 light_vp;
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+
+    start = std::chrono::system_clock::now();
+
+    // pre render data updates
+    for (auto& m : materials) {
+        Material& material = m.second;
+        material.update_internal();
+    }
+
+    for(mat_id_t i = 0; i < MAX_N_MATERIALS; i++) {
+        update_material(i, material_data_buffer[i]);
+    }
 
     // update globals buffer with frame info
     glm::mat4 P = camera.get_projection();
@@ -555,6 +607,9 @@ void Renderer::render(const Camera &camera) {
     globals_desc.setShaderParameter("VInv", glm::inverse(V), shader_globals);
     globals_desc.setShaderParameter("CameraPos", camera.get_position(), shader_globals);
     globals_desc.setShaderParameter("CameraDir", camera.get_forward(), shader_globals);
+
+    // real render
+    glm::mat4 light_vp;
 
     // render all geometry to g buffer
     glEnable(GL_DEPTH_TEST);
@@ -609,7 +664,7 @@ void Renderer::render(const Camera &camera) {
             if (m.drawable) {
                 ev2::gl::glUniform(m.transform, sdp_m_location);
 
-                m.drawable->draw(depth_program, m.material_override);
+                draw(m.drawable, depth_program);
             }
         }
 
@@ -642,7 +697,7 @@ void Renderer::render(const Camera &camera) {
             ev2::gl::glUniform(m.transform, gp_m_location);
             ev2::gl::glUniform(G, gp_g_location);
 
-            m.drawable->draw(geometry_program, m.material_override);
+            draw(m.drawable, geometry_program, m.material_id_override);
         }
     }
 
@@ -812,7 +867,7 @@ void Renderer::render(const Camera &camera) {
         ev2::gl::glUniformf(linear, plp_k_l_loc);
         ev2::gl::glUniformf(quadratic, plp_k_q_loc);
 
-        point_light_drawable->draw(point_lighting_program);
+        draw(point_light_drawable, point_lighting_program);
     }
 
     point_lighting_program.unbind();
@@ -856,6 +911,11 @@ void Renderer::render(const Camera &camera) {
     draw_screen_space_triangle();
 
     post_fx_program.unbind();
+
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+
+    // std::cout << "render() elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
 void Renderer::set_wireframe(bool enable) {

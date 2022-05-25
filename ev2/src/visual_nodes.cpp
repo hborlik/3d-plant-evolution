@@ -5,11 +5,11 @@
 namespace ev2 {
 
 void VisualInstance::on_init() {
-    iid = Renderer::get_singleton().create_model_instance();
+    iid = renderer::Renderer::get_singleton().create_model_instance();
 }
 
 void VisualInstance::on_ready() {
-    Renderer::get_singleton().set_instance_transform(iid, get_transform());
+    renderer::Renderer::get_singleton().set_instance_transform(iid, get_transform());
 }
 
 void VisualInstance::on_process(float delta) {
@@ -17,19 +17,19 @@ void VisualInstance::on_process(float delta) {
 }
 
 void VisualInstance::on_destroy() {
-    Renderer::get_singleton().destroy_instance(iid);
+    renderer::Renderer::get_singleton().destroy_instance(iid);
 }
 
 void VisualInstance::pre_render() {
-    Renderer::get_singleton().set_instance_transform(iid, get_transform());
+    renderer::Renderer::get_singleton().set_instance_transform(iid, get_transform());
 }
 
-void VisualInstance::set_model(MID model) {
-    Renderer::get_singleton().set_instance_model(iid, model);
+void VisualInstance::set_model(renderer::MID model) {
+    renderer::Renderer::get_singleton().set_instance_model(iid, model);
 }
 
-void VisualInstance::set_material_override(int32_t material_override) {
-    Renderer::get_singleton().set_instance_material_override(iid, material_override);
+void VisualInstance::set_material_override(renderer::Material* material_override) {
+    renderer::Renderer::get_singleton().set_instance_material_override(iid, material_override);
 }
 
 // camera
@@ -51,7 +51,7 @@ void CameraNode::pre_render() {
 }
 
 void CameraNode::update_internal() {
-    float r_aspect = ev2::Renderer::get_singleton().get_aspect_ratio();
+    float r_aspect = ev2::renderer::Renderer::get_singleton().get_aspect_ratio();
     
     camera.set_projection(fov, aspect * r_aspect, m_near, m_far);
 
@@ -61,7 +61,7 @@ void CameraNode::update_internal() {
 }
 
 void DirectionalLightNode::on_init() {
-    lid = ev2::Renderer::get_singleton().create_directional_light();
+    lid = ev2::renderer::Renderer::get_singleton().create_directional_light();
 }
 
 void DirectionalLightNode::on_ready() {
@@ -73,25 +73,25 @@ void DirectionalLightNode::on_process(float delta) {
 }
 
 void DirectionalLightNode::on_destroy() {
-    ev2::Renderer::get_singleton().destroy_light(lid);
+    ev2::renderer::Renderer::get_singleton().destroy_light(lid);
 }
 
 void DirectionalLightNode::pre_render() {
-    ev2::Renderer::get_singleton().set_light_position(lid, glm::vec3(get_transform()[3]));
+    ev2::renderer::Renderer::get_singleton().set_light_position(lid, glm::vec3(get_transform()[3]));
 }
 
 void DirectionalLightNode::set_color(const glm::vec3& color) {
-    ev2::Renderer::get_singleton().set_light_color(lid, color);
+    ev2::renderer::Renderer::get_singleton().set_light_color(lid, color);
 }
 
 void DirectionalLightNode::set_ambient(const glm::vec3& color) {
-    ev2::Renderer::get_singleton().set_light_ambient(lid, color);
+    ev2::renderer::Renderer::get_singleton().set_light_ambient(lid, color);
 }
 
 // point
 
 void PointLightNode::on_init() {
-    lid = ev2::Renderer::get_singleton().create_point_light();
+    lid = ev2::renderer::Renderer::get_singleton().create_point_light();
 }
 
 void PointLightNode::on_ready() {
@@ -103,15 +103,15 @@ void PointLightNode::on_process(float delta) {
 }
 
 void PointLightNode::on_destroy() {
-    ev2::Renderer::get_singleton().destroy_light(lid);
+    ev2::renderer::Renderer::get_singleton().destroy_light(lid);
 }
 
 void PointLightNode::pre_render() {
-    ev2::Renderer::get_singleton().set_light_position(lid, glm::vec3(get_transform()[3]));
+    ev2::renderer::Renderer::get_singleton().set_light_position(lid, glm::vec3(get_transform()[3]));
 }
 
 void PointLightNode::set_color(const glm::vec3& color) {
-    ev2::Renderer::get_singleton().set_light_color(lid, color);
+    ev2::renderer::Renderer::get_singleton().set_light_color(lid, color);
 }
 
 }

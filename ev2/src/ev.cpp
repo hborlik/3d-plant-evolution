@@ -40,15 +40,16 @@ shader_error::shader_error(std::string shaderName, std::string errorString) noex
 void ev2::EV2_init(const Args& args, const std::filesystem::path& asset_path) {
     window::init(args);
     glm::ivec2 screen_size = window::getWindowSize();
+    ev2::renderer::Renderer::initialize(screen_size.x, screen_size.y);
     ev2::ResourceManager::initialize(asset_path);
-    ev2::Renderer::initialize(screen_size.x, screen_size.y);
-    ev2::Renderer::get_singleton().init();
+    ev2::renderer::Renderer::get_singleton().init();
     ev2::Physics::initialize();
 }
 
 void ev2::EV2_shutdown() {
     ev2::Physics::shutdown();
-    ev2::Renderer::shutdown();
+    ev2::ResourceManager::shutdown();
+    ev2::renderer::Renderer::shutdown();
 }
 
 bool ev2::isGLError() {
