@@ -86,7 +86,7 @@ void GameState::update(float dt) {
     scene->update(dt);
     time_day += time_speed * dt / DayLength;
     const float sun_rads = 2.0 * M_PI * time_day;
-    Renderer::get_singleton().sun_position = sun_rads;
+    ev2::renderer::Renderer::get_singleton().sun_position = sun_rads;
     
     if (time_accumulator > 0.005f) {
         if (startedA && startedB)

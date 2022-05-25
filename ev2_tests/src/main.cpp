@@ -273,8 +273,8 @@ public:
     }
 
     void on_window_size_change(int32_t width, int32_t height) override {
-        if (ev2::renderer::is_initialized())
-            ev2::renderer::get_singleton().set_resolution(width, height);
+        if (ev2::renderer::Renderer::is_initialized())
+            ev2::renderer::Renderer::get_singleton().set_resolution(width, height);
         window_width = width;
         window_height = height;
     }
