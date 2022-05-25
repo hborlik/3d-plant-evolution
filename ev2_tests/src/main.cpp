@@ -110,10 +110,10 @@ public:
             show_settings_editor_window();
             show_game_debug_window(game.get());
         }
-        if (game->selected_tree_1->plantInfo.ID != NULL) {
+        if (game->selected_tree_1->plantInfo.ID != -1) {
             show_tree_window(game.get(), game->selected_tree_1);
         }
-        if (game->selected_tree_2->plantInfo.ID != NULL) {
+        if (game->selected_tree_2->plantInfo.ID != -1) {
             show_tree_window(game.get(), game->selected_tree_2);
         }
 
@@ -199,45 +199,6 @@ public:
         static bool enabled = false;
         enabled = !enabled;
         ev2::Renderer::get_singleton().set_wireframe(enabled);
-    }
-
-    std::map<std::string, float> crossParams(std::map<std::string, float> paramsA, std::map<std::string, float> paramsB) {
-        float randomGeneWeight = randomFloatRange(1.5f, 2.5f);
-        std::map<std::string, float> retParams = {
-            {"R_1", ((paramsA.find("R_1")->second + paramsB.find("R_1")->second)/randomGeneWeight)},
-            {"R_2", ((paramsA.find("R_2")->second + paramsB.find("R_2")->second)/randomGeneWeight)},
-            {"a_0", (randomCoinFlip(paramsA.find("a_0")->second, paramsB.find("a_0")->second))},
-            {"a_2", (randomCoinFlip(paramsA.find("a_2")->second, paramsB.find("a_2")->second))},
-            {"d",   (randomCoinFlip(paramsA.find("d")->second, paramsB.find("d")->second))},
-            {"w_r", ((paramsA.find("w_r")->second + paramsB.find("w_r")->second)/randomGeneWeight)}
-        };
-        return retParams;
-    }
-
-    void placeCross(glm::vec3 somePos) {
-        int unique_id = (int)randomFloatTo(9999999);
-        std::string unique_hit_tag = std::string("Tree_hit") += std::to_string(unique_id);
-        
-        ev2::Ref<TreeNode> tree = game->scene->create_node<TreeNode>("Tree");
-        
-        SuperSphere supershape(1.0f, 20, 20);
-
-        std::map<std::string, float> params = crossParams(parentAlpha.tree->getParams(), parentBeta.tree->getParams());
-        
-        ev2::Ref<ev2::ColliderBody> tree_hit_sphere = game->scene->create_node<ev2::ColliderBody>(unique_hit_tag.c_str());
-        tree_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(2.0f));
-        tree_hit_sphere->transform.position = somePos;
-        tree_hit_sphere->add_child(tree);
-
-        tree->thickness = ((parentAlpha.tree->thickness + parentBeta.tree->thickness)/randomFloatRange(1.5f, 2.5f));
-
-        tree->c0 = glm::vec3(randomFloatRange(parentAlpha.tree->c0.r, parentBeta.tree->c0.r) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c0.g, parentBeta.tree->c0.g) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c0.b, parentBeta.tree->c0.b) + randomFloatRange(-.2f, .2f));
-        tree->c1 = glm::vec3(randomFloatRange(parentAlpha.tree->c1.r, parentBeta.tree->c1.r) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c1.g, parentBeta.tree->c1.g) + randomFloatRange(-.2f, .2f), randomFloatRange(parentAlpha.tree->c1.b, parentBeta.tree->c1.b) + randomFloatRange(-.2f, .2f));
-        tree->set_material_override(ev2::ResourceManager::get_singleton().get_material_id("bark"));
-        tree->setParams(params, (parentAlpha.iterations + parentBeta.iterations)/2);
-
-        plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
-        placeChild = false;
     }
 
 

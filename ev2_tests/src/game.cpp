@@ -93,7 +93,7 @@ void GameState::update(float dt) {
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
 }
 
-void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations) {
+void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1) {
     int unique_id = (int)randomFloatTo(9999999);
     std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
@@ -109,8 +109,8 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     tree_hit_sphere->add_child(tree);
     tree->set_material_override(tree_bark.second);
 
-    tree->c0 = glm::vec3{randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f)};
-    tree->c1 = glm::vec3{randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f)};
+    tree->c0 = color_0;
+    tree->c1 = color_1;
     tree->setParams(params, iterations);
 
     if (!startedA) {
@@ -133,11 +133,14 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
         {"w_r", randomFloatRange(0.6f, 0.89f)}
     };
 
+    glm::vec3 color_0 = glm::vec3{randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f)};
+    glm::vec3 color_1 = glm::vec3{randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f)};
+
     float r = sqrt(randomFloatTo(1)) * range_extent;
     float th = randomFloatTo(ptree::degToRad(360));
 
     glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1);
 }
 
 void GameState::spawn_box(const glm::vec3& position) {
@@ -158,4 +161,27 @@ void GameState::spawn_box(const glm::vec3& position) {
 void GameState::spawn_player(const glm::vec3& position) {
     player = scene->create_node<Player>("player0", this);
     player->transform.position = position;
+}
+
+std::map<std::string, float> crossParams(std::map<std::string, float> paramsA, std::map<std::string, float> paramsB) {
+    float randomGeneWeight = randomFloatRange(1.5f, 2.5f);
+    std::map<std::string, float> retParams = {
+        {"R_1", ((paramsA.find("R_1")->second + paramsB.find("R_1")->second)/randomGeneWeight)},
+        {"R_2", ((paramsA.find("R_2")->second + paramsB.find("R_2")->second)/randomGeneWeight)},
+        {"a_0", (randomCoinFlip(paramsA.find("a_0")->second, paramsB.find("a_0")->second))},
+        {"a_2", (randomCoinFlip(paramsA.find("a_2")->second, paramsB.find("a_2")->second))},
+        {"d",   (randomCoinFlip(paramsA.find("d")->second, paramsB.find("d")->second))},
+        {"thickness", ((paramsA.find("thickness")->second + paramsB.find("thickness")->second)/randomGeneWeight)},
+        {"w_r", ((paramsA.find("w_r")->second + paramsB.find("w_r")->second)/randomGeneWeight)}
+    };
+    return retParams;
+}
+
+void GameState::spawn_cross(const glm::vec3& position, float rotation, int iterations) {
+    std::map<std::string, float> crossed_params = crossParams(selected_tree_1->getParams(), selected_tree_2->getParams());
+    glm::vec3 color_0 = glm::vec3(randomFloatRange(selected_tree_1->c0.r, selected_tree_2->c0.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.g, selected_tree_2->c0.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.b, selected_tree_2->c0.b) + randomFloatRange(-.2f, .2f)); 
+    glm::vec3 color_1 = glm::vec3(randomFloatRange(selected_tree_1->c1.r, selected_tree_2->c1.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.g, selected_tree_2->c1.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.b, selected_tree_2->c1.b) + randomFloatRange(-.2f, .2f));
+
+    spawn_tree(position, rotation, crossed_params, iterations, color_0, color_1);
+    //plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
 }

@@ -49,26 +49,31 @@ void Player::on_process(float dt) {
         material.setFrictionCoefficient(1.9f);
     }
     
-    auto& cam = cam_first_person->get_camera();
-    ev2::Ray cast{cam.get_position(), cam.get_forward()};
-    auto si = ev2::Physics::get_singleton().raycast_scene(cast, 200.0f);
-    if (si) {        
-        ev2::Ref<TreeNode> tree = si->hit.ref_cast<ev2::Node>()->get_child(0).ref_cast<TreeNode>();
-        if (tree)
-        {
-            // std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;
-            if (game->selected_tree_1->plantInfo.ID == -1) {
-                game->selected_tree_1 = tree;
-            } else if (game->selected_tree_2->plantInfo.ID == -1) {
-                game->selected_tree_2 = tree;
+    if (ev2::input::GetKeyDown(ev2::input::Key::Space)){
+        auto& cam = cam_first_person->get_camera();
+        ev2::Ray cast{cam.get_position(), cam.get_forward()};
+        auto si = ev2::Physics::get_singleton().raycast_scene(cast, 200.0f);
+        if (si) {        
+            ev2::Ref<TreeNode> tree = si->hit.ref_cast<ev2::Node>()->get_child(0).ref_cast<TreeNode>();
+            if (tree)
+            {
+                // std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;
+                if (game->selected_tree_1->plantInfo.ID == -1) {
+                    game->selected_tree_1 = tree;
+                } else if (game->selected_tree_2->plantInfo.ID == -1) {
+                    game->selected_tree_2 = tree;
+                } else if (game->selected_tree_2->plantInfo.ID != tree->plantInfo.ID) {
+                    game->selected_tree_1 = game->selected_tree_2;
+                    game->selected_tree_2 = tree; 
+                }
             } else {
-                game->selected_tree_1 = game->selected_tree_2;
-                game->selected_tree_2 = tree; 
+                if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))
+                    game->spawn_random_tree(si->point, 0, 10);
+                if (game->startedA && game->startedB)
+                    if (ev2::input::GetKeyDown(ev2::input::Key::KeyX))
+                        game->spawn_cross(si->point, 0, 10);    
             }
-        } else {
-            if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))
-                game->spawn_random_tree(si->point, 0, 10);
+            game->marker->transform.position = si->point;
         }
-        game->marker->transform.position = si->point;
     }
 }
