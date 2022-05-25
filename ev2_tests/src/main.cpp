@@ -32,38 +32,6 @@
 #include <game.h>
 
 namespace fs = std::filesystem;
-
-struct Plant {
-    bool selected = false;
-    bool parent = false;
-    int ID;
-    int iterations = 10;
-    glm::vec3 position;
-    glm::vec3 color;
-    glm::quat rot;
-    SuperSphere geometry;
-    ev2::Ref<TreeNode> tree{};
-    ev2::Ref<ev2::Node> tree_hit_sphere;
-    Plant() 
-    {
-        ID = NULL;
-    }
-    Plant(int IDin, glm::vec3 pos, glm::vec3 col, SuperSphere geo, ev2::Ref<TreeNode> treeIn, ev2::Ref<ev2::Node> tree_hit_sphere_In) 
-    {
-        ID = IDin;
-        position = pos;
-        color = col; 
-        geometry = geo; 
-        tree = treeIn; 
-        tree_hit_sphere = tree_hit_sphere_In; 
-        rot = glm::quatLookAt(glm::vec3(randomFloatTo(2) - 1, 0, randomFloatTo(2) - 1), glm::vec3{0, 1, 0});
-    }
-
-};
-
-    // Our state
-bool show_demo_window = true;
-bool show_another_window = false;
 ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 class TestApp : public ev2::Application {
@@ -78,11 +46,6 @@ public:
     ev2::Ref<ev2::Node> cam_orbital_root{};
 
     std::unique_ptr<GameState> game;
-
-    std::list<Plant> plantlist;
-    Plant parentAlpha;
-    Plant parentBeta;
-    Plant child;
 
     glm::vec2 mouse_p{};
     glm::vec2 mouse_delta{};
@@ -133,9 +96,6 @@ public:
 
     void initialize() {
         game = std::make_unique<GameState>();
-        // cube =  supershape.getModel();
-        parentAlpha.ID = NULL;
-        parentBeta.ID = NULL;
 
         cam_orbital      = game->scene->create_node<ev2::CameraNode>("Orbital");
         cam_orbital_root = game->scene->create_node<ev2::Node>("cam_orbital_root");
@@ -276,12 +236,6 @@ public:
                     break;
                 case ev2::input::Key::KeyD:
                     move_input.x = down ? 1.0f : 0.0f;
-                    break;
-                case ev2::input::Key::Space:
-                    if (child.ID > 0 && down)
-                    {
-                        placeChild = true;
-                    }
                     break;
                 default:
                     break;
