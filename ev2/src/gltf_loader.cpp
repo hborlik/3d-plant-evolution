@@ -125,7 +125,7 @@ Ref<GLTFScene> ResourceManager::loadGLTF(const std::filesystem::path& filename, 
 
     Ref<GLTFScene> scene = make_referenced<GLTFScene>(filename.generic_string());
     VertexBuffer* state = scene->get_vertex_buffer();
-    VBID vertex_buffer_id = scene->get_vertex_buffer_id();    
+    renderer::VBID vertex_buffer_id = scene->get_vertex_buffer_id();    
 
     for (std::size_t i = 0; i < model.bufferViews.size(); i++)
     {
@@ -287,9 +287,9 @@ Ref<GLTFScene> ResourceManager::loadGLTF(const std::filesystem::path& filename, 
     }
 
     for (size_t i_mesh = 0; i_mesh < model.meshes.size(); i_mesh++) {
-        MSID msid = ev2::Renderer::get_singleton().create_mesh();
+        renderer::MSID msid = ev2::renderer::Renderer::get_singleton().create_mesh();
 
-        std::vector<MeshPrimitive> mesh_primitives{};
+        std::vector<renderer::MeshPrimitive> mesh_primitives{};
 
         tinygltf::Mesh& mesh = model.meshes[i_mesh];
         for (size_t i = 0; i < mesh.primitives.size(); i++)
@@ -299,7 +299,7 @@ Ref<GLTFScene> ResourceManager::loadGLTF(const std::filesystem::path& filename, 
             if (primitive.indices < 0)
                 continue;
 
-            MeshPrimitive mesh_primitive{};
+            renderer::MeshPrimitive mesh_primitive{};
             mesh_primitive.vbid = vertex_buffer_id;
             mesh_primitive.indices = primitive.indices;
             mesh_primitive.material_id = primitive.material;
@@ -319,7 +319,7 @@ Ref<GLTFScene> ResourceManager::loadGLTF(const std::filesystem::path& filename, 
             mesh_primitives.push_back(mesh_primitive);
         }
 
-        ev2::Renderer::get_singleton().set_mesh_primitives(msid, mesh_primitives);
+        ev2::renderer::Renderer::get_singleton().set_mesh_primitives(msid, mesh_primitives);
 
         scene->add_mesh(msid);
     }

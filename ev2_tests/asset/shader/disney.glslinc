@@ -49,7 +49,7 @@ struct MaterialData {
 };
 
 layout (std140, binding = 1) uniform MaterialsInfo {
-    MaterialData materials[100];
+    MaterialData materials[255];
 };
 
 // ::begin shader

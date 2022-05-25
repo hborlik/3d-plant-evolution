@@ -24,25 +24,25 @@ GameState::GameState() {
     light->transform.position = glm::vec3{0, 3, 10};
     light->set_color(glm::vec3{0, 1, 0});
 
-    auto bark = ev2::ResourceManager::get_singleton().create_material("bark");
-    bark.first->diffuse = glm::vec3{0};
-    bark.first->metallic = 0;
+    auto bark = ev2::ResourceManager::get_singleton().get_material("bark");
+    bark->get_material()->diffuse = glm::vec3{0};
+    bark->get_material()->metallic = 0;
 
     tree_bark = bark;
 
-    highlight_material = ResourceManager::get_singleton().create_material("highlight");
-    highlight_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
-    highlight_material.first->sheen = 1.0;
-    highlight_material.first->metallic = 0.9;
+    highlight_material = ResourceManager::get_singleton().get_material("highlight");
+    highlight_material->get_material()->diffuse = glm::vec3{0.529, 0.702, 0.478};
+    highlight_material->get_material()->sheen = 1.0;
+    highlight_material->get_material()->metallic = 0.9;
 
-    auto ground_material = ResourceManager::get_singleton().create_material("ground_mat");
-    ground_material.first->diffuse = glm::vec3{0.529, 0.702, 0.478};
-    ground_material.first->sheen = 0.2;
+    auto ground_material = ResourceManager::get_singleton().get_material("ground_mat");
+    ground_material->get_material()->diffuse = glm::vec3{0.529, 0.702, 0.478};
+    ground_material->get_material()->sheen = 0.2;
 
-    MID ground = ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
+    renderer::MID ground = ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
     auto g_node = scene->create_node<VisualInstance>("ground");
     g_node->set_model(ground);
-    g_node->set_material_override(ground_material.second);
+    g_node->set_material_override(ground_material->get_material());
     g_node->transform.scale = glm::vec3{100, 0.1, 100};
 
     ground_plane = scene->create_node<RigidBody>("Ground Collider");
@@ -54,9 +54,9 @@ GameState::GameState() {
     auto& material = ground_plane->get_collider(0)->getMaterial();
     material.setBounciness(0.01f);
 
-    ev2::MID hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
-    ev2::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "low_poly_houses.obj");
-    ev2::MID sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
+    ev2::renderer::MID hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
+    ev2::renderer::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "low_poly_houses.obj");
+    ev2::renderer::MID sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
 
     marker = scene->create_node<ev2::VisualInstance>("marker");
     marker->set_model(ground);
@@ -125,7 +125,7 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     tree_hit_sphere->transform.position = position;
     tree_hit_sphere->transform.rotation = glm::rotate(glm::identity<glm::quat>(), rotation, glm::vec3{0, 1, 0});
     tree_hit_sphere->add_child(tree);
-    tree->set_material_override(tree_bark.second);
+    tree->set_material_override(tree_bark->get_material());
 
     tree->c0 = color_0;
     tree->c1 = color_1;
@@ -162,12 +162,12 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
 }
 
 void GameState::spawn_box(const glm::vec3& position) {
-    ev2::MID ground = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
+    ev2::renderer::MID ground = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
     auto box_vis = scene->create_node<ev2::VisualInstance>("marker");
     box_vis->set_model(ground);
     box_vis->transform.scale = glm::vec3{0.5, 0.5, 0.5};
     box_vis->transform.position = glm::vec3{0, 0, 0};
-    box_vis->set_material_override(highlight_material.second);
+    box_vis->set_material_override(highlight_material->get_material());
 
     auto box = scene->create_node<ev2::RigidBody>("Box Rigidbody");
     box->add_shape(ev2::make_referenced<ev2::BoxShape>(glm::vec3{0.25, 0.25, 0.25}));

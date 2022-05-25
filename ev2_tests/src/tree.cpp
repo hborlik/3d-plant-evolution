@@ -163,9 +163,10 @@ TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
         .add_attribute(ev2::VertexAttributeType::Color)
         .finalize();
     
-    model = std::make_shared<ev2::Drawable>(
+    model = std::make_shared<ev2::renderer::Drawable>(
         ev2::VertexBuffer::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
-        std::vector<ev2::Primitive>{},
+        std::vector<ev2::renderer::Primitive>{},
+        std::vector<ev2::renderer::Material*>{},
         glm::vec3{}, // TODO
         glm::vec3{}, // TODO
         ev2::gl::CullMode::BACK,
@@ -181,7 +182,7 @@ void TreeNode::on_init() {
 
     generate(5);
 
-    tree_geometry = ev2::Renderer::get_singleton().create_model(model);
+    tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(model);
     set_model(tree_geometry);
 }
 
@@ -225,7 +226,7 @@ void TreeNode::generate(int iterations) {
 
         std::vector<ptree::Vertex> vertices;
         std::vector<uint32_t> indices;
-        ptree::Skin_GO(5, tree_skeleton, vertices, indices, true, thickness, &dc);
+        ptree::Skin_GO(5, tree_skeleton, vertices, indices, false, thickness, &dc);
 
         std::vector<PNVertex> g_vertices(vertices.size());
         for (int i =0; i < vertices.size(); ++i) {
@@ -239,6 +240,6 @@ void TreeNode::generate(int iterations) {
         model->vertex_buffer.get_buffer(model->vertex_buffer.get_indexed()).CopyData(indices);
 
         model->primitives.clear();
-        model->primitives.push_back(ev2::Primitive{0, indices.size(), 2});
+        model->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), 2});
     }
 }

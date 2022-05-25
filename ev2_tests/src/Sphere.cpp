@@ -462,13 +462,13 @@ std::unique_ptr<ev2::Model> SuperSphere::getModel() {
     std::vector<DrawObject> drawObjects;
     bool success = true;
     if (success) {
-        std::vector<ev2::Material> ev_materials;
-        std::vector<ev2::Primitive> ev_meshs(drawObjects.size());
-        auto mat = ev2::Material{};
+        std::vector<ev2::renderer::Material> ev_materials;
+        std::vector<ev2::renderer::Primitive> ev_meshs(drawObjects.size());
+        auto mat = ev2::renderer::Material{};
         mat.diffuse = {0, 0.9, 0.05};
         ev_materials.push_back(mat);
 
-        ev_meshs.push_back(ev2::Primitive{0, indices.size(), 0});
+        ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), 0});
 
 
         // return std::make_unique<ev2::Model>(

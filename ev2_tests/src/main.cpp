@@ -150,21 +150,20 @@ public:
             auto camera_node = getCameraNode();
             if (true)
                 camera_node = game->cam_first_person;
-            ev2::Renderer::get_singleton().render(camera_node->get_camera());
+            ev2::renderer::Renderer::get_singleton().render(camera_node->get_camera());
             imgui(window);
             dt = float(ev2::window::getFrameTime());
         }
 
         game->scene->destroy();
-
-        ev2::Renderer::shutdown();      
+     
         return 0;
     }
 
     void toggleWireframe() {
         static bool enabled = false;
         enabled = !enabled;
-        ev2::Renderer::get_singleton().set_wireframe(enabled);
+        ev2::renderer::Renderer::get_singleton().set_wireframe(enabled);
     }
 
 
@@ -274,8 +273,8 @@ public:
     }
 
     void on_window_size_change(int32_t width, int32_t height) override {
-        if (ev2::Renderer::is_initialized())
-            ev2::Renderer::get_singleton().set_resolution(width, height);
+        if (ev2::renderer::is_initialized())
+            ev2::renderer::get_singleton().set_resolution(width, height);
         window_width = width;
         window_height = height;
     }

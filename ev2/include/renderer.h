@@ -10,16 +10,21 @@
 #include <unordered_map>
 #include <memory>
 #include <filesystem>
+#include <array>
+#include <queue>
 
 #include <singleton.h>
 #include <vertex_buffer.h>
 #include <shader.h>
 #include <texture.h>
 #include <camera.h>
-#include <material.h>
 
 
-namespace ev2 {
+namespace ev2::renderer {
+
+constexpr uint16_t MAX_N_MATERIALS = 255;
+
+using mat_id_t = uint8_t;
 
 /**
  * @brief model id
@@ -41,8 +46,8 @@ private:
 
 
 template<> 
-struct std::hash<ev2::MID> {
-    std::size_t operator()(ev2::MID const& s) const noexcept {
+struct std::hash<ev2::renderer::MID> {
+    std::size_t operator()(ev2::renderer::MID const& s) const noexcept {
         std::size_t h1 = std::hash<int>{}(s.v);
         // std::size_t h2 = std::hash<int>{}(s.y);
         // return h1 ^ (h2 << 1);
@@ -50,7 +55,7 @@ struct std::hash<ev2::MID> {
     }
 };
 
-namespace ev2 {
+namespace ev2::renderer {
 
 /**
  * @brief light id
@@ -76,6 +81,80 @@ struct DirectionalLight {
     glm::vec3 color     = {1, 1, 1};
     glm::vec3 ambient   = {0.05, 0.05, 0.05};
     glm::vec3 position = {0, -1, 0};
+};
+
+/**
+ * @brief material data as represented on gpu
+ * 
+ */
+struct MaterialData {
+    glm::vec3 diffuse   = {0.5, 0.4, 0.0};
+    float metallic       = 0;
+    float subsurface     = 0;
+    float specular       = .5f;
+    float roughness      = .5f;
+    float specularTint   = 0;
+    float clearcoat      = 0;
+    float clearcoatGloss = 1.f;
+    float anisotropic    = 0;
+    float sheen          = 0;
+    float sheenTint      = .5f;
+};
+
+struct Material {
+    std::string name = "default";
+
+    glm::vec3 diffuse   = {1.00f,0.10f,0.85f};
+    float metallic       = 0;
+    float subsurface     = 0;
+    float specular       = .5f;
+    float roughness      = .5f;
+    float specularTint   = 0;
+    float clearcoat      = 0;
+    float clearcoatGloss = 1.f;
+    float anisotropic    = 0;
+    float sheen          = 0;
+    float sheenTint      = .5f;
+
+    std::shared_ptr<Texture> ambient_tex;             // map_Ka
+    std::shared_ptr<Texture> diffuse_tex;             // map_Kd
+    std::shared_ptr<Texture> specular_tex;            // map_Ks
+    std::shared_ptr<Texture> specular_highlight_tex;  // map_Ns
+    std::shared_ptr<Texture> bump_tex;                // map_bump, map_Bump, bump
+    std::shared_ptr<Texture> displacement_tex;        // disp
+    std::shared_ptr<Texture> alpha_tex;               // map_d
+    std::shared_ptr<Texture> reflection_tex;          // refl
+
+    Material() = default;
+    Material(std::string name) : name{std::move(name)} {}
+
+    Material(const Material&) = default;
+    Material(Material&&) = default;
+    Material& operator=(const Material&) = default;
+    Material& operator=(Material&&) noexcept = default;
+
+private:
+    friend class Renderer;
+
+    void update_internal() {
+        if (internal_material) {
+            internal_material->diffuse          = diffuse;
+            internal_material->metallic         = metallic;
+            internal_material->subsurface       = subsurface;
+            internal_material->specular         = specular;
+            internal_material->roughness        = roughness;
+            internal_material->specularTint     = specularTint;
+            internal_material->clearcoat        = clearcoat;
+            internal_material->clearcoatGloss   = clearcoatGloss;
+            internal_material->anisotropic      = anisotropic;
+            internal_material->sheen            = sheen;
+            internal_material->sheenTint        = sheenTint;
+        }
+    }
+
+    int32_t material_id = -1;
+    mat_id_t slot = 0;
+    MaterialData* internal_material = nullptr;
 };
 
 /**
@@ -135,77 +214,44 @@ struct MeshInstance {
     Mesh*                   mesh = nullptr;
 };
 
+// instance drawable primitive setup
+
 struct Primitive {
-    size_t  start_index = 0;
-    size_t  num_elements = 0;
-    int32_t material_id = 0;
+    size_t      start_index = 0;
+    size_t      num_elements = 0;
+    int32_t     material_ind = 0; // material index in drawables material list
 };
 
 struct Drawable {
-    Drawable(VertexBuffer&& vb, std::vector<Primitive> primitives, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
-        vertex_buffer{std::move(vb)}, primitives{std::move(primitives)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
+    Drawable(VertexBuffer&& vb, std::vector<Primitive> primitives, std::vector<Material*> materials, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
+        vertex_buffer{std::move(vb)}, primitives{std::move(primitives)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
     VertexBuffer vertex_buffer;
     std::vector<Primitive> primitives;
+    std::vector<Material*> materials;
 
     glm::vec3 bmin, bmax;
 
     gl::CullMode cull_mode = gl::CullMode::BACK;
     gl::FrontFacing front_facing = gl::FrontFacing::CCW;
 
-    int32_t material_offset = 0;
     float vertex_color_weight = 0.f;
-
-    void draw(const Program& prog, int32_t material_override = -1);
-};
-
-/**
- * @brief material data as represented on gpu
- * 
- */
-struct MaterialData {
-    glm::vec3 diffuse   = {0.5, 0.4, 0.0};
-    float metallic       = 0;
-    float subsurface     = 0;
-    float specular       = .5f;
-    float roughness      = .5f;
-    float specularTint   = 0;
-    float clearcoat      = 0;
-    float clearcoatGloss = 1.f;
-    float anisotropic    = 0;
-    float sheen          = 0;
-    float sheenTint      = .5f;
-
-    static MaterialData from_material(const Material& mat) {
-        MaterialData nMat{};
-        nMat.diffuse = mat.diffuse;
-        nMat.metallic = mat.metallic;
-        nMat.subsurface = mat.subsurface;
-        nMat.specular = mat.specular;
-        nMat.roughness = mat.roughness;
-        nMat.specularTint = mat.specularTint;
-        nMat.clearcoat = mat.clearcoat;
-        nMat.clearcoatGloss = mat.clearcoatGloss;
-        nMat.anisotropic = mat.anisotropic;
-        nMat.sheen = mat.sheen;
-        nMat.sheenTint = mat.sheenTint;
-        return nMat;
-    }
 };
 
 struct ModelInstance {
     glm::mat4   transform = glm::identity<glm::mat4>();
     Drawable*   drawable = nullptr;
-    int32_t     material_override = -1;
+    int32_t     material_id_override = -1;
 };
 
 class Renderer : public Singleton<Renderer> {
 public:
     Renderer(uint32_t width, uint32_t height);
+    ~Renderer();
 
     void init();
 
-    void update_material(int32_t material_id, const MaterialData& material);
-    int32_t create_material(const MaterialData& material);
+    Material* create_material();
+    void destroy_material(Material* material);
 
     LID create_point_light();
     LID create_directional_light();
@@ -240,10 +286,10 @@ public:
     /**
      * @brief Set the instance material override id. Note: this will set materials for all shapes in model
      * 
-     * @param iid instance id
-     * @param material_override id of material to use when rendering, -1 for model defaults
+     * @param iid 
+     * @param material 
      */
-    void set_instance_material_override(IID iid, int32_t material_override);
+    void set_instance_material_override(IID iid, Material* material);
     
     void destroy_instance(IID iid);
 
@@ -270,12 +316,20 @@ public:
     float shadow_bias_world = 0.3f;
 
 private:
+
+    void draw(Drawable* dr, const Program& prog, int32_t material_override = -1);
+
+    void update_material(mat_id_t material_slot, const MaterialData& material);
+
     // model, instance vertex data
     std::unordered_map<MID, std::shared_ptr<Drawable>> models;
     uint32_t next_model_id = 1;
 
-    std::vector<MaterialData> materials;
-    int next_free_mat = 1;
+    // material management
+    int32_t next_material_id = 1234;
+    std::unordered_map<int32_t, Material> materials;
+    std::array<MaterialData, MAX_N_MATERIALS> material_data_buffer;
+    std::queue<mat_id_t> free_material_slots;
 
     std::unordered_map<int32_t, ModelInstance> model_instances;
     uint32_t next_instance_id = 100;
