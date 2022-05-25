@@ -92,6 +92,8 @@ public:
     bool placeChild = false;
     float cam_x = 0, cam_y = 0;
     float cam_boom_length = 10.0f;
+    int32_t window_width = 1920;
+    int32_t window_height = 1080;
 
     bool show_debug = false;
 
@@ -111,11 +113,15 @@ public:
             show_game_debug_window(game.get());
         }
         if (game->selected_tree_1->plantInfo.ID != -1) {
+            ImGui::SetNextWindowSize(ImVec2(window_width/5, window_height/5));
+            ImGui::SetNextWindowPos(ImVec2(window_width - window_width/5, 0));
             show_tree_window(game.get(), game->selected_tree_1);
         }
         if (game->selected_tree_2->plantInfo.ID != -1) {
+            ImGui::SetNextWindowSize(ImVec2(window_width/5, window_height/5));
+            ImGui::SetNextWindowPos(ImVec2(window_width - window_width/5, window_height/5));
             show_tree_window(game.get(), game->selected_tree_2);
-        }
+        } 
 
         // Rendering
         ImGui::Render();
@@ -182,7 +188,7 @@ public:
             game->scene->update_pre_render();
             ev2::ResourceManager::get_singleton().pre_render();
             auto camera_node = getCameraNode();
-            if (!show_debug)
+            if (true)
                 camera_node = game->cam_first_person;
             ev2::Renderer::get_singleton().render(camera_node->get_camera());
             imgui(window);
@@ -239,7 +245,7 @@ public:
                 if (down) {
                     show_debug = !show_debug;
                     ev2::window::setMouseCaptured(!show_debug);
-                    ev2::input::SetInputEnabled(!show_debug);
+                    //ev2::input::SetInputEnabled(!show_debug);
                 } 
                 break;
             default:
@@ -316,6 +322,8 @@ public:
     void on_window_size_change(int32_t width, int32_t height) override {
         if (ev2::Renderer::is_initialized())
             ev2::Renderer::get_singleton().set_resolution(width, height);
+        window_width = width;
+        window_height = height;
     }
 
     void on_drop_file(const std::string& path) override {}

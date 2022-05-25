@@ -63,11 +63,12 @@ void show_game_debug_window(GameState* game) {
         float fieldDegree = ptree::radToDeg(GUIParams.find("a_0")->second);
         float fieldDegree2 = ptree::radToDeg(GUIParams.find("a_2")->second);
         float fieldDegree3 = ptree::radToDeg(GUIParams.find("d")->second);
+        float thickness = GUIParams.find("thickness")->second;
 
         int counter = selected_tree->plantInfo.iterations;
         bool changed = false;
         
-        ImGui::Begin(std::to_string(selected_tree->plantInfo.ID).c_str(), &selected_tree->plantInfo.selected);                          // Create a window called "Hello, world!" and append into it.
+        ImGui::Begin(("Species #" + std::to_string(selected_tree->plantInfo.ID)).c_str(), &selected_tree->plantInfo.selected);                          // Create a window called "Hello, world!" and append into it.
 
         ImGui::Text("An editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
         
@@ -108,8 +109,9 @@ void show_game_debug_window(GameState* game) {
             GUIParams.find("d")->second = ptree::degToRad(fieldDegree3);
             changed = true;
         }
-        if (ImGui::SliderFloat("thickness", &(selected_tree->thickness), 0.2f, 10.0f))
+        if (ImGui::SliderFloat("thickness", &thickness, 0.2f, 10.0f))
         {
+            GUIParams.find("thickness")->second = thickness;
             changed = true;
         }
         if (ImGui::Button("Increase iterations."))                           
