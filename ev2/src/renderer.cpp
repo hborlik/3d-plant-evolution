@@ -16,28 +16,27 @@ void Renderer::draw(Drawable* dr, const Program& prog, int32_t material_override
         glCullFace((GLenum)dr->cull_mode);
     }
     glFrontFace((GLenum)dr->front_facing);
+    int mat_loc = prog.getUniformInfo("materialId").Location;
+    int vert_col_w_loc = prog.getUniformInfo("vertex_color_weight").Location;
     // TODO: support for multiple index buffers
     dr->vertex_buffer.bind();
     if (dr->vertex_buffer.get_indexed() != -1) {
         // draw indexed arrays
         for (auto& m : dr->primitives) {
-            // prog.applyMaterial(materials[m.material_id]);
 
             // TODO does this go here?
-            int loc = prog.getUniformInfo("materialId").Location;
-            if (loc != -1) {
+            if (mat_loc != -1) {
                 mat_id_t material_slot = 0;
                 if (material_override < 0) {
                     material_slot = materials.at(dr->materials[m.material_ind]->material_id).slot;
                 } else {
                     material_slot = materials.at(material_override).slot;
                 }
-                GL_CHECKED_CALL(glUniform1ui(loc, material_slot));
+                GL_CHECKED_CALL(glUniform1ui(mat_loc, material_slot));
             }
 
-            loc = prog.getUniformInfo("vertex_color_weight").Location;
-            if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1f(loc, dr->vertex_color_weight));
+            if (vert_col_w_loc != -1) {
+                GL_CHECKED_CALL(glUniform1f(vert_col_w_loc, dr->vertex_color_weight));
             }
 
             dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed()).Bind(); // bind index buffer (again, @Windows)
@@ -45,23 +44,20 @@ void Renderer::draw(Drawable* dr, const Program& prog, int32_t material_override
         }
     } else {
         for (auto& m : dr->primitives) {
-            // prog.applyMaterial(materials[m.material_id]);
 
             // TODO does this go here?
-            int loc = prog.getUniformInfo("materialId").Location;
-            if (loc != -1) {
+            if (mat_loc != -1) {
                 mat_id_t material_slot = 0;
                 if (material_override < 0) {
                     material_slot = materials.at(dr->materials[m.material_ind]->material_id).slot;
                 } else {
                     material_slot = materials.at(material_override).slot;
                 }
-                GL_CHECKED_CALL(glUniform1ui(loc, material_slot));
+                GL_CHECKED_CALL(glUniform1ui(mat_loc, material_slot));
             }
 
-            loc = prog.getUniformInfo("vertex_color_weight").Location;
-            if (loc != -1) {
-                GL_CHECKED_CALL(glUniform1f(loc, dr->vertex_color_weight));
+            if (vert_col_w_loc != -1) {
+                GL_CHECKED_CALL(glUniform1f(vert_col_w_loc, dr->vertex_color_weight));
             }
 
             glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
