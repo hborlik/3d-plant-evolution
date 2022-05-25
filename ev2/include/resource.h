@@ -11,7 +11,6 @@
 
 #include <glm/glm.hpp>
 
-#include <material.h>
 #include <vertex_buffer.h>
 #include <renderer.h>
 #include <scene.h>
@@ -26,15 +25,35 @@ struct DrawObject {
     size_t material_id;
 };
 
+class MaterialResource : public Object {
+public:
+    MaterialResource() {
+        material = renderer::Renderer::get_singleton().create_material();
+    }
+    virtual ~MaterialResource() {
+        renderer::Renderer::get_singleton().destroy_material(material);
+    }
+
+    MaterialResource(const MaterialResource&) = delete;
+    MaterialResource(MaterialResource&&) = delete;
+    MaterialResource& operator=(const MaterialResource&) = delete;
+    MaterialResource& operator=(MaterialResource&&) = delete;
+
+    renderer::Material* get_material() {return material;}
+
+private:
+    renderer::Material* material = nullptr;
+};
+
 // array vertex
 class Model {
 public:
-    Model(const std::string& name, std::vector<DrawObject> draw_objects, std::vector<Material> materials, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
+    Model(const std::string& name, std::vector<DrawObject> draw_objects, std::vector<Ref<MaterialResource>> materials, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
         name{name}, draw_objects{std::move(draw_objects)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
     
     std::string             name;
     std::vector<DrawObject> draw_objects;
-    std::vector<Material>   materials;
+    std::vector<Ref<MaterialResource>>  materials;
     std::vector<float>      buffer;
 
     glm::vec3 bmin, bmax;
@@ -48,7 +67,7 @@ public:
         int32_t update_internal();
 
         int32_t material_id = -1;
-        std::shared_ptr<Material> material{};
+        
     };
 
     explicit ResourceManager(const std::filesystem::path& asset_path) : asset_path{asset_path}, model_lookup{} {}
@@ -59,39 +78,28 @@ public:
      * @brief Get the model object reference id, or load object if not available
      * 
      * @param filename 
-     * @return MID 
+     * @return renderer::MID 
      */
-    MID get_model(const std::filesystem::path& filename, bool cache = true);
+    renderer::MID get_model(const std::filesystem::path& filename, bool cache = true);
 
-    MID create_model(std::shared_ptr<Model> model);
+    renderer::MID create_model(std::shared_ptr<Model> model);
 
     std::shared_ptr<Texture> get_texture(const std::filesystem::path& filename);
 
     Ref<GLTFScene> loadGLTF(const std::filesystem::path& filename, bool normalize = false);
 
-    std::pair<std::shared_ptr<Material>, int32_t> create_material(const std::string& name);
-    std::shared_ptr<Material> get_material(const std::string& name);
+    Ref<MaterialResource> get_material(const std::string& name);
     int32_t get_material_id(const std::string& name);
-    void push_material_changed(const std::string& name);
 
-    const auto& get_materials_locations() const {return materials;}
-
-private:
-    MaterialLocation get_material_internal(const std::string& name) {
-        auto itr = materials.find(name);
-        if (itr != materials.end()) {
-            return itr->second;
-        }
-        return {};
-    }
+    const auto& get_materials() const {return materials;}
 
 public:
     std::filesystem::path asset_path;
 
 private:
-    std::unordered_map<std::string, MID> model_lookup;
+    std::unordered_map<std::string, renderer::MID> model_lookup;
 
-    std::unordered_map<std::string, MaterialLocation> materials;
+    std::unordered_map<std::string, Ref<MaterialResource>> materials;
 
     std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
 };
