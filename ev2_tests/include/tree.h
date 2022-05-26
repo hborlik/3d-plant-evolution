@@ -10,6 +10,8 @@
 #include <visual_nodes.h>
 #include <vertex_buffer.h>
 
+#include <Sphere.h>
+
 #include <procedural_tree.hpp>
 
 struct PNVertex {
@@ -36,8 +38,23 @@ public:
     ev2::VertexLayout buffer_layout;
     ev2::renderer::MID tree_geometry;
     std::shared_ptr<ev2::renderer::Drawable> model;
+    SuperShapeParams fruit_params{};
 };
 
-ev2::Ref<TreeNode> spawnTree(const ev2::Scene& scene, const glm::vec3& position);
+class Fruit : public ev2::VisualInstance {
+public:
+    Fruit(const std::string& name, const SuperShapeParams& params);
+    Fruit(const std::string& name);
+
+    void on_init() override;
+
+    void generate();
+
+    const float radius_mul = 0.25f;
+    SuperSphere supershape{};
+    SuperShapeParams params{};
+    std::shared_ptr<ev2::renderer::Drawable> model{};
+    ev2::renderer::MID geometry{};
+};
 
 #endif // PLANT_GAME_TREE_H
