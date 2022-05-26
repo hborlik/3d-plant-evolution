@@ -49,41 +49,34 @@ void Player::on_process(float dt) {
         material.setFrictionCoefficient(1.9f);
     }
     
-    if (ev2::input::GetKeyDown(ev2::input::Key::Space)){
-        auto& cam = cam_first_person->get_camera();
-        ev2::Ray cast{cam.get_position() + glm::vec3(0, -1.0f, 0), cam.get_forward()};
-        auto si = ev2::Physics::get_singleton().raycast_scene(cast, 200.0f);
-        if (si) {        
-            ev2::Ref<TreeNode> tree = si->hit.ref_cast<ev2::Node>()->get_child(0).ref_cast<TreeNode>();
-            if (tree)
+    auto& cam = cam_first_person->get_camera();
+    ev2::Ray cast{cam.get_position(), cam.get_forward()};
+    auto si = ev2::Physics::get_singleton().raycast_scene(cast, 200.0f);
+    if (si) {        
+        ev2::Ref<TreeNode> tree = si->hit.ref_cast<ev2::Node>()->get_child(0).ref_cast<TreeNode>();
+        if (tree)
+        {
+            if (tree->breedable && ev2::input::GetMouseButton(ev2::input::MouseButton::Left))
             {
-                if (tree->breedable)
-                {
-                    if (game->selected_tree_1->plantInfo.ID == -1) {
-                        game->selected_tree_1 = tree;
-                        game->selected_tree_1->set_material_override(game->highlight_material->get_material());                        
-                        game->selected_tree_2->set_material_override(game->tree_bark->get_material());                        
-                    } else if (game->selected_tree_2->plantInfo.ID == -1) {
-                        game->selected_tree_2 = tree;
-                        game->selected_tree_2->set_material_override(game->highlight_material->get_material());                        
-                        game->selected_tree_1->set_material_override(game->tree_bark->get_material()); 
-                    } else if (game->selected_tree_2->plantInfo.ID != tree->plantInfo.ID) {
-                        game->selected_tree_1 = game->selected_tree_2;
-                        game->selected_tree_1->set_material_override(game->tree_bark->get_material());
-                        game->selected_tree_2 = tree; 
-                        game->selected_tree_2->set_material_override(game->highlight_material->get_material());
+                if (game->selected_tree_1 != tree && game->selected_tree_2 != tree) {
+                    if (game->selected_tree_2 != nullptr) {
+                        game->selected_tree_2->set_material_override(game->tree_bark->get_material());
                     }
+                    game->selected_tree_2 = game->selected_tree_1;
+                    game->selected_tree_1 = tree;
+                    tree->set_material_override(game->highlight_material->get_material());
                 }
-            } else {
-                if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))
-                    game->spawn_random_tree(si->point, 0, 9);
-                if (game->startedA && game->startedB)
-                    if (ev2::input::GetKeyDown(ev2::input::Key::KeyX))
-                        game->spawn_cross(si->point, 0, 9);
-                if (ev2::input::GetKeyDown(ev2::input::Key::KeyF))
-                    game->spawn_fruit(si->point + glm::vec3{0, 5, 0});
+                
             }
-            game->marker->transform.position = si->point;
+        } else {
+            if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))
+                game->spawn_random_tree(si->point, 0, 9);
+            if (ev2::input::GetKeyDown(ev2::input::Key::KeyX))
+                game->spawn_cross(si->point, 0, 9);
+            if (ev2::input::GetKeyDown(ev2::input::Key::KeyF))
+                game->spawn_fruit(si->point + glm::vec3{0, 5, 0});
         }
+        game->marker->transform.position = si->point;
     }
+
 }

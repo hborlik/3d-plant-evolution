@@ -148,7 +148,7 @@ public:
             game->scene->update_pre_render();
             ev2::ResourceManager::get_singleton().pre_render();
             auto camera_node = getCameraNode();
-            if (true)
+            if (!show_debug)
                 camera_node = game->cam_first_person;
             ev2::renderer::Renderer::get_singleton().render(camera_node->get_camera());
             imgui(window);
@@ -204,7 +204,7 @@ public:
                 if (down) {
                     show_debug = !show_debug;
                     ev2::window::setMouseCaptured(!show_debug);
-                    //ev2::input::SetInputEnabled(!show_debug);
+                    ev2::input::SetInputEnabled(!show_debug);
                 } 
                 break;
             default:
@@ -270,6 +270,7 @@ public:
             left_mouse_down = down;
         if (button == 3)
             right_mouse_down = down;
+        ev2::input::SetMouseButton(button, down);
     }
 
     void on_window_size_change(int32_t width, int32_t height) override {

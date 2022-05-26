@@ -12,6 +12,8 @@ struct InputState {
 
     KeyAndMods key_state[Key::Enum::Count] = {};
     glm::vec2 mouse_position{};
+
+    bool mouse_buttons[MouseButton::Count]{};
 };
 
 static InputState State;
@@ -45,6 +47,10 @@ void SetMousePosition(const glm::vec2& position) {
     State.mouse_position = position;
 }
 
+void SetMouseButton(MouseButton::Enum button, bool pressed) {
+    State.mouse_buttons[button] = pressed;
+}
+
 bool GetKeyDown(Key::Enum key, Modifier modifiers) {
     KeyAndMods& key_state = State.key_state[key];
     if (State.input_enabled && key_state.down) {
@@ -58,6 +64,10 @@ bool GetKeyDown(Key::Enum key, Modifier modifiers) {
 
 glm::vec2 GetMousePosition() {
     return State.mouse_position;
+}
+
+bool GetMouseButton(MouseButton::Enum button) {
+    return State.input_enabled && State.mouse_buttons[button];
 }
 
 }
