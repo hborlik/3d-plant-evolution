@@ -55,7 +55,7 @@ public:
     std::map<std::string, float> getParams() {return params;}
     bool breedable = true;
     float growth_current = 0;
-    float growth_rate = 0.1;
+    float growth_rate = 0.05;
     float growth_max = 1;
     
 

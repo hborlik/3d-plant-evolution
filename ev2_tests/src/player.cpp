@@ -61,11 +61,17 @@ void Player::on_process(float dt) {
                 {
                     if (game->selected_tree_1->plantInfo.ID == -1) {
                         game->selected_tree_1 = tree;
+                        game->selected_tree_1->set_material_override(game->highlight_material->get_material());                        
+                        game->selected_tree_2->set_material_override(game->tree_bark->get_material());                        
                     } else if (game->selected_tree_2->plantInfo.ID == -1) {
                         game->selected_tree_2 = tree;
+                        game->selected_tree_2->set_material_override(game->highlight_material->get_material());                        
+                        game->selected_tree_1->set_material_override(game->tree_bark->get_material()); 
                     } else if (game->selected_tree_2->plantInfo.ID != tree->plantInfo.ID) {
                         game->selected_tree_1 = game->selected_tree_2;
+                        game->selected_tree_1->set_material_override(game->tree_bark->get_material());
                         game->selected_tree_2 = tree; 
+                        game->selected_tree_2->set_material_override(game->highlight_material->get_material());
                     }
                 }
             } else {

@@ -70,9 +70,8 @@ void show_game_debug_window(GameState* game) {
         
         ImGui::Begin(("Species #" + std::to_string(selected_tree->plantInfo.ID)).c_str(), &selected_tree->plantInfo.selected);                          // Create a window called "Hello, world!" and append into it.
 
-        ImGui::Text("An editor for a plant's branch structure, each parameter is a \"gene\"");               // Display some text (you can use a format strings too)
+        ImGui::Text("Edit your plant's genes!!! :D");               // Display some text (you can use a format strings too)
         
-        if (ImGui::Checkbox("Make Parent?", &selected_tree->plantInfo.parent)) {}
         if (ImGui::TreeNode("Color")) {
             changed |= ImGui::ColorPicker3("diffuse color 0", glm::value_ptr(selected_tree->c0), ImGuiColorEditFlags_InputRGB);
             changed |= ImGui::ColorPicker3("diffuse color 1", glm::value_ptr(selected_tree->c1), ImGuiColorEditFlags_InputRGB);

@@ -102,7 +102,7 @@ void GameState::update(float dt) {
             for (int i = 0; i < scene->get_n_children(); i++) {
                 ev2::Ref<TreeNode> tree = scene->get_child(i).ref_cast<Node>()->get_child(0).ref_cast<TreeNode>();
                 if (tree) {
-                    tree->growth_current = tree->growth_current + tree->growth_rate;
+                    tree->growth_current = tree->growth_current + tree->growth_rate * (1/(log(tree->growth_current + 1.1f)));
                     if (tree->growth_current < tree->growth_max) {
                         tree->setParams(tree->getParams(), tree->plantInfo.iterations, tree->growth_current);
                     }
@@ -181,7 +181,7 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
     glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
 //    glm::vec3 pos = position;
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.f, true);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 0, true);
 }
 
 
