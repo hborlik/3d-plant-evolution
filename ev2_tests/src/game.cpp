@@ -153,8 +153,14 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     if (breedable)
     {
         auto light = scene->create_node<ev2::PointLightNode>("point_light");
-        light->transform.position = glm::vec3{position} + glm::vec3{0, 10, 1};
+        light->transform.position = glm::vec3{position} + glm::vec3{0, 1, 0};
         light->set_color(color_0);
+
+        auto light2 = scene->create_node<ev2::PointLightNode>("point_light");
+        light2->transform.position = glm::vec3{position} + glm::vec3{0, 6, 0};
+        light2->set_color(color_1);
+
+        spawn_fruit(position + glm::vec3{0, 10, 0}, tree->fruit_params);
     }
     tree->c0 = color_0;
     tree->c1 = color_1;
@@ -168,7 +174,6 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
         startedB = true;
     }
 
-    spawn_fruit(position + glm::vec3{0, 10, 0}, tree->fruit_params);
 }
 
 void GameState::spawn_random_tree(const glm::vec3& position, float range_extent, int iterations) {
