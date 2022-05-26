@@ -43,7 +43,7 @@ public:
 
     void update(float dt);
 
-    void spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1);
+    void spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1, float starting_growth);
     void spawn_random_tree(const glm::vec3& position, float range_extent, int iterations);
     void spawn_box(const glm::vec3& position);
     void spawn_player(const glm::vec3& position);

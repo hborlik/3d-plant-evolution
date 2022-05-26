@@ -73,10 +73,17 @@ GameState::GameState() {
     lh_node->transform.position = glm::vec3{50, 1, -20};
     lh_node->set_model(building0);
 
-    for (int n = 0; n < 2; n++)
+    for (int x = -50; x < 50; x+=2)
     {
-        spawn_random_tree(glm::vec3{}, 40, 10);
+        spawn_random_tree(glm::vec3{x, 0, 50}, 40, 10);
+        spawn_random_tree(glm::vec3{x, 0, -50}, 40, 10);
     }
+    for (int z = -50; z < 50; z+=2)
+    {
+        spawn_random_tree(glm::vec3{50, 0, z}, 40, 10);
+        spawn_random_tree(glm::vec3{-50, 0, z}, 40, 10);
+    }    
+
 
     spawn_player({0, 20, 0});
     cam_first_person = player->cam_first_person;
@@ -110,7 +117,7 @@ void GameState::update(float dt) {
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
 }
 
-void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1) {
+void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1, float starting_growth) {
     int unique_id = (int)randomFloatTo(9999999);
     std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
@@ -119,7 +126,7 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     tree->plantInfo.ID = unique_id;
     tree->plantInfo.iterations = iterations;
     SuperSphere supershape(1.0f, 20, 20);
-    
+    tree->growth_current = starting_growth;
     ev2::Ref<ev2::RigidBody> tree_hit_sphere = scene->create_node<ev2::RigidBody>(unique_hit_tag.c_str());
     tree_hit_sphere->add_shape(ev2::make_referenced<ev2::CapsuleShape>(1.0, 5.0), glm::vec3{0, 2.5, 0});
     tree_hit_sphere->transform.position = position;
@@ -157,8 +164,10 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
     float r = sqrt(randomFloatTo(1)) * range_extent;
     float th = randomFloatTo(ptree::degToRad(360));
 
-    glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1);
+//    glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
+    glm::vec3 pos = position;
+
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.f);
 }
 
 void GameState::spawn_box(const glm::vec3& position) {
@@ -200,6 +209,6 @@ void GameState::spawn_cross(const glm::vec3& position, float rotation, int itera
     glm::vec3 color_0 = glm::vec3(randomFloatRange(selected_tree_1->c0.r, selected_tree_2->c0.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.g, selected_tree_2->c0.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.b, selected_tree_2->c0.b) + randomFloatRange(-.2f, .2f)); 
     glm::vec3 color_1 = glm::vec3(randomFloatRange(selected_tree_1->c1.r, selected_tree_2->c1.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.g, selected_tree_2->c1.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.b, selected_tree_2->c1.b) + randomFloatRange(-.2f, .2f));
 
-    spawn_tree(position, rotation, crossed_params, iterations, color_0, color_1);
+    spawn_tree(position, rotation, crossed_params, iterations, color_0, color_1, 0.f);
     //plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
 }

@@ -68,10 +68,10 @@ void Player::on_process(float dt) {
                 }
             } else {
                 if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))
-                    game->spawn_random_tree(si->point, 0, 10);
+                    game->spawn_random_tree(si->point, 0, 9);
                 if (game->startedA && game->startedB)
                     if (ev2::input::GetKeyDown(ev2::input::Key::KeyX))
-                        game->spawn_cross(si->point, 0, 10);    
+                        game->spawn_cross(si->point, 0, 9);    
             }
             game->marker->transform.position = si->point;
         }
