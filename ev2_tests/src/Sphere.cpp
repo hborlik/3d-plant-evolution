@@ -19,8 +19,6 @@
 #include <cmath>
 #include <resource.h>
 
-float amplitude_on_frequency_10steps_temp[10] = { 0 };
-
 const int MIN_SECTOR_COUNT = 3;
 const int MIN_STACK_COUNT = 2;
 
@@ -143,6 +141,16 @@ template <class _Ty> /* constexpr */ _Ty lerp(const _Ty _ArgA, const _Ty _ArgB, 
     }
 }
 
+float superformula_do(float t, float a, float b, float m, float n1, float n2, float n3) {
+    //x'(t) = -m/(4*n1)*smt_4*cmt_4*((n3 asmt_4)^(n3 - 2))/b^2 - (n2 acmt_4)^(n2 - 2))/a^2) (acmt_4)^n2 + asmt_4)^n3)^(-(n1 + 1)/n1))
+    float smt_4 = sin((m*t)/4.f);
+    float cmt_4 = abs(cos((m*t)/4.f));
+    float asmt_4 = abs(smt_4) / b;
+    float acmt_4 = abs(cmt_4) / a;
+    float x_p = -m/(4*n1)*smt_4*cmt_4*(pow(n3*asmt_4,n3 - 2)/pow(b,2) - pow(n2*acmt_4,n2 - 2)/pow(a,2))*pow(pow(acmt_4,n2) + pow(asmt_4,n3),(-(n1 + 1)/n1));
+    return x_p;
+}
+
 //Supershape superformula
 float superformula(float o, float a, float b, float m, float n1, float n2, float n3)
 {
@@ -153,7 +161,7 @@ float superformula(float o, float a, float b, float m, float n1, float n2, float
     double fffb = pow(fa, n2);
     double fffc = pow(fb, n3);
     return pow(fffb + fffc, 1 / n1);
-    }
+}
 
 
 //superparameters & pi
@@ -163,9 +171,26 @@ int randLim = 1;
 
 
 
-SuperSphere::SuperSphere(float radius, int sectors, int stacks, bool smooth) : interleavedStride(32)
+SuperSphere::SuperSphere(float radius, int sectors, int stacks) : interleavedStride(32)
 {
-    set(radius, sectors, stacks, smooth, 1.f);
+    set(radius, sectors, stacks);
+}
+
+SuperSphere::SuperSphere(float radius, int sectorCount, int stackCount, const SuperShapeParams& params) :
+    interleavedStride{32},
+    n1{params.n1},
+    n2{params.n2},
+    n3{params.n3},
+    m {params.m },
+    a {params.a },
+    b {params.b },
+    q1{params.q1},
+    q2{params.q2},
+    q3{params.q3},
+    k {params.k },
+    c {params.c },
+    d {params.d } {
+    set(radius, sectorCount, stackCount);
 }
 
 static float randomFloatTo(float limit) {
@@ -192,7 +217,7 @@ SuperSphere SuperSphere::crossGenes(const SuperSphere parentB){
                       return child;
                   }
 
-void SuperSphere::set(float radius, int sectors, int stacks, float time, bool smooth)
+void SuperSphere::set(float radius, int sectors, int stacks)
 {
     this->radius = radius;
     this->sectorCount = sectors;
@@ -201,38 +226,27 @@ void SuperSphere::set(float radius, int sectors, int stacks, float time, bool sm
     this->stackCount = stacks;
     if (sectors < MIN_STACK_COUNT)
         this->sectorCount = MIN_STACK_COUNT;
-    this->smooth = true;
 
-    if (smooth)
-        buildVerticesSmooth(time);
+
+    buildVerticesSmooth();
 }
 
 void SuperSphere::setRadius(float radius)
 {
     if (radius != this->radius)
-        set(radius, sectorCount, stackCount, smooth, amplitude_on_frequency_10steps_temp);
+        set(radius, sectorCount, stackCount);
 }
 
 void SuperSphere::setSectorCount(int sectors)
 {
     if (sectors != this->sectorCount)
-        set(radius, sectors, stackCount, smooth, amplitude_on_frequency_10steps_temp);
+        set(radius, sectors, stackCount);
 }
 
 void SuperSphere::setStackCount(int stacks)
 {
     if (stacks != this->stackCount)
-        set(radius, sectorCount, stacks, smooth);
-}
-
-void SuperSphere::setSmooth(bool smooth)
-{
-    if (this->smooth == smooth)
-        return;
-
-    this->smooth = smooth;
-    if (smooth)
-        buildVerticesSmooth(1.f);
+        set(radius, sectorCount, stacks);
 }
 
 
@@ -249,61 +263,6 @@ void SuperSphere::printSelf() const
 }
 
 
-/*
-void SuperSphere::draw() const
-{
-    std::cout << "drawing\n";
-    // interleaved array
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_NORMAL_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glVertexPointer(3, GL_FLOAT, interleavedStride, &interleavedVertices[0]);
-    glNormalPointer(GL_FLOAT, interleavedStride, &interleavedVertices[3]);
-    glTexCoordPointer(2, GL_FLOAT, interleavedStride, &interleavedVertices[6]);
-
-    glDrawElements(GL_TRIANGLES, (unsigned int)indices.size(), GL_UNSIGNED_INT, indices.data());
-
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_NORMAL_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-}
-*/
-
-
-/*
-void SuperSphere::drawLines(const float lineColor[4]) const
-{
-    // set line colour
-    glColor4fv(lineColor);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, lineColor);
-
-    // draw lines with VA
-    glDisable(GL_LIGHTING);
-    glDisable(GL_TEXTURE_2D);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(3, GL_FLOAT, 0, vertices.data());
-
-    glDrawElements(GL_LINES, (unsigned int)lineIndices.size(), GL_UNSIGNED_INT, lineIndices.data());
-
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glEnable(GL_LIGHTING);
-    glEnable(GL_TEXTURE_2D);
-}
-*/
-
-/*
-void SuperSphere::drawWithLines(const float lineColor[4]) const
-{
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(1.0, 1.0f); // move polygon backward
-    this->draw();
-    glDisable(GL_POLYGON_OFFSET_FILL);
-
-    // draw lines with VA
-    drawLines(lineColor);
-}
-*/
-
 void SuperSphere::clearArrays()
 {
     std::vector<float>().swap(vertices);
@@ -315,7 +274,7 @@ void SuperSphere::clearArrays()
 
 
 
-void SuperSphere::buildVerticesSmooth(float time)
+void SuperSphere::buildVerticesSmooth()
 {
     const float PI = acos(-1);
 
@@ -334,21 +293,16 @@ void SuperSphere::buildVerticesSmooth(float time)
     float rTheta;
     float vPer;
 
-    float tempFloat = 1.f;
     float phi;
     float rPhi;
     float cosphi;
-    float minSize = .25f;
     for (int i = 0; i <= stackCount; ++i)
     {
         stackAngle = PI / 2 - i * stackStep;        
 
         uPer = float(i) / float(stackCount);
         theta = lerp(-pi, pi, uPer);
-        rTheta = superformula(theta, minSize + a * sin(time) * tempFloat,
-         minSize + b + 10 * sin(time) * tempFloat
-          * tempFloat * tempFloat * tempFloat, m * sin(time) * tempFloat * 3 + tempFloat * tempFloat, n1 * tempFloat
-          , n2 * tempFloat, n3 * tempFloat * tempFloat);
+        rTheta = 1.0f / superformula(theta, a, b, m, n1, n2, n3);
 
 
         // add (sectorCount+1) vertices per stack
@@ -359,14 +313,11 @@ void SuperSphere::buildVerticesSmooth(float time)
             float vPer = float(j) / float(sectorCount);
 
             float phi = lerp(-pi/2, pi/2, vPer);
-            float rPhi = superformula(phi, minSize + a * sin(time) * tempFloat,
-         minSize + b + 10 * sin(time) * tempFloat
-          * tempFloat * tempFloat * tempFloat, m * sin(time) * tempFloat * 3 + tempFloat * tempFloat, n1 * tempFloat
-          , n2 * tempFloat, n3 * tempFloat * tempFloat);
+            float rPhi = 1.0f / superformula(phi, c, d, k, q1, q2, q3);
             float cosphi = cos(phi);
-            x = cos(theta) * cosphi / rTheta / rPhi;
-            y = sin(theta) * cosphi / rTheta / rPhi;
-            z = sin(phi) / rPhi;
+            x = cos(theta) * cosphi * rTheta * rPhi * radius;
+            y = sin(theta) * cosphi * rTheta * rPhi * radius;
+            z = sin(phi) * rPhi * radius;
             //std::cout << phi << "\n";
             //std::cout << rPhi << "\n";
             //std::cout << rTheta << "\n";
@@ -468,7 +419,7 @@ std::unique_ptr<ev2::Model> SuperSphere::getModel() {
         mat.diffuse = {0, 0.9, 0.05};
         ev_materials.push_back(mat);
 
-        ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), 0});
+        ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
 
 
         // return std::make_unique<ev2::Model>(

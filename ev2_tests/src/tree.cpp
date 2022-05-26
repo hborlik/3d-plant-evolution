@@ -189,6 +189,18 @@ void TreeNode::on_init() {
 void TreeNode::setParams(std::map<std::string, float> paramsNew, int iterations) {
     params = paramsNew;
     thickness = params.at("thickness");
+    fruit_params.n1 = params.at("n1");
+    fruit_params.n2 = params.at("n2");
+    fruit_params.n3 = params.at("n3");
+    fruit_params.m  = params.at("m");
+    fruit_params.a  = params.at("a");
+    fruit_params.b  = params.at("b");
+    fruit_params.q1 = params.at("q1");
+    fruit_params.q2 = params.at("q2");
+    fruit_params.q3 = params.at("q3");
+    fruit_params.k  = params.at("k");
+    fruit_params.c  = params.at("c");
+    fruit_params.d  = params.at("d_f");
     this->generate(iterations);
 }
 
@@ -232,6 +244,56 @@ void TreeNode::generate(int iterations) {
         model->vertex_buffer.get_buffer(model->vertex_buffer.get_indexed()).CopyData(indices);
 
         model->primitives.clear();
-        model->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), 2});
+        model->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
     }
+}
+
+Fruit::Fruit(const std::string& name, const SuperShapeParams& params) : ev2::VisualInstance{name}, supershape{radius_mul, 50, 50, params} {
+    const std::vector<uint32_t>& indices = supershape.getIndicesv();
+    std::vector<ev2::renderer::Primitive> ev_meshs;
+    ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
+    
+    model = std::make_shared<ev2::renderer::Drawable>(
+        ev2::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices),
+        std::move(ev_meshs),
+        std::vector<ev2::renderer::Material*>{},
+        glm::vec3{}, // TODO
+        glm::vec3{}, // TODO
+        ev2::gl::CullMode::BACK,
+        ev2::gl::FrontFacing::CCW);
+    // model->vertex_color_weight = 1.0f;
+}
+
+Fruit::Fruit(const std::string& name) : ev2::VisualInstance{name}, supershape{radius_mul, 50, 50} {
+    const std::vector<uint32_t>& indices = supershape.getIndicesv();
+    std::vector<ev2::renderer::Primitive> ev_meshs;
+    ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
+    
+    model = std::make_shared<ev2::renderer::Drawable>(
+        ev2::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices),
+        std::move(ev_meshs),
+        std::vector<ev2::renderer::Material*>{},
+        glm::vec3{}, // TODO
+        glm::vec3{}, // TODO
+        ev2::gl::CullMode::BACK,
+        ev2::gl::FrontFacing::CCW);
+    // model->vertex_color_weight = 1.0f;
+}
+
+void Fruit::on_init() {
+    ev2::VisualInstance::on_init();
+
+    geometry = ev2::renderer::Renderer::get_singleton().create_model(model);
+    set_model(geometry);
+}
+
+void Fruit::generate() {
+    const std::vector<uint32_t>& indices = supershape.getIndicesv();
+    const std::vector<float> vbuffer = supershape.getInterleavedVerticesv();
+
+    model->vertex_buffer.get_buffer(0).CopyData(vbuffer);
+    model->vertex_buffer.get_buffer(model->vertex_buffer.get_indexed()).CopyData(indices);
+
+    model->primitives.clear();
+    model->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
 }

@@ -21,8 +21,6 @@ GameState::GameState() {
 
     sun_light = scene->create_node<ev2::DirectionalLightNode>("directional_light");
     sun_light->transform.position = glm::vec3{10, 100, 0};
-    sun_light->set_color(glm::vec3{5, 5, 5});
-    sun_light->set_ambient({0.1, 0.1, 0.1});
 
     auto light = scene->create_node<ev2::PointLightNode>("point_light");
     light->transform.position = glm::vec3{0, 5, -10};
@@ -42,6 +40,13 @@ GameState::GameState() {
     highlight_material->get_material()->diffuse = glm::vec3{0.529, 0.702, 0.478};
     highlight_material->get_material()->sheen = 1.0;
     highlight_material->get_material()->metallic = 0.9;
+
+    fruit_material = ResourceManager::get_singleton().get_material("fruit_material");
+    fruit_material->get_material()->diffuse = glm::vec3{0.229, 0.602, 0.478};
+    fruit_material->get_material()->sheen = 0.7;
+    fruit_material->get_material()->roughness = 0.4f;
+    fruit_material->get_material()->clearcoat = 0.2f;
+    fruit_material->get_material()->metallic = 0.0;
 
     auto ground_material = ResourceManager::get_singleton().get_material("ground_mat");
     ground_material->get_material()->diffuse = glm::vec3{0.529, 0.702, 0.478};
@@ -63,7 +68,7 @@ GameState::GameState() {
     material.setBounciness(0.01f);
 
     ev2::renderer::MID hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
-    ev2::renderer::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "low_poly_houses.obj");
+    ev2::renderer::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "house" / "house.obj");
     ev2::renderer::MID sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
 
     marker = scene->create_node<ev2::VisualInstance>("marker");
@@ -78,7 +83,7 @@ GameState::GameState() {
     h_node->transform.scale = glm::vec3{0.1, 0.1, 0.1};
 
     auto lh_node = scene->create_node<ev2::VisualInstance>("building");
-    lh_node->transform.position = glm::vec3{50, 1, -20};
+    lh_node->transform.position = glm::vec3{40, 0, -20};
     lh_node->set_model(building0);
 
     for (int n = 0; n < 20; n++)
@@ -96,6 +101,12 @@ void GameState::update(float dt) {
     const float sun_rads = 2.0 * M_PI * time_day;
     renderer::Renderer::get_singleton().sun_position = sun_rads;
 
+    float sun_brightness = std::pow(std::max<float>(sin(sun_rads), 0), 0.33);
+    float sun_scatter = .1f * std::pow(std::max<float>(cos(2 * sun_rads),0), 5);
+
+    sun_light->set_color(glm::vec3{5, 5, 5} * sun_brightness + sunset_color * sun_scatter);
+    sun_light->set_ambient(glm::vec3{0.05, 0.05, 0.05} * sun_brightness + sunset_color * sun_scatter + (1 - sun_brightness) * night_ambient * .4f);
+
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
 }
 
@@ -105,18 +116,22 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     
     ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
     
-    SuperSphere supershape(1.0f, 20, 20);
-    
     ev2::Ref<ev2::RigidBody> tree_hit_sphere = scene->create_node<ev2::RigidBody>(unique_hit_tag.c_str());
-    tree_hit_sphere->add_shape(ev2::make_referenced<ev2::CapsuleShape>(1.0, 5.0), glm::vec3{0, 2.5, 0});
+    tree_hit_sphere->add_shape(ev2::make_referenced<ev2::CapsuleShape>(.5, 5.0), glm::vec3{0, 2.5, 0});
     tree_hit_sphere->transform.position = position;
     tree_hit_sphere->transform.rotation = glm::rotate(glm::identity<glm::quat>(), rotation, glm::vec3{0, 1, 0});
     tree_hit_sphere->add_child(tree);
     tree->set_material_override(tree_bark->get_material());
 
+    auto light = scene->create_node<ev2::PointLightNode>("point_light");
+    light->transform.position = glm::vec3{position} + glm::vec3{0, 10, 1};
+    light->set_color(glm::vec3{0.2, 0, 0});
+
     tree->c0 = glm::vec3{randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f)};
     tree->c1 = glm::vec3{randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f)};
     tree->setParams(params, iterations);
+
+    spawn_fruit(position + glm::vec3{0, 10, 0}, tree->fruit_params);
 }
 
 void GameState::spawn_random_tree(const glm::vec3& position, float range_extent, int iterations) {
@@ -127,7 +142,21 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
         {"a_2", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
         {"d",   ptree::degToRad(randomFloatRange(.0f, 360.f))},
         {"thickness", randomFloatRange(0.5f, 2.0f)},
-        {"w_r", randomFloatRange(0.6f, 0.89f)}
+        {"w_r", randomFloatRange(0.6f, 0.89f)},
+        // fruit params
+        {"n1",  randomFloatRange(.2f, .5f)},
+        {"n2",  randomFloatRange(.9f, 2.f)},
+        {"n3",  randomFloatRange(.9f, 2.f)},
+        {"m",   (int)randomFloatRange(1, 7.f)},
+        {"a",   randomFloatRange(.99f, 1.05f)},
+        {"b",   randomFloatRange(.99f, 1.05f)},
+
+        {"q1",  randomFloatRange(.2f, .5f)},
+        {"q2",  randomFloatRange(.9f, 2.f)},
+        {"q3",  randomFloatRange(.9f, 2.f)},
+        {"k",   (int)randomFloatRange(1, 3.f)},
+        {"c",   randomFloatRange(.99f, 1.05f)},
+        {"d_f", randomFloatRange(.99f, 1.05f)}
     };
 
     float r = sqrt(randomFloatTo(1)) * range_extent;
@@ -135,6 +164,30 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
 
     glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
     spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations);
+}
+
+void GameState::spawn_fruit(const glm::vec3& position, const SuperShapeParams& params) {
+    ev2::Ref<Fruit> fruit = scene->create_node<Fruit>("Fruit", params);
+    
+    ev2::Ref<ev2::RigidBody> fruit_hit_sphere = scene->create_node<ev2::RigidBody>("fruit");
+    fruit_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(.5), glm::vec3{0, 0, 0});
+    fruit_hit_sphere->transform.position = position;
+    fruit_hit_sphere->add_child(fruit);
+    // fruit_hit_sphere->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
+
+    fruit->set_material_override(fruit_material->get_material());
+}
+
+void GameState::spawn_fruit(const glm::vec3& position) {
+    ev2::Ref<Fruit> fruit = scene->create_node<Fruit>("Fruit");
+    
+    ev2::Ref<ev2::RigidBody> fruit_hit_sphere = scene->create_node<ev2::RigidBody>("fruit");
+    fruit_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(.5), glm::vec3{0, 0, 0});
+    fruit_hit_sphere->transform.position = position;
+    fruit_hit_sphere->add_child(fruit);
+    // fruit_hit_sphere->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
+
+    fruit->set_material_override(highlight_material->get_material());
 }
 
 void GameState::spawn_box(const glm::vec3& position) {

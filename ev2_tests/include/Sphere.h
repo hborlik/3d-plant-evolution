@@ -9,22 +9,38 @@
 #include <vector>
 #include <resource.h>
 
+struct SuperShapeParams {
+    float n1 = .2f;
+    float n2 = 1.7f;
+    float n3 = 1.7f;
+    float m = 7.f;
+    float a = 1.f;
+    float b = 1.f;
+
+    float q1 = 0.2f;
+    float q2 = 1.7f;
+    float q3 = 1.7f;
+    float k = 7.f;
+    float c = 1.f;
+    float d = 1.f;
+};
+
 class SuperSphere
 {
 public:
     // ctor/dtor
-    SuperSphere(float radius=1.0f, int sectorCount=36, int stackCount=18, bool smooth=true);
+    SuperSphere(float radius=1.0f, int sectorCount=36, int stackCount=18);
+    SuperSphere(float radius, int sectorCount, int stackCount, const SuperShapeParams& params);
     ~SuperSphere() {}
 
     // getters/setters
     float getRadius() const                 { return radius; }
     int getSectorCount() const              { return sectorCount; }
     int getStackCount() const               { return stackCount; }
-    void set(float radius, int sectorCount, int stackCount, float time, bool smooth = true);
+    void set(float radius, int sectorCount, int stackCount);
     void setRadius(float radius);
     void setSectorCount(int sectorCount);
     void setStackCount(int stackCount);
-    void setSmooth(bool smooth);
 
     // for vertex data
     unsigned int getVertexCount() const     { return (unsigned int)vertices.size() / 3; }
@@ -44,16 +60,18 @@ public:
     const unsigned int* getIndices() const  { return indices.data(); }
     const unsigned int* getLineIndices() const  { return lineIndices.data(); }
 
+    const std::vector<float>& getVerticesv() const        { return vertices; }
+    const std::vector<float>& getNormalsv() const         { return normals; }
+    const std::vector<float>& getTexCoordsv() const       { return texCoords; }
+    const std::vector<unsigned int>& getIndicesv() const  { return indices; }
+    const std::vector<unsigned int>& getLineIndicesv() const  { return lineIndices; }
+    const std::vector<float>& getInterleavedVerticesv() const {return interleavedVertices;}
+
     // for interleaved vertices: V/N/T
     unsigned int getInterleavedVertexCount() const  { return getVertexCount(); }    // # of vertices
     unsigned int getInterleavedVertexSize() const   { return (unsigned int)interleavedVertices.size() * sizeof(float); }    // # of bytes
     int getInterleavedStride() const                { return interleavedStride; }   // should be 32 bytes
     const float* getInterleavedVertices() const     { return interleavedVertices.data(); }
-
-    // draw in VertexArray mode
-    void draw() const;                                  // draw surface
-    void drawLines(const float lineColor[4]) const;     // draw lines only
-    void drawWithLines(const float lineColor[4]) const; // draw surface and lines
 
     // debug
     void printSelf() const;
@@ -70,24 +88,25 @@ public:
     SuperSphere crossGenes(SuperSphere parentB);
 
     //genes
+    float n1 = .2f;
+    float n2 = 1.7f;
+    float n3 = 1.7f;
+    float m = 7.f;
     float a = 1.f; //* //sin(time); //+ sin(f);
     float b = 1.f;
-    float m = 1.f;
-    float n1 = 1.f;
-    float n2 = 1.f;
-    float n3 = 1.f;
-    float c = a; //+ sin(f);
-    float d = b;
-    float k = m;
-    float q1 = n1;
-    float q2 = n2;
-    float q3 = n3;
+
+    float q1 = 0.2f;
+    float q2 = 1.7f;
+    float q3 = 1.7f;
+    float k = 7.f;
+    float c = 1.f;
+    float d = 1.f;
 
 protected:
 
 private:
     // member functions
-    void buildVerticesSmooth(float time);
+    void buildVerticesSmooth();
     void buildInterleavedVertices();
     void clearArrays();
     void addVertex(float x, float y, float z);
@@ -102,7 +121,6 @@ private:
     float radius;
     int sectorCount;                        // longitude, # of slices
     int stackCount;                         // latitude, # of stacks
-    bool smooth;
     std::vector<float> vertices;
     std::vector<float> normals;
     std::vector<float> texCoords;

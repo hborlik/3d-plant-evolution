@@ -60,6 +60,8 @@ void Player::on_process(float dt) {
         } else {
             if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))
                 game->spawn_random_tree(si->point, 0, 10);
+            if (ev2::input::GetKeyDown(ev2::input::Key::KeyF))
+                game->spawn_fruit(si->point + glm::vec3{0, 5, 0});
         }
         game->marker->transform.position = si->point;
     }
