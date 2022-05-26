@@ -5,15 +5,15 @@ in vec3 fsun;
 out vec4 color;
 
 uniform float time = 0.0;
-uniform float cirrus = 0.4;
-uniform float cumulus = 0.8;
+uniform float cirrus = 0.3;
+uniform float cumulus = 0.5;
 
 const float Br = 0.0025;
 const float Bm = 0.0003;
 const float g =  0.9800;
-const vec3 nitrogen = vec3(0.650, 0.570, 0.475);
-const vec3 Kr = Br / pow(nitrogen, vec3(4.0));
-const vec3 Km = Bm / pow(nitrogen, vec3(0.84));
+const vec3 nitrogen = vec3(0.650, 0.510, 0.425);
+const vec3 Kr = Br / pow(nitrogen, vec3(4.5));
+const vec3 Km = Bm / pow(nitrogen, vec3(0.74));
 
 float hash(float n)
 {

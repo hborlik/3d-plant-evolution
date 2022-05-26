@@ -44,7 +44,7 @@ public:
 
     float time_accumulator = 0.0f;
     float time_day = 0.0f;
-    float time_speed = 1.0f;
+    float time_speed = .3f;
     const float DayLength = 60.0f;
 
     void update(float dt);

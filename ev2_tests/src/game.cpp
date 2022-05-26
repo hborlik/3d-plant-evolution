@@ -164,11 +164,11 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     {
         auto light = scene->create_node<ev2::PointLightNode>("point_light");
         light->transform.position = glm::vec3{position} + glm::vec3{0, 1, 0};
-        light->set_color(color_0);
+        light->set_color(color_0 * 3.f);
 
         auto light2 = scene->create_node<ev2::PointLightNode>("point_light");
         light2->transform.position = glm::vec3{position} + glm::vec3{0, 6, 0};
-        light2->set_color(color_1);
+        light2->set_color(color_1 * 3.f);
 
         spawn_fruit(position + glm::vec3{0, 10, 0}, tree->fruit_params);
     }
@@ -220,7 +220,7 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
     glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
 //    glm::vec3 pos = position;
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 0, true);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.0f, true);
 }
 
 
@@ -292,15 +292,15 @@ void GameState::spawn_player(const glm::vec3& position) {
 }
 
 std::map<std::string, float> crossParams(std::map<std::string, float> paramsA, std::map<std::string, float> paramsB) {
-    float randomGeneWeight = randomFloatRange(1.5f, 2.5f);
+    float randomGeneWeight = randomFloatTo(1.f);
     std::map<std::string, float> retParams = {
-        {"R_1", ((paramsA.find("R_1")->second + paramsB.find("R_1")->second)/randomGeneWeight)},
-        {"R_2", ((paramsA.find("R_2")->second + paramsB.find("R_2")->second)/randomGeneWeight)},
+        {"R_1", (paramsA.find("R_1")->second * (1 - randomGeneWeight) + paramsB.find("R_1")->second * randomGeneWeight)},
+        {"R_2", (paramsA.find("R_2")->second * (1 - randomGeneWeight) + paramsB.find("R_2")->second * randomGeneWeight)},
         {"a_0", (randomCoinFlip(paramsA.find("a_0")->second, paramsB.find("a_0")->second))},
         {"a_2", (randomCoinFlip(paramsA.find("a_2")->second, paramsB.find("a_2")->second))},
         {"d",   (randomCoinFlip(paramsA.find("d")->second, paramsB.find("d")->second))},
-        {"thickness", ((paramsA.find("thickness")->second + paramsB.find("thickness")->second)/randomGeneWeight)},
-        {"w_r", ((paramsA.find("w_r")->second + paramsB.find("w_r")->second)/randomGeneWeight)}
+        {"thickness", (paramsA.find("thickness")->second * (1 - randomGeneWeight) + paramsB.find("thickness")->second * randomGeneWeight)},
+        {"w_r", (paramsA.find("w_r")->second * (1 - randomGeneWeight) + paramsB.find("w_r")->second * randomGeneWeight)}
     };
     return retParams;
 }
