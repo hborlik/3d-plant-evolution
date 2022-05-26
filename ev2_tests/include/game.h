@@ -20,6 +20,9 @@ float randomFloatRange(float low, float high);
 class GameState {
 public:
     GameState();
+    
+    glm::vec3 sunset_color{253/255.0f, 94/255.0, 83/255.0};
+    glm::vec3 night_ambient{0.13, 0.16, 0.21};
 
     Ref<Scene> scene;
     ev2::Ref<ev2::MaterialResource> tree_bark;

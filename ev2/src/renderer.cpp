@@ -240,6 +240,7 @@ void Renderer::init() {
     plp_k_c_loc = point_lighting_program.getUniformInfo("k_c").Location;
     plp_k_l_loc = point_lighting_program.getUniformInfo("k_l").Location;
     plp_k_q_loc = point_lighting_program.getUniformInfo("k_q").Location;
+    plp_k_radius_loc = point_lighting_program.getUniformInfo("radius").Location;
 
 
     ssao_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
@@ -869,12 +870,13 @@ void Renderer::render(const Camera &camera) {
 
         glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), l.position) * glm::scale(point_light_geom_tr, 5.f * glm::vec3{radius});
 
-        ev2::gl::glUniform(tr, plp_m_location);
-        ev2::gl::glUniform(l.color, plp_light_c_location);
-        ev2::gl::glUniform(l.position, plp_light_p_location);
-        ev2::gl::glUniformf(constant, plp_k_c_loc);
-        ev2::gl::glUniformf(linear, plp_k_l_loc);
-        ev2::gl::glUniformf(quadratic, plp_k_q_loc);
+        gl::glUniform(tr, plp_m_location);
+        gl::glUniform(l.color, plp_light_c_location);
+        gl::glUniform(l.position, plp_light_p_location);
+        gl::glUniformf(constant, plp_k_c_loc);
+        gl::glUniformf(linear, plp_k_l_loc);
+        gl::glUniformf(quadratic, plp_k_q_loc);
+        gl::glUniformf(radius, plp_k_radius_loc);
 
         draw(point_light_drawable, point_lighting_program, false);
     }

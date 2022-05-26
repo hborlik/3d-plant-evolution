@@ -21,8 +21,6 @@ GameState::GameState() {
 
     sun_light = scene->create_node<ev2::DirectionalLightNode>("directional_light");
     sun_light->transform.position = glm::vec3{10, 100, 0};
-    sun_light->set_color(glm::vec3{5, 5, 5});
-    sun_light->set_ambient({0.1, 0.1, 0.1});
 
     auto light = scene->create_node<ev2::PointLightNode>("point_light");
     light->transform.position = glm::vec3{0, 5, -10};
@@ -96,6 +94,12 @@ void GameState::update(float dt) {
     const float sun_rads = 2.0 * M_PI * time_day;
     renderer::Renderer::get_singleton().sun_position = sun_rads;
 
+    float sun_brightness = std::pow(std::max<float>(sin(sun_rads), 0), 0.33);
+    float sun_scatter = .1f * std::pow(std::max<float>(cos(2 * sun_rads),0), 5);
+
+    sun_light->set_color(glm::vec3{5, 5, 5} * sun_brightness + sunset_color * sun_scatter);
+    sun_light->set_ambient(glm::vec3{0.05, 0.05, 0.05} * sun_brightness + sunset_color * sun_scatter + (1 - sun_brightness) * night_ambient * .4f);
+
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
 }
 
@@ -108,11 +112,15 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     SuperSphere supershape(1.0f, 20, 20);
     
     ev2::Ref<ev2::RigidBody> tree_hit_sphere = scene->create_node<ev2::RigidBody>(unique_hit_tag.c_str());
-    tree_hit_sphere->add_shape(ev2::make_referenced<ev2::CapsuleShape>(1.0, 5.0), glm::vec3{0, 2.5, 0});
+    tree_hit_sphere->add_shape(ev2::make_referenced<ev2::CapsuleShape>(.5, 5.0), glm::vec3{0, 2.5, 0});
     tree_hit_sphere->transform.position = position;
     tree_hit_sphere->transform.rotation = glm::rotate(glm::identity<glm::quat>(), rotation, glm::vec3{0, 1, 0});
     tree_hit_sphere->add_child(tree);
     tree->set_material_override(tree_bark->get_material());
+
+    auto light = scene->create_node<ev2::PointLightNode>("point_light");
+    light->transform.position = glm::vec3{position} + glm::vec3{0, 10, 1};
+    light->set_color(glm::vec3{0.2, 0, 0});
 
     tree->c0 = glm::vec3{randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f)};
     tree->c1 = glm::vec3{randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f)};
