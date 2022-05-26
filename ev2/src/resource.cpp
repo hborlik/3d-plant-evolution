@@ -688,7 +688,7 @@ std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::pat
     }
 
     int w, h, ncomps;
-    stbi_set_flip_vertically_on_load(true);
+    stbi_set_flip_vertically_on_load(false);
     std::string input_file = filename.generic_string();
     unsigned char *data = stbi_load(input_file.c_str(), &w, &h, &ncomps, 0);
 
@@ -718,7 +718,7 @@ std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::pat
         }
 
         std::shared_ptr<Texture> texture = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::LINEAR);
-        texture->set_data2D(internal_format, w, h, pixel_format, gl::PixelType::BYTE, data);
+        texture->set_data2D(internal_format, w, h, pixel_format, gl::PixelType::UNSIGNED_BYTE, data);
         texture->generate_mips();
         stbi_image_free(data);
         textures.insert({filename.generic_string(), texture});
@@ -755,7 +755,7 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
         for (auto& m : materials) {
             Ref<MaterialResource> mat                   = rm->get_material(filename.generic_string() + "_" + m.name);
             mat->get_material()->name                   = filename.generic_string() + "_" + m.name;
-            mat->get_material()->diffuse                = glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]};
+            mat->get_material()->diffuse                = m.diffuse_texname.empty() ? glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]} : glm::vec3{};
             mat->get_material()->metallic               = m.metallic;
             mat->get_material()->subsurface             = glm::clamp(glm::length(glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}), 0.f, 1.f);
             mat->get_material()->specular               = m.shininess;

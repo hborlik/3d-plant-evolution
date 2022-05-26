@@ -46,14 +46,14 @@ float TestShadow(vec3 LSfPos, vec3 Normal) {
 
 void main() {
     vec3 FragPos = texture(gPosition, tex_coord).rgb;
+    if (FragPos == vec3(0, 0, 0)) // no rendered geometry
+        discard;
+
     vec3 Normal = texture(gNormal, tex_coord).rgb;
     vec3 Albedo = texture(gAlbedoSpec, tex_coord).rgb;
     float Specular = texture(gAlbedoSpec, tex_coord).a;
     uint MaterialId = texture(gMaterialTex, tex_coord).r;
     float AO = texture(gAO, tex_coord).r;
-
-    if (FragPos == vec3(0, 0, 0)) // no rendered geometry
-        discard;
 
     // constant tangent spaces
     vec3 X = vec3(1, 0, 0);

@@ -240,6 +240,6 @@ void TreeNode::generate(int iterations) {
         model->vertex_buffer.get_buffer(model->vertex_buffer.get_indexed()).CopyData(indices);
 
         model->primitives.clear();
-        model->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), 2});
+        model->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
     }
 }
