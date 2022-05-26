@@ -53,13 +53,13 @@ public:
     void on_init() override;
 
     void generate(int iterations);
-    void setParams(std::map<std::string, float> params, int iterations, float growth);
+    void setParams(const std::map<std::string, float>& paramsNew, int iterations, float growth);
     std::map<std::string, float> getParams() {return params;}
+    
     bool breedable = true;
     float growth_current = 0;
-    float growth_rate = 0.01;
+    float growth_rate = 0.05f;
     float growth_max = 1;
-    
 
     float thickness = 1.0f;
     glm::vec3 c0, c1;

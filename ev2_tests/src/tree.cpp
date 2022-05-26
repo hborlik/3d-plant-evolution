@@ -186,18 +186,22 @@ void TreeNode::on_init() {
     set_model(tree_geometry);
 }
 
-void TreeNode::setParams(std::map<std::string, float> paramsNew, int iterations, float growth) {
-    std::map<std::string, float> grown_params = paramsNew;
+void TreeNode::setParams(const std::map<std::string, float>& paramsNew, int iterations, float growth) {
+    growth_current = growth;
+    auto temp_params = paramsNew;
     if (growth_current < growth_max)
     {
-        for (auto itr = grown_params.begin(); itr != grown_params.end(); itr++) {
-            itr->second = itr->second * growth_current;
-        }
+        temp_params["thickness"] *= growth_current;
+        temp_params["w_r"] *= growth_current;
+        temp_params["R_1"] *= growth_current;
+        temp_params["R_2"] *= growth_current;
     }
-    thickness = grown_params.find("thickness")->second;
-    params = grown_params;
-    this->generate(iterations);
-    params = paramsNew;
+
+    thickness = temp_params.at("thickness");
+    params = temp_params;
+    this->generate(iterations * growth_current);
+    params = paramsNew; // save target parameters after generation of vertex buffers
+
     /*
     fruit_params.n1 = params.at("n1");
     fruit_params.n2 = params.at("n2");

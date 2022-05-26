@@ -99,6 +99,7 @@ struct Ref {
     }
 
     bool operator==(const Ref<T>& o) noexcept {return o._ref == _ref;}
+    bool operator!=(const Ref<T>& o) noexcept {return !this->operator==(o);}
 
     void clear();
 

@@ -160,9 +160,11 @@ void DisableInput();
 void EnableInput();
 void SetInputEnabled(bool enabled);
 void SetMousePosition(const glm::vec2& position);
+void SetMouseButton(MouseButton::Enum button, bool pressed);
 
 bool GetKeyDown(Key::Enum key, Modifier modifiers = {});
 glm::vec2 GetMousePosition();
+bool GetMouseButton(MouseButton::Enum button);
 
 }
 
