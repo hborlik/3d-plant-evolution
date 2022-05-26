@@ -106,12 +106,14 @@ void GameState::update(float dt) {
         if (startedA && startedB)
         {
             //probably not very efficient, maybe use a queue for ungrown plants?
+            int j = 0;
             for (int i = 0; i < scene->get_n_children(); i++) {
                 ev2::Ref<TreeNode> tree = scene->get_child(i).ref_cast<Node>()->get_child(0).ref_cast<TreeNode>();
-                if (tree) {
+                if (tree && j < 3) {
                     tree->growth_current = tree->growth_current + tree->growth_rate * (1/(log(tree->growth_current + 1.1f)));
                     if (tree->growth_current < tree->growth_max) {
                         tree->setParams(tree->getParams(), tree->plantInfo.iterations, tree->growth_current);
+                        j++;
                     }
                 }
             }
