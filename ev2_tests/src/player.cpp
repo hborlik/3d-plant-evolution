@@ -57,14 +57,16 @@ void Player::on_process(float dt) {
             ev2::Ref<TreeNode> tree = si->hit.ref_cast<ev2::Node>()->get_child(0).ref_cast<TreeNode>();
             if (tree)
             {
-                // std::cout << si->hit.ref_cast<ev2::Node>()->get_path() << std::endl;
-                if (game->selected_tree_1->plantInfo.ID == -1) {
-                    game->selected_tree_1 = tree;
-                } else if (game->selected_tree_2->plantInfo.ID == -1) {
-                    game->selected_tree_2 = tree;
-                } else if (game->selected_tree_2->plantInfo.ID != tree->plantInfo.ID) {
-                    game->selected_tree_1 = game->selected_tree_2;
-                    game->selected_tree_2 = tree; 
+                if (tree->breedable)
+                {
+                    if (game->selected_tree_1->plantInfo.ID == -1) {
+                        game->selected_tree_1 = tree;
+                    } else if (game->selected_tree_2->plantInfo.ID == -1) {
+                        game->selected_tree_2 = tree;
+                    } else if (game->selected_tree_2->plantInfo.ID != tree->plantInfo.ID) {
+                        game->selected_tree_1 = game->selected_tree_2;
+                        game->selected_tree_2 = tree; 
+                    }
                 }
             } else {
                 if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))

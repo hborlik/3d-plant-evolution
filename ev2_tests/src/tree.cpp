@@ -194,7 +194,7 @@ void TreeNode::setParams(std::map<std::string, float> paramsNew, int iterations,
             itr->second = itr->second * growth_current;
         }
     }
-
+    thickness = grown_params.find("thickness")->second;
     params = grown_params;
     this->generate(iterations);
     params = paramsNew;
