@@ -80,6 +80,8 @@ void Player::on_process(float dt) {
                 if (game->startedA && game->startedB)
                     if (ev2::input::GetKeyDown(ev2::input::Key::KeyX))
                         game->spawn_cross(si->point, 0, 9);    
+                if (ev2::input::GetKeyDown(ev2::input::Key::KeyF))
+                    game->spawn_fruit(si->point + glm::vec3{0, 5, 0});
             }
             game->marker->transform.position = si->point;
         }
