@@ -13,10 +13,15 @@ in vec2 tex_coord;
 uniform uint materialId;
 uniform float vertex_color_weight;
 
+uniform sampler2D diffuse_tex;
+
 void main() {
+    vec4 tex = texture(diffuse_tex, tex_coord);
+    if (tex.a < 0.05)
+        discard;
     gPosition = frag_pos;
     gNormal = normalize(vert_normal);
-    gAlbedoSpec.rgb = vert_color * vertex_color_weight;
+    gAlbedoSpec.rgb = vert_color * vertex_color_weight + tex.rgb;
     gAlbedoSpec.a = 0;
     gMaterialTex = materialId;
 }

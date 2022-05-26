@@ -63,7 +63,7 @@ GameState::GameState() {
     material.setBounciness(0.01f);
 
     ev2::renderer::MID hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
-    ev2::renderer::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "low_poly_houses.obj");
+    ev2::renderer::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "house" / "house.obj");
     ev2::renderer::MID sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
 
     marker = scene->create_node<ev2::VisualInstance>("marker");
@@ -78,7 +78,7 @@ GameState::GameState() {
     h_node->transform.scale = glm::vec3{0.1, 0.1, 0.1};
 
     auto lh_node = scene->create_node<ev2::VisualInstance>("building");
-    lh_node->transform.position = glm::vec3{50, 1, -20};
+    lh_node->transform.position = glm::vec3{40, 0, -20};
     lh_node->set_model(building0);
 
     for (int n = 0; n < 20; n++)

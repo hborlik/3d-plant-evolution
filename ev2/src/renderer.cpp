@@ -8,7 +8,7 @@
 
 namespace ev2::renderer {
 
-void Renderer::draw(Drawable* dr, const Program& prog, int32_t material_override) {
+void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32_t material_override) {
     if (dr->cull_mode == gl::CullMode::NONE) {
         glDisable(GL_CULL_FACE);
     } else {
@@ -18,49 +18,50 @@ void Renderer::draw(Drawable* dr, const Program& prog, int32_t material_override
     glFrontFace((GLenum)dr->front_facing);
     int mat_loc = prog.getUniformInfo("materialId").Location;
     int vert_col_w_loc = prog.getUniformInfo("vertex_color_weight").Location;
+    int diffuse_sampler_loc = prog.getUniformInfo("diffuse_tex").Location;
+    bool indexed = dr->vertex_buffer.get_indexed() != -1;
     // TODO: support for multiple index buffers
     dr->vertex_buffer.bind();
-    if (dr->vertex_buffer.get_indexed() != -1) {
-        // draw indexed arrays
-        for (auto& m : dr->primitives) {
+    for (auto& m : dr->primitives) {
+        Material* material_ptr = nullptr;
+        if (use_materials) {
+            mat_id_t material_slot = 0;
+            if (material_override < 0) {
+                material_ptr = &materials.at(dr->materials[m.material_ind]->material_id);
+            } else {
+                material_ptr = &materials.at(material_override);
+            }
+            material_slot = material_ptr->slot;
+
+            if (diffuse_sampler_loc >= 0) {
+                glActiveTexture(GL_TEXTURE0);
+                gl::glUniformSampler(0, diffuse_sampler_loc);
+            }
+            if (material_ptr->diffuse_tex) {
+                material_ptr->diffuse_tex->bind();
+            } else {
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
 
             // TODO does this go here?
-            if (mat_loc != -1) {
-                mat_id_t material_slot = 0;
-                if (material_override < 0) {
-                    material_slot = materials.at(dr->materials[m.material_ind]->material_id).slot;
-                } else {
-                    material_slot = materials.at(material_override).slot;
-                }
+            if (mat_loc >= 0) {
                 GL_CHECKED_CALL(glUniform1ui(mat_loc, material_slot));
             }
 
-            if (vert_col_w_loc != -1) {
+            if (vert_col_w_loc >= 0) {
                 GL_CHECKED_CALL(glUniform1f(vert_col_w_loc, dr->vertex_color_weight));
             }
+        }
 
+        if (indexed) {
             dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed()).Bind(); // bind index buffer (again, @Windows)
             glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
-        }
-    } else {
-        for (auto& m : dr->primitives) {
-
-            // TODO does this go here?
-            if (mat_loc != -1) {
-                mat_id_t material_slot = 0;
-                if (material_override < 0) {
-                    material_slot = materials.at(dr->materials[m.material_ind]->material_id).slot;
-                } else {
-                    material_slot = materials.at(material_override).slot;
-                }
-                GL_CHECKED_CALL(glUniform1ui(mat_loc, material_slot));
-            }
-
-            if (vert_col_w_loc != -1) {
-                GL_CHECKED_CALL(glUniform1f(vert_col_w_loc, dr->vertex_color_weight));
-            }
-
+        } else {
             glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
+        }
+
+        if (material_ptr && diffuse_sampler_loc >= 0 && material_ptr->diffuse_tex) {
+            material_ptr->diffuse_tex->unbind();
         }
     }
     dr->vertex_buffer.unbind();
@@ -660,7 +661,7 @@ void Renderer::render(const Camera &camera) {
             if (m.drawable) {
                 ev2::gl::glUniform(m.transform, sdp_m_location);
 
-                draw(m.drawable, depth_program);
+                draw(m.drawable, depth_program, false);
             }
         }
 
@@ -693,7 +694,7 @@ void Renderer::render(const Camera &camera) {
             ev2::gl::glUniform(m.transform, gp_m_location);
             ev2::gl::glUniform(G, gp_g_location);
 
-            draw(m.drawable, geometry_program, m.material_id_override);
+            draw(m.drawable, geometry_program, true, m.material_id_override);
         }
     }
 
@@ -738,6 +739,10 @@ void Renderer::render(const Camera &camera) {
     ssao_kernel_desc.bind_buffer(ssao_kernel_buffer);
 
     draw_screen_space_triangle();
+
+    position->unbind();
+    normals->unbind();
+    ssao_kernel_noise->unbind();
 
     ssao_program.unbind();
     ssao_buffer.unbind();
@@ -807,7 +812,7 @@ void Renderer::render(const Camera &camera) {
         gl::glUniformSampler(5, lp_sdt_location);      
     }
 
-        gl::glUniform(light_vp, lp_ls_location);
+    gl::glUniform(light_vp, lp_ls_location);
 
     for (auto& litr : directional_lights) {
         auto& l = litr.second;
@@ -817,6 +822,14 @@ void Renderer::render(const Camera &camera) {
         
         draw_screen_space_triangle();
     }
+
+
+    position->unbind();
+    normals->unbind();
+    albedo_spec->unbind();
+    material_tex->unbind();
+    ssao_kernel_color->unbind();
+    shadow_depth_tex->unbind();
 
     directional_lighting_program.unbind();
 
@@ -863,8 +876,12 @@ void Renderer::render(const Camera &camera) {
         ev2::gl::glUniformf(linear, plp_k_l_loc);
         ev2::gl::glUniformf(quadratic, plp_k_q_loc);
 
-        draw(point_light_drawable, point_lighting_program);
+        draw(point_light_drawable, point_lighting_program, false);
     }
+
+    normals->unbind();
+    albedo_spec->unbind();
+    material_tex->unbind();
 
     point_lighting_program.unbind();
 
@@ -905,6 +922,8 @@ void Renderer::render(const Camera &camera) {
     }
 
     draw_screen_space_triangle();
+
+    hdr_texture->unbind();
 
     post_fx_program.unbind();
 

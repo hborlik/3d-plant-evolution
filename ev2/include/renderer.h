@@ -317,7 +317,7 @@ public:
 
 private:
 
-    void draw(Drawable* dr, const Program& prog, int32_t material_override = -1);
+    void draw(Drawable* dr, const Program& prog, bool use_materials, int32_t material_override = -1);
 
     void update_material(mat_id_t material_slot, const MaterialData& material);
 
