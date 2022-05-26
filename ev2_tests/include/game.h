@@ -13,6 +13,7 @@
 #include <player.h>
 #include <tree.h>
 #include <Sphere.h>
+#include <miniaudio.h>
 
 using namespace ev2;
 
@@ -38,6 +39,7 @@ public:
 
     ev2::Ref<TreeNode> selected_tree_1;
     ev2::Ref<TreeNode> selected_tree_2;
+    ma_engine engine;
 
     bool startedA = false;
     bool startedB = false;
