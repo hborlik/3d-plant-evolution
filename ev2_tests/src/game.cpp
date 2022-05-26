@@ -88,7 +88,7 @@ GameState::GameState() {
 
     for (int n = 0; n < 20; n++)
     {
-        spawn_random_tree(glm::vec3{}, 40, 9);
+        spawn_random_tree(glm::vec3{}, 40, 9, 1.0f);
     }
 
     for (int x = -50; x < 50; x+=10)
@@ -186,7 +186,7 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
 
 }
 
-void GameState::spawn_random_tree(const glm::vec3& position, float range_extent, int iterations) {
+void GameState::spawn_random_tree(const glm::vec3& position, float range_extent, int iterations, float starting_growth) {
     std::map<std::string, float> params = {
         {"R_1", randomFloatRange(.6f, 1.0f)},
         {"R_2", randomFloatRange(.6f, 1.f)},
@@ -220,7 +220,7 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
     glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
 //    glm::vec3 pos = position;
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.0f, true);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, starting_growth, true);
 }
 
 
@@ -315,5 +315,6 @@ void GameState::spawn_cross(const glm::vec3& position, float rotation, int itera
         ma_engine_play_sound(&engine, "asset/plantGrowing.mp3", NULL);
 
         spawn_tree(position, rotation, crossed_params, (selected_tree_1->plantInfo.iterations + selected_tree_2->plantInfo.iterations)/2, color_0, color_1, 0.f, true);
+    }
     //plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
 }

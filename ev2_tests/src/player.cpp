@@ -70,7 +70,7 @@ void Player::on_process(float dt) {
             }
         } else {
             if (ev2::input::GetKeyDown(ev2::input::Key::KeyL))
-                game->spawn_random_tree(si->point, 0, 9);
+                game->spawn_random_tree(si->point, 0, 9, 0.0f);
             if (ev2::input::GetKeyDown(ev2::input::Key::KeyX))
                 game->spawn_cross(si->point, 0, 9);
             if (ev2::input::GetKeyDown(ev2::input::Key::KeyF))

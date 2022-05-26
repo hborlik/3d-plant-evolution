@@ -59,6 +59,7 @@ public:
     int32_t window_height = 1080;
 
     bool show_debug = false;
+    bool cap_mouse = false;
     ma_engine engine;
 
 
@@ -226,14 +227,20 @@ public:
             case ev2::input::Key::Esc:
                 if (down) {
                     show_debug = !show_debug;
-                    ev2::window::setMouseCaptured(!show_debug);
+                    //ev2::window::setMouseCaptured(!show_debug);
                     ev2::input::SetInputEnabled(!show_debug);
+                } 
+                break;
+            case ev2::input::Key::Tab:
+                if (down) {
+                    ev2::window::setMouseCaptured(cap_mouse);
+                    cap_mouse = !cap_mouse;
                 } 
                 break;
             default:
                 break;
         }
-        if (!show_debug)
+        if (!show_debug && !cap_mouse)
             ev2::input::SetKeyState(key, mods, down);
         if (show_debug && !io.WantCaptureMouse) {
             switch (key) {
@@ -280,7 +287,7 @@ public:
     }
 
     void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {
-        if (!show_debug) {
+        if (!show_debug && !cap_mouse) {
             glm::vec2 scr_size = ev2::window::getWindowSize();
             glm::vec2 s_pos = ev2::window::getCursorPosition() / scr_size;
             ev2::input::SetMousePosition(s_pos);

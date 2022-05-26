@@ -16,6 +16,10 @@ target_include_directories(ev2_tests PRIVATE
 # add_library("ImGui" STATIC ${IMGUI_SOURCES})
 # target_include_directories("ImGui" PUBLIC ${IMGUI_PATH})
 
+if(WIN32)
+    set(CMAKE_CXX_FLAGS "-static-libgcc -static-libstdc++")
+endif()
+
 target_link_libraries(ev2_tests 
     ev2
     ptree

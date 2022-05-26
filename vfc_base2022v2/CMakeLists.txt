@@ -36,7 +36,7 @@ target_link_libraries(VFC PUBLIC glfw3 glm)
 # findGLM(${CMAKE_PROJECT_NAME})
 
 # OS specific options and libraries
-if(NOT WIN32)
+if(WIN32)
 
   message(STATUS "Adding GCC style compiler flags")
   add_compile_options("-Wall")
