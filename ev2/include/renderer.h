@@ -84,21 +84,35 @@ struct DirectionalLight {
 };
 
 /**
- * @brief material data as represented on gpu
+ * @brief material data internal
  * 
  */
 struct MaterialData {
-    glm::vec3 diffuse   = {0.5, 0.4, 0.0};
-    float metallic       = 0;
-    float subsurface     = 0;
-    float specular       = .5f;
-    float roughness      = .5f;
-    float specularTint   = 0;
-    float clearcoat      = 0;
-    float clearcoatGloss = 1.f;
-    float anisotropic    = 0;
-    float sheen          = 0;
-    float sheenTint      = .5f;
+    glm::vec3 diffuse       = {0.5, 0.4, 0.0};
+    float metallic          = 0;
+    float subsurface        = 0;
+    float specular          = .5f;
+    float roughness         = .5f;
+    float specularTint      = 0;
+    float clearcoat         = 0;
+    float clearcoatGloss    = 1.f;
+    float anisotropic       = 0;
+    float sheen             = 0;
+    float sheenTint         = .5f;
+
+    GLint diffuse_offset        = 0;
+    GLint metallic_offset       = 0;
+    GLint subsurface_offset     = 0;
+    GLint specular_offset       = 0;
+    GLint roughness_offset      = 0;
+    GLint specularTint_offset   = 0;
+    GLint clearcoat_offset      = 0;
+    GLint clearcoatGloss_offset = 0;
+    GLint anisotropic_offset    = 0;
+    GLint sheen_offset          = 0;
+    GLint sheenTint_offset      = 0;
+
+    bool changed = false;
 };
 
 struct Material {
@@ -138,17 +152,32 @@ private:
 
     void update_internal() {
         if (internal_material) {
-            internal_material->diffuse          = diffuse;
-            internal_material->metallic         = metallic;
-            internal_material->subsurface       = subsurface;
-            internal_material->specular         = specular;
-            internal_material->roughness        = roughness;
-            internal_material->specularTint     = specularTint;
-            internal_material->clearcoat        = clearcoat;
-            internal_material->clearcoatGloss   = clearcoatGloss;
-            internal_material->anisotropic      = anisotropic;
-            internal_material->sheen            = sheen;
-            internal_material->sheenTint        = sheenTint;
+            if (
+                internal_material->diffuse          != diffuse ||
+                internal_material->metallic         != metallic ||
+                internal_material->subsurface       != subsurface ||
+                internal_material->specular         != specular ||
+                internal_material->roughness        != roughness ||
+                internal_material->specularTint     != specularTint ||
+                internal_material->clearcoat        != clearcoat ||
+                internal_material->clearcoatGloss   != clearcoatGloss ||
+                internal_material->anisotropic      != anisotropic ||
+                internal_material->sheen            != sheen ||
+                internal_material->sheenTint        != sheenTint
+            ) {
+                internal_material->changed = true;
+                internal_material->diffuse          = diffuse;
+                internal_material->metallic         = metallic;
+                internal_material->subsurface       = subsurface;
+                internal_material->specular         = specular;
+                internal_material->roughness        = roughness;
+                internal_material->specularTint     = specularTint;
+                internal_material->clearcoat        = clearcoat;
+                internal_material->clearcoatGloss   = clearcoatGloss;
+                internal_material->anisotropic      = anisotropic;
+                internal_material->sheen            = sheen;
+                internal_material->sheenTint        = sheenTint;
+            }
         }
     }
 

@@ -277,6 +277,47 @@ void Renderer::init() {
     lighting_materials_desc = directional_lighting_program.getUniformBlockInfo("MaterialsInfo");
     lighting_materials.Allocate(lighting_materials_desc.block_size);
 
+    // extract all offsets for material buffer
+    for (const auto& layout_p : lighting_materials_desc.layouts) {
+        const auto& layout = layout_p.second;
+        std::string name = layout_p.first;
+        std::size_t b_begin = name.find('[');
+        std::size_t b_end = name.find(']');
+        if (b_begin != std::string::npos) {
+            if (b_end == std::string::npos)
+                throw engine_exception{"Invalid array name??"};
+            b_begin++;
+            uint32_t index = std::stoi(name.substr(b_begin, b_end - b_begin));
+            std::string var_name = name.substr(b_end + 2);
+            MaterialData& data_ref = material_data_buffer[index];
+            if (var_name == "diffuse") {
+                data_ref.diffuse_offset = layout.Offset;
+            } else if (var_name == "metallic") {
+                data_ref.metallic_offset = layout.Offset;
+            } else if (var_name == "subsurface") {
+                data_ref.subsurface_offset = layout.Offset;
+            } else if (var_name == "specular") {
+                data_ref.specular_offset = layout.Offset;
+            } else if (var_name == "roughness") {
+                data_ref.roughness_offset = layout.Offset;
+            } else if (var_name == "specularTint") {
+                data_ref.specularTint_offset = layout.Offset;
+            } else if (var_name == "clearcoat") {
+                data_ref.clearcoat_offset = layout.Offset;
+            } else if (var_name == "clearcoatGloss") {
+                data_ref.clearcoatGloss_offset = layout.Offset;
+            } else if (var_name == "anisotropic") {
+                data_ref.anisotropic_offset = layout.Offset;
+            } else if (var_name == "sheen") {
+                data_ref.sheen_offset = layout.Offset;
+            } else if (var_name == "sheenTint") {
+                data_ref.sheenTint_offset = layout.Offset;
+            } else {
+                throw engine_exception{"invalid material array name " + var_name};
+            }
+        }
+    }
+
     ssao_kernel_desc = ssao_program.getUniformBlockInfo("Samples");
     ssao_kernel_buffer.Allocate(ssao_kernel_desc.block_size);
     auto tgt_layout = ssao_kernel_desc.getLayout("samples[0]");
@@ -298,17 +339,17 @@ void Renderer::init() {
 
 void Renderer::update_material(mat_id_t material_slot, const MaterialData& material) {
     material_data_buffer[material_slot] = material;
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].diffuse", material.diffuse, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].metallic", material.metallic, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].subsurface", material.subsurface, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].specular", material.specular, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].roughness", material.roughness, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].specularTint", material.specularTint, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].clearcoat", material.clearcoat, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].clearcoatGloss", material.clearcoatGloss, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].anisotropic", material.anisotropic, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].sheen", material.sheen, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].sheenTint", material.sheenTint, lighting_materials);
+    lighting_materials.SubData(material.diffuse,        material.diffuse_offset);
+    lighting_materials.SubData(material.metallic,       material.metallic_offset);
+    lighting_materials.SubData(material.subsurface,     material.subsurface_offset);
+    lighting_materials.SubData(material.specular,       material.specular_offset);
+    lighting_materials.SubData(material.roughness,      material.roughness_offset);
+    lighting_materials.SubData(material.specularTint,   material.specularTint_offset);
+    lighting_materials.SubData(material.clearcoat,      material.clearcoat_offset);
+    lighting_materials.SubData(material.clearcoatGloss, material.clearcoatGloss_offset);
+    lighting_materials.SubData(material.anisotropic,    material.anisotropic_offset);
+    lighting_materials.SubData(material.sheen,          material.sheen_offset);
+    lighting_materials.SubData(material.sheenTint,      material.sheenTint_offset);
 }
 
 Material* Renderer::create_material() {
@@ -593,7 +634,8 @@ void Renderer::render(const Camera &camera) {
     }
 
     for(mat_id_t i = 0; i < MAX_N_MATERIALS; i++) {
-        update_material(i, material_data_buffer[i]);
+        if (material_data_buffer[i].changed)
+            update_material(i, material_data_buffer[i]);
     }
 
     // update globals buffer with frame info
