@@ -121,7 +121,8 @@
 			"csignal": "cpp",
 			"any": "cpp",
 			"strstream": "cpp",
-			"*.ipp": "cpp"
+			"*.ipp": "cpp",
+			"span": "cpp"
 		},
 		"cmake.buildDirectory": "${workspaceRoot}/build",
 		"glsllint.glslangValidatorPath": "../glslang-master-windows-x64-Release/bin/glslangValidator.exe"

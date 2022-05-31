@@ -71,7 +71,7 @@
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/2022NormalBase/resources",
+            "cwd": "${workspaceFolder}/2022CuteKitty/resources",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
