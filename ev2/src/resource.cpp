@@ -655,7 +655,7 @@ renderer::MID ResourceManager::get_quad() {
                     0.05f,  0.05f,  .0f
                 }, 
                 positions_only),
-            renderer::Primitive{0, 6, -1},
+            std::vector<renderer::Primitive>{renderer::Primitive{0, 6, -1}},
             std::vector<renderer::Material*>{},
             glm::vec3{},
             glm::vec3{},
