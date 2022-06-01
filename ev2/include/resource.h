@@ -45,20 +45,27 @@ private:
     renderer::Material* material = nullptr;
 };
 
-// array vertex
+// single buffer model
 class Model {
 public:
-    Model(const std::string& name, std::vector<DrawObject> draw_objects, std::vector<Ref<MaterialResource>> materials, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
-        name{name}, draw_objects{std::move(draw_objects)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
-    
+    Model(const std::string &name,
+          std::vector<DrawObject> draw_objects,
+          std::vector<Ref<MaterialResource>> materials,
+          glm::vec3 bmin,
+          glm::vec3 bmax,
+          std::vector<float> vb) : name{name},
+                                   draw_objects{std::move(draw_objects)},
+                                   materials{std::move(materials)},
+                                   bmin{bmin},
+                                   bmax{bmax},
+                                   buffer{std::move(vb)} {}
+
     std::string             name;
     std::vector<DrawObject> draw_objects;
     std::vector<Ref<MaterialResource>>  materials;
     std::vector<float>      buffer;
 
     glm::vec3 bmin, bmax;
-
-    VertexFormat bufferFormat;
 };
 
 class ResourceManager : public Singleton<ResourceManager> {
@@ -71,9 +78,12 @@ public:
     };
 
     explicit ResourceManager(const std::filesystem::path& asset_path) : asset_path{asset_path}, model_lookup{} {}
+    ~ResourceManager();
 
     void pre_render();
     
+    renderer::MID get_quad();
+
     /**
      * @brief Get the model object reference id, or load object if not available
      * 
@@ -97,6 +107,7 @@ public:
     std::filesystem::path asset_path;
 
 private:
+    renderer::MID quad_model_id{};
     std::unordered_map<std::string, renderer::MID> model_lookup;
 
     std::unordered_map<std::string, Ref<MaterialResource>> materials;

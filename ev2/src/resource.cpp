@@ -627,8 +627,44 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
 
 namespace ev2 {
 
+ResourceManager::~ResourceManager() {
+    // TODO destroy models
+    // for (auto v : model_lookup) {
+    //     renderer::Renderer::get_singleton().destroy_mesh()
+    // }
+}
+
 void ResourceManager::pre_render() {
 
+}
+
+renderer::MID ResourceManager::get_quad() {
+    if (!quad_model_id.is_valid()) {
+        VertexLayout positions_only;
+        positions_only.add_attribute(VertexAttributeType::Vertex).finalize();
+        std::shared_ptr<renderer::Drawable> draw = std::make_shared<renderer::Drawable>(
+            VertexBuffer::vbInitVertexDataInstanced(
+                {
+                    // positions
+                    -0.05f,  0.05f,  .0f,
+                    0.05f, -0.05f,  .0f,
+                    -0.05f, -0.05f,  .0f,
+
+                    -0.05f,  0.05f,  .0f,
+                    0.05f, -0.05f,  .0f,
+                    0.05f,  0.05f,  .0f
+                }, 
+                positions_only),
+            renderer::Primitive{0, 6, -1},
+            std::vector<renderer::Material*>{},
+            glm::vec3{},
+            glm::vec3{},
+            gl::CullMode::NONE,
+            gl::FrontFacing::CCW
+        );
+        quad_model_id = renderer::Renderer::get_singleton().create_model(draw);
+    }
+    return quad_model_id;
 }
 
 renderer::MID ResourceManager::get_model(const std::filesystem::path& filename, bool cache) {
@@ -801,8 +837,7 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
             std::move(ev_mat),
             bmin,
             bmax,
-            std::move(buffer),
-            VertexFormat::Array
+            std::move(buffer)
         );
 
     }

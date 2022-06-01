@@ -252,8 +252,24 @@ struct Primitive {
 };
 
 struct Drawable {
-    Drawable(VertexBuffer&& vb, std::vector<Primitive> primitives, std::vector<Material*> materials, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
-        vertex_buffer{std::move(vb)}, primitives{std::move(primitives)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
+    Drawable(VertexBuffer &&vb,
+             std::vector<Primitive> primitives,
+             std::vector<Material *> materials,
+             glm::vec3 bmin,
+             glm::vec3 bmax,
+             gl::CullMode cull,
+             gl::FrontFacing ff) :
+
+                                   vertex_buffer{std::move(vb)},
+                                   primitives{std::move(primitives)},
+                                   materials{std::move(materials)},
+                                   bmin{bmin},
+                                   bmax{bmax},
+                                   cull_mode{cull},
+                                   front_facing{ff}
+    {
+    }
+
     VertexBuffer vertex_buffer;
     std::vector<Primitive> primitives;
     std::vector<Material*> materials;
