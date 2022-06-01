@@ -374,6 +374,7 @@ namespace ev2 {
     constexpr uint32_t NORMAL_BINDING_LOCATION = 1;
     constexpr uint32_t COLOR_BINDING_LOCATION = 2;
     constexpr uint32_t TEXCOORD_BINDING_LOCATION = 3;
+    constexpr uint32_t INSTANCE_BINDING_LOCATION = 4;
 
     const std::unordered_map<std::string, uint32_t> attributes{
         std::make_pair("POSITION", VERTEX_BINDING_LOCATION),
