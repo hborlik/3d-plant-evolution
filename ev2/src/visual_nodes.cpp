@@ -34,27 +34,30 @@ void VisualInstance::set_material_override(renderer::Material* material_override
 
 void InstancedGeometry::on_init() {
     VertexLayout quad_layout;
-    quad_layout.add_attribute(VertexAttributeType::Vertex).add_attribute(VertexAttributeType::Normal).finalize();
+    quad_layout .add_attribute(VertexAttributeType::Vertex)
+                .add_attribute(VertexAttributeType::Normal)
+                .add_attribute(VertexAttributeType::Texcoord)
+                .finalize();
     geometry = renderer::Renderer::get_singleton().create_model(
         VertexBuffer::vbInitVertexDataInstanced(
             {
-                // positions         // normals
-                -0.05f,  0.05f, .0f, .0f, .0f, -1.f,
-                 0.05f, -0.05f, .0f, .0f, .0f, -1.f,
-                -0.05f, -0.05f, .0f, .0f, .0f, -1.f,
+                // positions         normals         texcoords
+                -0.05f,  0.05f, .0f, .0f, .0f, -1.f, 1.f, 1.f,
+                 0.05f, -0.05f, .0f, .0f, .0f, -1.f, 0.f, 0.f,
+                -0.05f, -0.05f, .0f, .0f, .0f, -1.f, 1.f, 0.f,
 
-                -0.05f,  0.05f, .0f, .0f, .0f, -1.f,
-                 0.05f,  0.05f, .0f, .0f, .0f, -1.f,
-                 0.05f, -0.05f, .0f, .0f, .0f, -1.f,
+                -0.05f,  0.05f, .0f, .0f, .0f, -1.f, 1.f, 1.f,
+                 0.05f,  0.05f, .0f, .0f, .0f, -1.f, 0.f, 1.f,
+                 0.05f, -0.05f, .0f, .0f, .0f, -1.f, 0.f, 0.f,
                 
                 // back
-                -0.05f,  0.05f, .0f, .0f, .0f, 1.f,
-                -0.05f, -0.05f, .0f, .0f, .0f, 1.f,
-                 0.05f, -0.05f, .0f, .0f, .0f, 1.f,
+                -0.05f,  0.05f, .0f, .0f, .0f, 1.f, 1.f, 1.f,
+                -0.05f, -0.05f, .0f, .0f, .0f, 1.f, 1.f, 0.f,
+                 0.05f, -0.05f, .0f, .0f, .0f, 1.f, 0.f, 0.f,
 
-                -0.05f,  0.05f, .0f, .0f, .0f, 1.f,
-                 0.05f, -0.05f, .0f, .0f, .0f, 1.f,
-                 0.05f,  0.05f, .0f, .0f, .0f, 1.f,
+                -0.05f,  0.05f, .0f, .0f, .0f, 1.f, 1.f, 1.f,
+                 0.05f, -0.05f, .0f, .0f, .0f, 1.f, 0.f, 0.f,
+                 0.05f,  0.05f, .0f, .0f, .0f, 1.f, 0.f, 1.f,
             },
             quad_layout),
         std::vector<renderer::Primitive>{renderer::Primitive{0, 12, -1}},

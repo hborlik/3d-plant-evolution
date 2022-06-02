@@ -92,7 +92,7 @@ public:
 
     renderer::Drawable* create_model(std::shared_ptr<Model> model);
 
-    std::shared_ptr<Texture> get_texture(const std::filesystem::path& filename);
+    std::shared_ptr<Texture> get_texture(const std::filesystem::path& filename, bool ignore_asset_path = false);
 
     Ref<GLTFScene> loadGLTF(const std::filesystem::path& filename, bool normalize = false);
 

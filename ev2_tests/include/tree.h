@@ -48,7 +48,7 @@ struct PNVertex {
 
 class TreeNode : public ev2::VisualInstance {
 public:
-    explicit TreeNode(const std::string& name);
+    explicit TreeNode(class GameState* game, const std::string& name);
 
     void on_init() override;
     void on_destroy() override;
@@ -63,6 +63,7 @@ public:
     float growth_max = 1;
 
     float thickness = 1.0f;
+    float leaf_scale = 5.f;
     glm::vec3 c0, c1;
     ptree::Skeleton tree_skeleton;
     ptree::Tree tree;
@@ -74,6 +75,7 @@ public:
     SuperShapeParams fruit_params{};
     
     ev2::Ref<ev2::InstancedGeometry> leafs;
+    class GameState* const game;
 };
 
 class Fruit : public ev2::VisualInstance {

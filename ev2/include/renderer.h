@@ -421,6 +421,8 @@ private:
     std::shared_ptr<Texture> ssao_kernel_noise;
     std::shared_ptr<Texture> ssao_kernel_color;
 
+    std::shared_ptr<Texture> one_p_black_tex;
+
     std::shared_ptr<Texture> hdr_texture;
 
     Buffer shader_globals;

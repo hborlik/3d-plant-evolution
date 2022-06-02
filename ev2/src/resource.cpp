@@ -686,7 +686,7 @@ renderer::Drawable* ResourceManager::get_model(const std::filesystem::path& file
     }
 }
 
-std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::path& filename) {
+std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::path& filename, bool ignore_asset_path) {
     auto itr = textures.find(filename.generic_string());
     if (itr != textures.end()) { // already loaded
         return itr->second;
@@ -694,7 +694,8 @@ std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::pat
 
     int w, h, ncomps;
     stbi_set_flip_vertically_on_load(false);
-    std::string input_file = filename.generic_string();
+    std::filesystem::path base_path = ignore_asset_path ? "" : asset_path;
+    std::string input_file = (base_path / filename).generic_string();
     unsigned char *data = stbi_load(input_file.c_str(), &w, &h, &ncomps, 0);
 
     if (data) {
@@ -773,28 +774,28 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
             mat->get_material()->sheenTint              = 0.5f;
 
             if (!m.ambient_texname.empty())
-                mat->get_material()->ambient_tex            = rm->get_texture((base_dir / m.ambient_texname).generic_string());
+                mat->get_material()->ambient_tex            = rm->get_texture((base_dir / m.ambient_texname).generic_string(), true);
             
             if (!m.diffuse_texname.empty())
-                mat->get_material()->diffuse_tex            = rm->get_texture((base_dir / m.diffuse_texname).generic_string());
+                mat->get_material()->diffuse_tex            = rm->get_texture((base_dir / m.diffuse_texname).generic_string(), true);
             
             if (!m.specular_texname.empty())
-                mat->get_material()->specular_tex           = rm->get_texture((base_dir / m.specular_texname).generic_string());
+                mat->get_material()->specular_tex           = rm->get_texture((base_dir / m.specular_texname).generic_string(), true);
             
             if (!m.specular_highlight_texname.empty())
-                mat->get_material()->specular_highlight_tex = rm->get_texture((base_dir / m.specular_highlight_texname).generic_string());
+                mat->get_material()->specular_highlight_tex = rm->get_texture((base_dir / m.specular_highlight_texname).generic_string(), true);
             
             if (!m.bump_texname.empty())
-                mat->get_material()->bump_tex               = rm->get_texture((base_dir / m.bump_texname).generic_string());
+                mat->get_material()->bump_tex               = rm->get_texture((base_dir / m.bump_texname).generic_string(), true);
             
             if (!m.displacement_texname.empty())
-                mat->get_material()->displacement_tex       = rm->get_texture((base_dir / m.displacement_texname).generic_string());
+                mat->get_material()->displacement_tex       = rm->get_texture((base_dir / m.displacement_texname).generic_string(), true);
             
             if (!m.alpha_texname.empty())
-                mat->get_material()->alpha_tex              = rm->get_texture((base_dir / m.alpha_texname).generic_string());
+                mat->get_material()->alpha_tex              = rm->get_texture((base_dir / m.alpha_texname).generic_string(), true);
             
             if (!m.reflection_texname.empty())
-                mat->get_material()->reflection_tex         = rm->get_texture((base_dir / m.reflection_texname).generic_string());
+                mat->get_material()->reflection_tex         = rm->get_texture((base_dir / m.reflection_texname).generic_string(), true);
 
 
             ev_mat[i++] = mat;

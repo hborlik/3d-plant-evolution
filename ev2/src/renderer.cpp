@@ -37,14 +37,6 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
             }
             material_slot = material_ptr->slot;
 
-            if (material_ptr->diffuse_tex && diffuse_sampler_loc >= 0) {
-                glActiveTexture(GL_TEXTURE0);
-                material_ptr->diffuse_tex->bind();
-                gl::glUniformSampler(0, diffuse_sampler_loc);
-            } else {
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
-
             // TODO does this go here?
             if (mat_loc >= 0) {
                 GL_CHECKED_CALL(glUniform1ui(mat_loc, material_slot));
@@ -53,6 +45,19 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
             if (vert_col_w_loc >= 0) {
                 GL_CHECKED_CALL(glUniform1f(vert_col_w_loc, dr->vertex_color_weight));
             }
+        }
+
+        // textures
+        if (diffuse_sampler_loc >= 0) {
+            glActiveTexture(GL_TEXTURE0);
+            if (use_materials && material_ptr && material_ptr->diffuse_tex)
+                material_ptr->diffuse_tex->bind();
+            else
+                one_p_black_tex->bind();
+
+            gl::glUniformSampler(0, diffuse_sampler_loc);
+        } else {
+            // glBindTexture(GL_TEXTURE_2D, 0);
         }
 
         if (indexed) {
@@ -73,9 +78,7 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
             }
         }
 
-        if (material_ptr && diffuse_sampler_loc >= 0 && material_ptr->diffuse_tex) {
-            material_ptr->diffuse_tex->unbind();
-        }
+        // glBindTexture(GL_TEXTURE_2D, 0);
     }
     dr->vertex_buffer.unbind();
 }
@@ -162,6 +165,13 @@ void Renderer::init() {
 
     if (!ssao_buffer.check())
         throw engine_exception{"Framebuffer is not complete"};
+
+    // black texture
+    one_p_black_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    one_p_black_tex->set_data2D(gl::TextureInternalFormat::RED, 1, 1, gl::PixelFormat::RED, gl::PixelType::UNSIGNED_BYTE, nullptr);
+    one_p_black_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::REPEAT);
+    one_p_black_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::REPEAT);
+    one_p_black_tex->generate_mips();
 
     // set up FBO textures
     shadow_depth_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
