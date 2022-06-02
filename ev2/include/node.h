@@ -85,7 +85,11 @@ public:
             ;
         return *itr;
     }
+
     size_t get_n_children() const noexcept {return children.size();}
+
+    auto& get_children() {return children;}
+    const auto& get_children() const {return children;}
 
     Ref<Node> get_parent() const {
         if (parent)

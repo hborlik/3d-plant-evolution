@@ -81,8 +81,6 @@ public:
     ~ResourceManager();
 
     void pre_render();
-    
-    renderer::MID get_quad();
 
     /**
      * @brief Get the model object reference id, or load object if not available
@@ -90,9 +88,9 @@ public:
      * @param filename 
      * @return renderer::MID 
      */
-    renderer::MID get_model(const std::filesystem::path& filename, bool cache = true);
+    renderer::Drawable* get_model(const std::filesystem::path& filename, bool cache = true);
 
-    renderer::MID create_model(std::shared_ptr<Model> model);
+    renderer::Drawable* create_model(std::shared_ptr<Model> model);
 
     std::shared_ptr<Texture> get_texture(const std::filesystem::path& filename);
 
@@ -107,8 +105,7 @@ public:
     std::filesystem::path asset_path;
 
 private:
-    renderer::MID quad_model_id{};
-    std::unordered_map<std::string, renderer::MID> model_lookup;
+    std::unordered_map<std::string, renderer::Drawable*> model_lookup;
 
     std::unordered_map<std::string, Ref<MaterialResource>> materials;
 

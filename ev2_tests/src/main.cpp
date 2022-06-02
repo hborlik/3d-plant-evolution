@@ -75,16 +75,16 @@ public:
             show_settings_editor_window();
             show_game_debug_window(game.get());
         }
-        if (game->selected_tree_1->plantInfo.ID != -1) {
+        if (game->selected_tree_1) {
             ImGui::SetNextWindowSize(ImVec2(window_width/5, window_height/5));
             ImGui::SetNextWindowPos(ImVec2(window_width - window_width/5, 0));
             show_tree_window(game.get(), game->selected_tree_1);
         }
-        if (game->selected_tree_2->plantInfo.ID != -1) {
+        if (game->selected_tree_2) {
             ImGui::SetNextWindowSize(ImVec2(window_width/5, window_height/5));
             ImGui::SetNextWindowPos(ImVec2(window_width - window_width/5, window_height/5));
             show_tree_window(game.get(), game->selected_tree_2);
-        } 
+        }
 
         // Rendering
         ImGui::Render();

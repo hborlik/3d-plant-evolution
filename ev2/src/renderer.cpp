@@ -16,29 +16,31 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
         glCullFace((GLenum)dr->cull_mode);
     }
     glFrontFace((GLenum)dr->front_facing);
-    int mat_loc = prog.getUniformInfo("materialId").Location;
-    int vert_col_w_loc = prog.getUniformInfo("vertex_color_weight").Location;
-    int diffuse_sampler_loc = prog.getUniformInfo("diffuse_tex").Location;
-    bool indexed = dr->vertex_buffer.get_indexed() != -1;
-    // TODO: support for multiple index buffers
+    const int mat_loc = prog.getUniformInfo("materialId").Location;
+    const int vert_col_w_loc = prog.getUniformInfo("vertex_color_weight").Location;
+    const int diffuse_sampler_loc = prog.getUniformInfo("diffuse_tex").Location;
+    const bool indexed = dr->vertex_buffer.get_indexed() != -1;
+    const int instanced_buffer_id = dr->vertex_buffer.get_instanced();
+    const bool instanced = instanced_buffer_id != -1;
+
     dr->vertex_buffer.bind();
     for (auto& m : dr->primitives) {
         Material* material_ptr = nullptr;
         if (use_materials) {
             mat_id_t material_slot = 0;
-            if (material_override < 0) {
+            if (m.material_ind >= 0 && material_override < 0) {
                 material_ptr = &materials.at(dr->materials[m.material_ind]->material_id);
-            } else {
+            } else if (material_override >= 0) {
                 material_ptr = &materials.at(material_override);
+            } else { // use default if no material is set
+                material_ptr = &materials.at(default_material_id);
             }
             material_slot = material_ptr->slot;
 
-            if (diffuse_sampler_loc >= 0) {
+            if (material_ptr->diffuse_tex && diffuse_sampler_loc >= 0) {
                 glActiveTexture(GL_TEXTURE0);
-                gl::glUniformSampler(0, diffuse_sampler_loc);
-            }
-            if (material_ptr->diffuse_tex) {
                 material_ptr->diffuse_tex->bind();
+                gl::glUniformSampler(0, diffuse_sampler_loc);
             } else {
                 glBindTexture(GL_TEXTURE_2D, 0);
             }
@@ -54,10 +56,21 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
         }
 
         if (indexed) {
-            dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed()).Bind(); // bind index buffer (again, @Windows)
-            glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
+            Buffer& el_buf = dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed());
+            el_buf.Bind(); // bind index buffer (again, @Windows)
+            if (instanced) {
+                // Buffer& inst_buf = dr->vertex_buffer.get_buffer(instanced_buffer_id);
+                glDrawElementsInstanced(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0, dr->vertex_buffer.get_n_instances());
+            } else {
+                glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
+            }
+            el_buf.Unbind();
         } else {
-            glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
+            if (instanced) {
+                glDrawArraysInstanced(GL_TRIANGLES, m.start_index, m.num_elements, dr->vertex_buffer.get_n_instances());
+            } else {
+                glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
+            }
         }
 
         if (material_ptr && diffuse_sampler_loc >= 0 && material_ptr->diffuse_tex) {
@@ -84,12 +97,13 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
     height{height} {
 
     // material id queue
-    for (mat_id_t i = 1; i < MAX_N_MATERIALS; i++) {
+    for (mat_id_t i = 0; i < MAX_N_MATERIALS; i++) {
         free_material_slots.push(i);
     }
 
     // create default material
-    materials[0] = {};
+    default_material_id = create_material()->material_id;
+    materials[default_material_id].diffuse = {1.00,0.00,1.00};
 
     for (auto& mat : material_data_buffer) {
         mat = {};
@@ -203,6 +217,10 @@ void Renderer::init() {
 
     gp_m_location = geometry_program.getUniformInfo("M").Location;
     gp_g_location = geometry_program.getUniformInfo("G").Location;
+
+    geometry_program_instanced.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "geometry_instanced.glsl.vert", prep);
+    geometry_program_instanced.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "geometry.glsl.frag", prep);
+    geometry_program_instanced.link();
 
     // Initialize the GLSL programs
     depth_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "simpleDepth.glsl.vert", prep);
@@ -329,9 +347,7 @@ void Renderer::init() {
     }
 
     // light geometry
-    point_light_geometry_id = ResourceManager::get_singleton().get_model(std::filesystem::path("models") / "sphere.obj", false);
-    auto itr = models.find(point_light_geometry_id);
-    point_light_drawable = itr->second.get();
+    point_light_drawable = ResourceManager::get_singleton().get_model(std::filesystem::path("models") / "sphere.obj", false);;
     point_light_drawable->front_facing = gl::FrontFacing::CW; // render back facing only
     glm::vec3 scaling = glm::vec3{2} / (point_light_drawable->bmax - point_light_drawable->bmin);
     point_light_geom_tr = glm::scale(glm::identity<glm::mat4>(), scaling);
@@ -463,20 +479,64 @@ void Renderer::destroy_light(LID lid) {
     point_lights.erase(lid._v);
 }
 
-MID Renderer::create_model(std::shared_ptr<Drawable> d) {
-    MID nmid = {next_model_id++};
-    models.insert_or_assign(nmid, d);
-    return nmid;
+Drawable *Renderer::create_model(VertexBuffer &&vb,
+                                 std::vector<Primitive> primitives,
+                                 std::vector<Material *> materials,
+                                 glm::vec3 bmin,
+                                 glm::vec3 bmax,
+                                 gl::CullMode cull,
+                                 gl::FrontFacing ff)
+{
+    uint32_t nmid = {next_model_id++};
+    if (vb.get_instanced() != -1) {
+        auto ins = instanced_models.emplace(
+            std::make_pair(
+                nmid,
+                Drawable{
+                    std::move(vb),
+                    std::move(primitives),
+                    std::move(materials),
+                    std::move(bmin),
+                    std::move(bmax),
+                    std::move(cull),
+                    std::move(ff),
+                    nmid
+                }
+            )
+        );
+        if (ins.second)
+            return &(ins.first->second);
+    } else {
+        auto ins = models.emplace(
+            std::make_pair(
+                nmid,
+                Drawable{
+                    std::move(vb),
+                    std::move(primitives),
+                    std::move(materials),
+                    std::move(bmin),
+                    std::move(bmax),
+                    std::move(cull),
+                    std::move(ff),
+                    nmid
+                }
+            )
+        );
+        if (ins.second)
+            return &(ins.first->second);
+    }
+    
+    return nullptr;
 }
 
-void Renderer::set_model_vertex_color_diffuse_weight(MID mid, float weight) {
-    if (!mid.is_valid())
-        return;
-    auto model = models.find(mid);
-    if (model != models.end()) {
-        model->second->vertex_color_weight = weight;
+void Renderer::destroy_model(Drawable* d) {
+    assert(d);
+    auto mitr = models.find(d->model_id);
+    if (mitr != models.end()) {
+        models.erase(mitr);
     }
 }
+
 
 IID Renderer::create_model_instance() {
     int32_t id = next_instance_id++;
@@ -486,12 +546,13 @@ IID Renderer::create_model_instance() {
     return {id};
 }
 
-void Renderer::set_instance_model(IID iid, MID mid) {
+void Renderer::set_instance_model(IID iid, Drawable* mid) {
+    assert(mid);
     if (!iid.is_valid())
         return;
-    auto model = models.find(mid);
+    auto model = models.find(mid->model_id);
     if (model != models.end()) {
-        model_instances[iid.v].drawable = (*model).second.get();
+        model_instances[iid.v].drawable = mid;
     }
 }
 
@@ -740,8 +801,18 @@ void Renderer::render(const Camera &camera) {
             draw(m.drawable, geometry_program, true, m.material_id_override);
         }
     }
-
     geometry_program.unbind();
+
+    // render instanced geometry
+    geometry_program_instanced.use();
+    // bind global shader UBO to shader
+    globals_desc.bind_buffer(shader_globals);
+    for (auto &mPair : instanced_models) {
+        auto& m = mPair.second;
+        draw(&m, geometry_program_instanced, true);
+    }
+    geometry_program_instanced.unbind();
+
     g_buffer.unbind();
 
     // glFlush();

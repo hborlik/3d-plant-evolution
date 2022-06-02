@@ -39,9 +39,6 @@ public:
     ev2::Ref<TreeNode> selected_tree_1;
     ev2::Ref<TreeNode> selected_tree_2;
 
-    bool startedA = false;
-    bool startedB = false;
-
     float time_accumulator = 0.0f;
     float time_day = 0.0f;
     float time_speed = .3f;

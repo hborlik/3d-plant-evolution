@@ -638,36 +638,7 @@ void ResourceManager::pre_render() {
 
 }
 
-renderer::MID ResourceManager::get_quad() {
-    if (!quad_model_id.is_valid()) {
-        VertexLayout positions_only;
-        positions_only.add_attribute(VertexAttributeType::Vertex).finalize();
-        std::shared_ptr<renderer::Drawable> draw = std::make_shared<renderer::Drawable>(
-            VertexBuffer::vbInitVertexDataInstanced(
-                {
-                    // positions
-                    -0.05f,  0.05f,  .0f,
-                    0.05f, -0.05f,  .0f,
-                    -0.05f, -0.05f,  .0f,
-
-                    -0.05f,  0.05f,  .0f,
-                    0.05f, -0.05f,  .0f,
-                    0.05f,  0.05f,  .0f
-                }, 
-                positions_only),
-            std::vector<renderer::Primitive>{renderer::Primitive{0, 6, -1}},
-            std::vector<renderer::Material*>{},
-            glm::vec3{},
-            glm::vec3{},
-            gl::CullMode::NONE,
-            gl::FrontFacing::CCW
-        );
-        quad_model_id = renderer::Renderer::get_singleton().create_model(draw);
-    }
-    return quad_model_id;
-}
-
-renderer::MID ResourceManager::get_model(const std::filesystem::path& filename, bool cache) {
+renderer::Drawable* ResourceManager::get_model(const std::filesystem::path& filename, bool cache) {
     auto itr = model_lookup.find(filename.generic_string());
     if (itr != model_lookup.end() && !cache) { // already loaded
         return itr->second;
@@ -697,7 +668,7 @@ renderer::MID ResourceManager::get_model(const std::filesystem::path& filename, 
             ev_mat[i++] = mat->get_material();
         }
 
-        std::shared_ptr<renderer::Drawable> d = std::make_shared<renderer::Drawable>(
+        renderer::Drawable* id = ev2::renderer::Renderer::get_singleton().create_model(
             VertexBuffer::vbInitArrayVertexData(loaded_model->buffer),
             std::move(ev_prim),
             std::move(ev_mat),
@@ -706,8 +677,6 @@ renderer::MID ResourceManager::get_model(const std::filesystem::path& filename, 
             gl::CullMode::BACK,
             gl::FrontFacing::CCW
         );
-
-        renderer::MID id = ev2::renderer::Renderer::get_singleton().create_model(d);
         if (cache)
             model_lookup.insert(std::make_pair(filename.generic_string(), id));
         return id;

@@ -85,11 +85,6 @@ struct VertexLayout {
     uint32_t stride = 0;
 };
 
-enum class VertexFormat {
-    Array = 0,
-    Indexed
-};
-
 struct VertexBufferAccessor {
     int buffer_id = -1;     // buffer in VertexBuffer
     size_t byte_offset = 0;
@@ -107,7 +102,9 @@ public:
 
     VertexBuffer(VertexBuffer&& o) : buffers{std::move(o.buffers)} {
         std::swap(gl_vao, o.gl_vao);
-        indexed = o.indexed;
+        std::swap(indexed, o.indexed);
+        std::swap(n_instances, o.n_instances);
+        std::swap(instanced, o.instanced);
     }
     VertexBuffer& operator=(VertexBuffer&& o) = delete;
 
@@ -119,7 +116,11 @@ public:
     void bind() const {glBindVertexArray(gl_vao);}
     void unbind() const {glBindVertexArray(0);}
     
-    int get_indexed() {return indexed;}
+    int get_indexed() const {return indexed;}
+    int get_instanced() const {return instanced;}
+
+    uint32_t get_n_instances() const {return n_instances;}
+    void set_n_instances(uint32_t n_inst) {n_instances = n_inst;}
 
     void add_buffer(uint32_t buffer_id, Buffer&& buffer) {
         if (buffer.target == gl::BindingTarget::ELEMENT_ARRAY) {
@@ -177,7 +178,7 @@ public:
      * @param buffer 
      * @return VertexBuffer 
      */
-    static VertexBuffer vbInitArrayVertexDataInstanced(const std::vector<float>& buffer);
+    static VertexBuffer vbInitVertexDataInstanced(const std::vector<float>& buffer, const VertexLayout& layout);
 
     static VertexBuffer vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout);
     static VertexBuffer vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout);
@@ -188,7 +189,11 @@ private:
     std::unordered_map<uint32_t, Buffer> buffers;
     std::unordered_map<uint32_t, VertexBufferAccessor> accessors;
     GLuint gl_vao = 0;
+
     int indexed = -1;
+
+    int instanced = -1;
+    uint32_t n_instances = 0;
 };
 
 }

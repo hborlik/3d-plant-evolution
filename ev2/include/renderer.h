@@ -27,37 +27,6 @@ constexpr uint16_t MAX_N_MATERIALS = 255;
 using mat_id_t = uint8_t;
 
 /**
- * @brief model id
- * 
- */
-struct MID {
-    MID() = default;
-
-    bool is_valid() const noexcept {return v != -1;}
-
-    int32_t v = -1;
-private:
-    friend bool operator==(const MID& a, const MID& b) noexcept {
-        return a.v == b.v;
-    }
-};
-
-} // namespace ev2
-
-
-template<> 
-struct std::hash<ev2::renderer::MID> {
-    std::size_t operator()(ev2::renderer::MID const& s) const noexcept {
-        std::size_t h1 = std::hash<int>{}(s.v);
-        // std::size_t h2 = std::hash<int>{}(s.y);
-        // return h1 ^ (h2 << 1);
-        return h1;
-    }
-};
-
-namespace ev2::renderer {
-
-/**
  * @brief light id
  * 
  */
@@ -258,15 +227,16 @@ struct Drawable {
              glm::vec3 bmin,
              glm::vec3 bmax,
              gl::CullMode cull,
-             gl::FrontFacing ff) :
-
+             gl::FrontFacing ff,
+             uint32_t model_id) :
                                    vertex_buffer{std::move(vb)},
                                    primitives{std::move(primitives)},
                                    materials{std::move(materials)},
                                    bmin{bmin},
                                    bmax{bmax},
                                    cull_mode{cull},
-                                   front_facing{ff}
+                                   front_facing{ff},
+                                   model_id{model_id}
     {
     }
 
@@ -280,6 +250,11 @@ struct Drawable {
     gl::FrontFacing front_facing = gl::FrontFacing::CCW;
 
     float vertex_color_weight = 0.f;
+
+private:
+    friend class Renderer;
+
+    uint32_t model_id{};
 };
 
 struct ModelInstance {
@@ -305,11 +280,17 @@ public:
     void set_light_ambient(LID lid, const glm::vec3& color);
     void destroy_light(LID lid);
 
-    MID create_model(std::shared_ptr<Drawable> d);
-    void set_model_vertex_color_diffuse_weight(MID mid, float weight);
+    Drawable *create_model(VertexBuffer &&vb,
+                           std::vector<Primitive> primitives,
+                           std::vector<Material *> materials,
+                           glm::vec3 bmin,
+                           glm::vec3 bmax,
+                           gl::CullMode cull,
+                           gl::FrontFacing ff);
+    void destroy_model(Drawable* d);
 
     IID create_model_instance();
-    void set_instance_model(IID iid, MID mid);
+    void set_instance_model(IID iid, Drawable* mid);
     void set_instance_transform(IID iid, const glm::mat4& transform);
 
 
@@ -351,7 +332,7 @@ public:
     float ssao_bias = 0.025f;
     uint32_t ssao_kernel_samples = 32;
 
-    float exposure      = .2f;
+    float exposure      = .8f;
     float gamma         = 2.2f;
     float sun_position  = .0f;
     float cloud_speed   = .1f;
@@ -367,7 +348,8 @@ private:
     void update_material(mat_id_t material_slot, const MaterialData& material);
 
     // model, instance vertex data
-    std::unordered_map<MID, std::shared_ptr<Drawable>> models;
+    std::unordered_map<uint32_t, Drawable> models;
+    std::unordered_map<uint32_t, Drawable> instanced_models;
     uint32_t next_model_id = 1;
 
     // material management
@@ -398,6 +380,8 @@ private:
     Program geometry_program;
     int gp_m_location;
     int gp_g_location;
+
+    Program geometry_program_instanced;
 
     Program depth_program;
     int sdp_m_location;
@@ -448,9 +432,10 @@ private:
     uint32_t width, height;
     bool wireframe = false;
 
-    MID point_light_geometry_id;
     glm::mat4 point_light_geom_tr;
     Drawable* point_light_drawable;
+
+    int32_t default_material_id = 0;
 };
 
 }
