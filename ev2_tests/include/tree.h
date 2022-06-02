@@ -72,6 +72,8 @@ public:
 
     PlantInfo plantInfo{};
     SuperShapeParams fruit_params{};
+    
+    ev2::Ref<ev2::InstancedGeometry> leafs;
 };
 
 class Fruit : public ev2::VisualInstance {

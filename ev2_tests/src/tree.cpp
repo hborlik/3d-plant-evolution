@@ -170,6 +170,7 @@ TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
 void TreeNode::on_init() {
     ev2::VisualInstance::on_init();
 
+    leafs = create_node<ev2::InstancedGeometry>("leafs");
 
     tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(
         ev2::VertexBuffer::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
@@ -244,6 +245,13 @@ void TreeNode::generate(int iterations) {
     if (tree.from_symbol_string(str)) {
         // tree.simple_skeleton(5);
         tree_skeleton = tree.to_skeleton();
+
+        leafs->instance_transforms.clear();
+        leafs->instance_transforms.reserve(tree_skeleton.endpoints.size());
+        for (const auto& ind : tree_skeleton.endpoints) {
+            glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), tree_skeleton.joints[ind].position);
+            leafs->instance_transforms.push_back(tr);
+        }
 
         ptree::DefaultColorizer dc{c0, c1, tree.max_joint_depth};
 

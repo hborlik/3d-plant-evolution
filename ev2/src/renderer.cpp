@@ -222,6 +222,8 @@ void Renderer::init() {
     geometry_program_instanced.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "geometry.glsl.frag", prep);
     geometry_program_instanced.link();
 
+    gpi_m_location = geometry_program_instanced.getUniformInfo("M").Location;
+
     // Initialize the GLSL programs
     depth_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "simpleDepth.glsl.vert", prep);
     depth_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "simpleDepth.glsl.frag", prep);
@@ -809,6 +811,9 @@ void Renderer::render(const Camera &camera) {
     globals_desc.bind_buffer(shader_globals);
     for (auto &mPair : instanced_models) {
         auto& m = mPair.second;
+
+        ev2::gl::glUniform(m.instance_world_transform, gpi_m_location);
+
         draw(&m, geometry_program_instanced, true);
     }
     geometry_program_instanced.unbind();

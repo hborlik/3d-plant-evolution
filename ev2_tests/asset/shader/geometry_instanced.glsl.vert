@@ -11,11 +11,13 @@ out vec3 vert_normal;   // normal in view space
 out vec3 vert_color;    // passthrough
 out vec2 tex_coord;     // passthrough
 
+uniform mat4 M;
+
 void main() {
-    vec4 vertV = View * InstanceMat * vec4(VertPos, 1.0);
+    vec4 vertV = View * M * InstanceMat * vec4(VertPos, 1.0);
     frag_pos = vertV.xyz;
     gl_Position = P * vertV;
-    vert_normal = vec3(View * InstanceMat * vec4(Normal, 0.0));
+    vert_normal = vec3(View * M * InstanceMat * vec4(Normal, 0.0));
     vert_color = VertCol;
     tex_coord = TexPos;
 }

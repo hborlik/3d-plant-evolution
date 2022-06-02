@@ -26,9 +26,10 @@ public:
     virtual ~Node() = default;
 
     template<typename T, typename... Args>
-    static Ref<T> create_node(Args&&... args) {
+    Ref<T> create_node(Args&&... args) {
         Ref<T> node{new T(std::forward<Args&&>(args)...)};
         node->on_init();
+        add_child(node);
         return node;
     }
 

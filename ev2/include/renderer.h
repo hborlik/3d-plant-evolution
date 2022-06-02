@@ -251,6 +251,8 @@ struct Drawable {
 
     float vertex_color_weight = 0.f;
 
+    glm::mat4 instance_world_transform = glm::identity<glm::mat4>();
+
 private:
     friend class Renderer;
 
@@ -382,6 +384,7 @@ private:
     int gp_g_location;
 
     Program geometry_program_instanced;
+    int gpi_m_location;
 
     Program depth_program;
     int sdp_m_location;

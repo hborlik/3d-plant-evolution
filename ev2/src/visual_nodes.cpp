@@ -72,6 +72,7 @@ void InstancedGeometry::on_destroy() {
 }
 
 void InstancedGeometry::pre_render() {
+    geometry->instance_world_transform = get_transform();
     geometry->vertex_buffer.get_buffer(geometry->vertex_buffer.get_instanced()).CopyData(instance_transforms);
     geometry->vertex_buffer.set_n_instances(instance_transforms.size());
 }
