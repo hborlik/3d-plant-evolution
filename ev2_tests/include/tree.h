@@ -48,7 +48,7 @@ struct PNVertex {
 
 class TreeNode : public ev2::VisualInstance {
 public:
-    explicit TreeNode(class GameState* game, const std::string& name);
+    explicit TreeNode(class GameState* game, const std::string& name, bool has_leafs = false);
 
     void on_init() override;
     void on_destroy() override;
@@ -64,6 +64,7 @@ public:
 
     float thickness = 1.0f;
     float leaf_scale = 5.f;
+    bool has_leafs = false;
     glm::vec3 c0, c1;
     ptree::Skeleton tree_skeleton;
     ptree::Tree tree;

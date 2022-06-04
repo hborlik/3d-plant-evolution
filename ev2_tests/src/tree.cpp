@@ -158,7 +158,7 @@ struct P_3 : public MonopodialProduction {
 
 }
 
-TreeNode::TreeNode(GameState* game, const std::string& name) : ev2::VisualInstance{name}, game{game} {
+TreeNode::TreeNode(GameState* game, const std::string& name, bool has_leafs) : ev2::VisualInstance{name}, game{game}, has_leafs{has_leafs} {
     buffer_layout.add_attribute(ev2::VertexAttributeType::Vertex)
         .add_attribute(ev2::VertexAttributeType::Normal)
         .add_attribute(ev2::VertexAttributeType::Color)
@@ -171,8 +171,10 @@ TreeNode::TreeNode(GameState* game, const std::string& name) : ev2::VisualInstan
 void TreeNode::on_init() {
     ev2::VisualInstance::on_init();
 
-    leafs = create_node<ev2::InstancedGeometry>("leafs");
-    leafs->set_material_override(game->leaf_material->get_material());
+    if (has_leafs) {
+        leafs = create_node<ev2::InstancedGeometry>("leafs");
+        leafs->set_material_override(game->leaf_material->get_material());
+    }
 
     tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(
         ev2::VertexBuffer::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
@@ -248,16 +250,18 @@ void TreeNode::generate(int iterations) {
         // tree.simple_skeleton(5);
         tree_skeleton = tree.to_skeleton();
 
-        leafs->instance_transforms.clear();
-        leafs->instance_transforms.reserve(tree_skeleton.endpoints.size());
-        const glm::mat4 rot_leaf = glm::mat4(glm::rotate<float>(glm::identity<glm::quat>(), M_PI / 2.f, glm::vec3{1, 0, 0}));
-        for (const auto& ind : tree_skeleton.endpoints) {
-            glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), tree_skeleton.joints[ind].position) 
-                * glm::mat4(glm::quatLookAt(tree_skeleton.joints[ind].tangent, glm::vec3{0, 1, 0}))
-                * rot_leaf
-                * glm::translate(glm::identity<glm::mat4>(), {0, leaf_scale * -0.05, 0})
-                * glm::scale(glm::identity<glm::mat4>(), glm::vec3{leaf_scale});
-            leafs->instance_transforms.push_back(tr);
+        if (leafs) {
+            leafs->instance_transforms.clear();
+            leafs->instance_transforms.reserve(tree_skeleton.endpoints.size());
+            const glm::mat4 rot_leaf = glm::mat4(glm::rotate<float>(glm::identity<glm::quat>(), M_PI / 2.f, glm::vec3{1, 0, 0}));
+            for (const auto& ind : tree_skeleton.endpoints) {
+                glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), tree_skeleton.joints[ind].position) 
+                    * glm::mat4(glm::quatLookAt(tree_skeleton.joints[ind].tangent, glm::vec3{0, 1, 0}))
+                    * rot_leaf
+                    * glm::translate(glm::identity<glm::mat4>(), {0, leaf_scale * -0.05, 0})
+                    * glm::scale(glm::identity<glm::mat4>(), glm::vec3{leaf_scale});
+                leafs->instance_transforms.push_back(tr);
+            }
         }
 
         ptree::DefaultColorizer dc{c0, c1, tree.max_joint_depth};

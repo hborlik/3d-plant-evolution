@@ -58,6 +58,7 @@ struct DirectionalLight {
  */
 struct MaterialData {
     glm::vec3 diffuse       = {0.5, 0.4, 0.0};
+    glm::vec3 emissive      = {};
     float metallic          = 0;
     float subsurface        = 0;
     float specular          = .5f;
@@ -70,6 +71,7 @@ struct MaterialData {
     float sheenTint         = .5f;
 
     GLint diffuse_offset        = 0;
+    GLint emissive_offset       = 0;
     GLint metallic_offset       = 0;
     GLint subsurface_offset     = 0;
     GLint specular_offset       = 0;
@@ -88,6 +90,7 @@ struct Material {
     std::string name = "default";
 
     glm::vec3 diffuse   = {1.00f,0.10f,0.85f};
+    glm::vec3 emissive  = {};
     float metallic       = 0;
     float subsurface     = 0;
     float specular       = .5f;
@@ -123,6 +126,7 @@ private:
         if (internal_material) {
             if (
                 internal_material->diffuse          != diffuse ||
+                internal_material->emissive         != emissive ||
                 internal_material->metallic         != metallic ||
                 internal_material->subsurface       != subsurface ||
                 internal_material->specular         != specular ||
@@ -136,6 +140,7 @@ private:
             ) {
                 internal_material->changed = true;
                 internal_material->diffuse          = diffuse;
+                internal_material->emissive         = emissive;
                 internal_material->metallic         = metallic;
                 internal_material->subsurface       = subsurface;
                 internal_material->specular         = specular;
@@ -336,12 +341,17 @@ public:
 
     float exposure      = .8f;
     float gamma         = 2.2f;
+
+    float sky_brightness = .22f;
     float sun_position  = .0f;
     float cloud_speed   = .1f;
 
     const uint32_t ShadowMapWidth = 4096;
     const uint32_t ShadowMapHeight = 4096;
-    float shadow_bias_world = 0.3f;
+    float shadow_bias_world = 0.17f;
+
+    int32_t bloom_iterations = 2;
+    float bloom_threshold = 2.17f;
 
 private:
 
@@ -400,23 +410,34 @@ private:
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
 
     Program sky_program;
-    int sky_time_loc, sky_cirrus_loc, sky_cumulus_loc, sky_sun_position_loc;
+    int sky_time_loc, sky_cirrus_loc, sky_cumulus_loc, sky_sun_position_loc, sky_output_mul_loc;
+
+    Program post_fx_bloom_combine_program;
+    int post_fx_bc_hdrt_loc, post_fx_bc_emist_loc, post_fx_bc_thresh_loc;
+
+    Program post_fx_bloom_blur;
+    int post_fx_bb_hor_loc, post_fx_bb_bloom_in_loc;
 
     Program post_fx_program;
-    int post_fx_gamma_loc, post_fx_exposure_loc, post_fx_hdrt_loc;
+    int post_fx_gamma_loc, post_fx_exposure_loc, post_fx_hdrt_loc, post_fx_bloomt_loc;
+
 
     FBO g_buffer;
     FBO ssao_buffer;
     FBO lighting_buffer;
-    FBO d_buffer;
+    FBO depth_buffer;
+    FBO bloom_thresh_combine;
+    std::array<FBO, 2> bloom_blur_swap_fbo;
     
     VertexBuffer sst_vb;
 
     std::shared_ptr<Texture> shadow_depth_tex;
+
     std::shared_ptr<Texture> material_tex;
     std::shared_ptr<Texture> albedo_spec;
     std::shared_ptr<Texture> normals;
     std::shared_ptr<Texture> position;
+    std::shared_ptr<Texture> emissive;
 
     std::shared_ptr<Texture> ssao_kernel_noise;
     std::shared_ptr<Texture> ssao_kernel_color;
@@ -424,6 +445,10 @@ private:
     std::shared_ptr<Texture> one_p_black_tex;
 
     std::shared_ptr<Texture> hdr_texture;
+    std::shared_ptr<Texture> hdr_combined;
+
+    // texture in the 0 index is used for the bloom combined output
+    std::array<std::shared_ptr<Texture>, 2> bloom_blur_swap_tex;
 
     Buffer shader_globals;
     ProgramUniformBlockDescription globals_desc;

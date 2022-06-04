@@ -7,6 +7,7 @@ out vec4 color;
 uniform float time = 0.0;
 uniform float cirrus = 0.3;
 uniform float cumulus = 0.5;
+uniform float output_mul = 0.8;
 
 const float Br = 0.0025;
 const float Bm = 0.0003;
@@ -72,6 +73,8 @@ void main()
         // Dithering Noise
         color.rgb += noise(pos * 1000) * 0.01;
     }
-
+    color.rgb = vec3(output_mul) * color.rgb;
+    // color.rgb = vec3(1.0) - exp(-color.rgb * 0.5);
+    // color.rgb = log(vec3(1.0) + color.rgb);
     // color = vec4(tex_coord, 0.0, 1.0);
 }

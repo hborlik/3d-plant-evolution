@@ -723,7 +723,7 @@ std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::pat
                 return {};
         }
 
-        std::shared_ptr<Texture> texture = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::LINEAR);
+        std::shared_ptr<Texture> texture = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::LINEAR_MIPMAP_LINEAR);
         texture->set_data2D(internal_format, w, h, pixel_format, gl::PixelType::UNSIGNED_BYTE, data);
         texture->generate_mips();
         stbi_image_free(data);
@@ -762,15 +762,15 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
             Ref<MaterialResource> mat                   = rm->get_material(filename.generic_string() + "_" + m.name);
             mat->get_material()->name                   = filename.generic_string() + "_" + m.name;
             mat->get_material()->diffuse                = m.diffuse_texname.empty() ? glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]} : glm::vec3{};
-            mat->get_material()->metallic               = m.metallic;
+            mat->get_material()->metallic               = glm::clamp(m.metallic, 0.f, 1.f);
             mat->get_material()->subsurface             = glm::clamp(glm::length(glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}), 0.f, 1.f);
-            mat->get_material()->specular               = m.shininess;
-            mat->get_material()->roughness              = m.roughness;
+            mat->get_material()->specular               = glm::clamp(m.shininess / 300.0f, 0.f, 1.f);
+            mat->get_material()->roughness              = glm::clamp(m.roughness, 0.f, 1.f);
             mat->get_material()->specularTint           = 0;
-            mat->get_material()->clearcoat              = m.clearcoat_roughness;
-            mat->get_material()->clearcoatGloss         = m.clearcoat_thickness;
-            mat->get_material()->anisotropic            = m.anisotropy;
-            mat->get_material()->sheen                  = m.sheen;
+            mat->get_material()->clearcoat              = glm::clamp(m.clearcoat_roughness, 0.f, 1.f);
+            mat->get_material()->clearcoatGloss         = glm::clamp(m.clearcoat_thickness, 0.f, 1.f);
+            mat->get_material()->anisotropic            = glm::clamp(m.anisotropy, 0.f, 1.f);
+            mat->get_material()->sheen                  = glm::clamp(m.sheen, 0.f, 1.f);
             mat->get_material()->sheenTint              = 0.5f;
 
             if (!m.ambient_texname.empty())

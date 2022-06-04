@@ -91,7 +91,9 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
     g_buffer{gl::FBOTarget::RW},
     ssao_buffer{gl::FBOTarget::RW},
     lighting_buffer{gl::FBOTarget::RW},
-    d_buffer{gl::FBOTarget::RW},
+    depth_buffer{gl::FBOTarget::RW},
+    bloom_thresh_combine{gl::FBOTarget::RW},
+    bloom_blur_swap_fbo{FBO{gl::FBOTarget::RW}, FBO{gl::FBOTarget::RW}},
     sst_vb{VertexBuffer::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     lighting_materials{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
@@ -179,8 +181,8 @@ void Renderer::init() {
     shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::CLAMP_TO_BORDER);
     shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::CLAMP_TO_BORDER);
     shadow_depth_tex->set_border_color(glm::vec4{1.0f});
-    d_buffer.attach(shadow_depth_tex, gl::FBOAttachment::DEPTH);
-    if (!d_buffer.check())
+    depth_buffer.attach(shadow_depth_tex, gl::FBOAttachment::DEPTH);
+    if (!depth_buffer.check())
         throw engine_exception{"Framebuffer is not complete"};
     
 
@@ -200,6 +202,10 @@ void Renderer::init() {
     position->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
     g_buffer.attach(position, gl::FBOAttachment::COLOR0, 0);
 
+    emissive = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    emissive->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
+    g_buffer.attach(emissive, gl::FBOAttachment::COLOR4, 4);
+
     g_buffer.attach_renderbuffer(gl::RenderBufferInternalFormat::DEPTH_COMPONENT, width, height, gl::FBOAttachment::DEPTH);
 
     if (!g_buffer.check())
@@ -213,6 +219,25 @@ void Renderer::init() {
     lighting_buffer.attach_renderbuffer(gl::RenderBufferInternalFormat::DEPTH24_STENCIL8, width, height, gl::FBOAttachment::DEPTH_STENCIL);
 
     if (!lighting_buffer.check())
+        throw engine_exception{"Framebuffer is not complete"};
+
+    // blur pass texture and FBOs
+    bloom_blur_swap_tex[0] = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    bloom_blur_swap_tex[0]->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
+    bloom_blur_swap_fbo[0].attach(bloom_blur_swap_tex[0], gl::FBOAttachment::COLOR0, 0);
+
+    bloom_blur_swap_tex[1] = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    bloom_blur_swap_tex[1]->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
+    bloom_blur_swap_fbo[1].attach(bloom_blur_swap_tex[1], gl::FBOAttachment::COLOR0, 0);
+
+    // bloom threshold combine output HDR FBO
+    hdr_combined = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    hdr_combined->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
+    bloom_thresh_combine.attach(hdr_combined, gl::FBOAttachment::COLOR0, 0);
+
+    bloom_thresh_combine.attach(bloom_blur_swap_tex[0], gl::FBOAttachment::COLOR1, 1);
+
+    if (!bloom_thresh_combine.check())
         throw engine_exception{"Framebuffer is not complete"};
 
     // set up programs
@@ -292,6 +317,20 @@ void Renderer::init() {
     sky_cirrus_loc = sky_program.getUniformInfo("cirrus").Location;
     sky_cumulus_loc = sky_program.getUniformInfo("cumulus").Location;
     sky_sun_position_loc = sky_program.getUniformInfo("sun_position").Location;
+    sky_output_mul_loc = sky_program.getUniformInfo("output_mul").Location;
+
+    post_fx_bloom_combine_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
+    post_fx_bloom_combine_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "post_fx_bloom_combine.glsl.frag", prep);
+    post_fx_bloom_combine_program.link();
+    post_fx_bc_hdrt_loc = post_fx_bloom_combine_program.getUniformInfo("hdrBuffer").Location;
+    post_fx_bc_emist_loc = post_fx_bloom_combine_program.getUniformInfo("emissiveBuffer").Location;
+    post_fx_bc_thresh_loc = post_fx_bloom_combine_program.getUniformInfo("bloom_threshold").Location;
+
+    post_fx_bloom_blur.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
+    post_fx_bloom_blur.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "post_fx_bloom_blur.glsl.frag", prep);
+    post_fx_bloom_blur.link();
+    post_fx_bb_hor_loc = post_fx_bloom_blur.getUniformInfo("horizontal").Location;
+    post_fx_bb_bloom_in_loc = post_fx_bloom_blur.getUniformInfo("bloom_blur_in").Location;
 
     post_fx_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
     post_fx_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "post_fx.glsl.frag", prep);
@@ -299,6 +338,7 @@ void Renderer::init() {
     post_fx_gamma_loc = post_fx_program.getUniformInfo("gamma").Location;
     post_fx_exposure_loc = post_fx_program.getUniformInfo("exposure").Location;
     post_fx_hdrt_loc = post_fx_program.getUniformInfo("hdrBuffer").Location;
+    post_fx_bloomt_loc = post_fx_program.getUniformInfo("bloomBuffer").Location;
 
     // program block inputs
     globals_desc = geometry_program.getUniformBlockInfo("Globals");
@@ -322,6 +362,8 @@ void Renderer::init() {
             MaterialData& data_ref = material_data_buffer[index];
             if (var_name == "diffuse") {
                 data_ref.diffuse_offset = layout.Offset;
+            } else if (var_name == "emissive") {
+                data_ref.emissive_offset = layout.Offset;
             } else if (var_name == "metallic") {
                 data_ref.metallic_offset = layout.Offset;
             } else if (var_name == "subsurface") {
@@ -368,6 +410,7 @@ void Renderer::init() {
 void Renderer::update_material(mat_id_t material_slot, const MaterialData& material) {
     material_data_buffer[material_slot] = material;
     lighting_materials.SubData(material.diffuse,        material.diffuse_offset);
+    lighting_materials.SubData(material.emissive,       material.emissive_offset);
     lighting_materials.SubData(material.metallic,       material.metallic_offset);
     lighting_materials.SubData(material.subsurface,     material.subsurface_offset);
     lighting_materials.SubData(material.specular,       material.specular_offset);
@@ -733,7 +776,7 @@ void Renderer::render(const Camera &camera) {
     if (shadow_directional_light_id >= 0) {
         //set up shadow shader
         depth_program.use();
-        d_buffer.bind();
+        depth_buffer.bind();
         //set up light's depth map
         glViewport(0, 0, ShadowMapWidth, ShadowMapHeight);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -761,8 +804,8 @@ void Renderer::render(const Camera &camera) {
         const float shadow_near = 0.1f;
         const float shadow_far = 2.f * dist_to_camera;
         const float shadow_bias = 2.f * shadow_bias_world / (shadow_far - shadow_near);
-        glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY, shadow_near, shadow_far);
-        glm::mat4 bias_mat = {
+        const glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY, shadow_near, shadow_far);
+        const glm::mat4 bias_mat = {
             glm::vec4{.5f, 0, 0, 0},
             glm::vec4{0, .5f, 0, 0},
             glm::vec4{0, 0, .5f, 0},
@@ -782,7 +825,7 @@ void Renderer::render(const Camera &camera) {
         }
 
         depth_program.unbind();
-        d_buffer.unbind();
+        depth_buffer.unbind();
     }
 
 
@@ -801,6 +844,7 @@ void Renderer::render(const Camera &camera) {
 
     // bind global shader UBO to shader
     globals_desc.bind_buffer(shader_globals);
+    lighting_materials_desc.bind_buffer(lighting_materials);
 
     for (auto &mPair : model_instances) {
         auto& m = mPair.second;
@@ -819,6 +863,7 @@ void Renderer::render(const Camera &camera) {
     geometry_program_instanced.use();
     // bind global shader UBO to shader
     globals_desc.bind_buffer(shader_globals);
+    lighting_materials_desc.bind_buffer(lighting_materials);
     for (auto &mPair : instanced_models) {
         auto& m = mPair.second;
 
@@ -841,7 +886,7 @@ void Renderer::render(const Camera &camera) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glDisable(GL_DEPTH_TEST); // overdraw
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL );
 
     if (ssao_p_loc >= 0) {
         glActiveTexture(GL_TEXTURE0);
@@ -1020,6 +1065,7 @@ void Renderer::render(const Camera &camera) {
     float time = (float)glfwGetTime() - 0.0f;
     gl::glUniformf(time * cloud_speed, sky_time_loc);
     gl::glUniformf(sun_position, sky_sun_position_loc);
+    gl::glUniformf(sky_brightness, sky_output_mul_loc);
     // draw into non lit pixels
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
@@ -1035,6 +1081,56 @@ void Renderer::render(const Camera &camera) {
     sky_program.unbind();
     lighting_buffer.unbind();
 
+    // bloom threshold and combine
+    bloom_thresh_combine.bind();
+    post_fx_bloom_combine_program.use();
+
+    glViewport(0, 0, width, height);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glDisable(GL_DEPTH_TEST); // sst
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL );
+
+    if (post_fx_bc_hdrt_loc >= 0) {
+        glActiveTexture(GL_TEXTURE0);
+        hdr_texture->bind();
+        gl::glUniformSampler(0, post_fx_bc_hdrt_loc);
+    }
+
+    if (post_fx_bc_emist_loc >= 0) {
+        glActiveTexture(GL_TEXTURE1);
+        emissive->bind();
+        gl::glUniformSampler(1, post_fx_bc_emist_loc);
+    }
+
+    gl::glUniformf(bloom_threshold, post_fx_bc_thresh_loc);
+
+    draw_screen_space_triangle();
+
+    post_fx_bloom_combine_program.unbind();
+    bloom_thresh_combine.unbind();
+
+    // bloom blur
+    int bloom_output_tex_ind = 0;
+    post_fx_bloom_blur.use();
+    for (int i = 0; i < bloom_iterations * 2; i++) {
+        bloom_output_tex_ind = (i + 1) % 2;
+
+        bloom_blur_swap_fbo[bloom_output_tex_ind].bind();
+
+        glActiveTexture(GL_TEXTURE0);
+        bloom_blur_swap_tex[i%2]->bind();
+        gl::glUniformSampler(0, post_fx_bb_bloom_in_loc);
+
+        gl::glUniformi(bloom_output_tex_ind, post_fx_bb_hor_loc); // boolean
+
+        draw_screen_space_triangle();
+
+        bloom_blur_swap_fbo[bloom_output_tex_ind].unbind();
+    }
+    post_fx_bloom_blur.unbind();
+
     // post fx pass
     post_fx_program.use();
 
@@ -1047,8 +1143,14 @@ void Renderer::render(const Camera &camera) {
 
     if (post_fx_hdrt_loc >= 0) {
         glActiveTexture(GL_TEXTURE0);
-        hdr_texture->bind();
+        hdr_combined->bind();
         gl::glUniformSampler(0, post_fx_hdrt_loc);
+    }
+
+    if (post_fx_bloomt_loc >= 0) {
+        glActiveTexture(GL_TEXTURE1);
+        bloom_blur_swap_tex[bloom_output_tex_ind]->bind();
+        gl::glUniformSampler(1, post_fx_bloomt_loc);
     }
 
     draw_screen_space_triangle();
@@ -1074,6 +1176,9 @@ void Renderer::set_resolution(uint32_t width, uint32_t height) {
     g_buffer.resize_all(width, height);
     ssao_buffer.resize_all(width, height);
     lighting_buffer.resize_all(width, height);
+    bloom_thresh_combine.resize_all(width, height);
+    bloom_blur_swap_fbo[0].resize_all(width, height);
+    bloom_blur_swap_fbo[1].resize_all(width, height);
 }
 
 void Renderer::draw_screen_space_triangle() {

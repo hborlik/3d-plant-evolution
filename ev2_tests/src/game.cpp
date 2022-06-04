@@ -23,13 +23,22 @@ GameState::GameState() {
     light->set_color(glm::vec3{0, 1, 0});
 
     auto bark = ev2::ResourceManager::get_singleton().get_material("bark");
-    bark->get_material()->diffuse = glm::vec3{0};
+    bark->get_material()->diffuse = glm::vec3{};
     bark->get_material()->metallic = 0;
+    bark->get_material()->subsurface = 0.05;
+    bark->get_material()->specular = 0.08;
+    bark->get_material()->roughness = 0.75;
+    bark->get_material()->specularTint = 0.1;
+    bark->get_material()->clearcoat = 0.0;
+    bark->get_material()->clearcoatGloss = 0.0;
+    bark->get_material()->sheen = 0.1;
+    bark->get_material()->sheenTint = 0.54;
 
     tree_bark = bark;
 
     highlight_material = ResourceManager::get_singleton().get_material("highlight");
-    highlight_material->get_material()->diffuse = glm::vec3{235/255.0, 255/255.0, 0/255.0};
+    highlight_material->get_material()->diffuse = glm::vec3{};
+    highlight_material->get_material()->emissive = glm::vec3{10, 0, 0};
     highlight_material->get_material()->sheen = 1.0;
     highlight_material->get_material()->metallic = 0.9;
 
@@ -41,11 +50,17 @@ GameState::GameState() {
     fruit_material->get_material()->metallic = 0.0;
 
     leaf_material = ResourceManager::get_singleton().get_material("leaf_material");
-    leaf_material->get_material()->diffuse = glm::vec3{};
-    leaf_material->get_material()->sheen = 0.7;
-    leaf_material->get_material()->roughness = 0.4f;
-    leaf_material->get_material()->clearcoat = 0.2f;
-    leaf_material->get_material()->metallic = 0.0;
+    leaf_material->get_material()->diffuse = glm::vec3{165/255.0, 17/255.0, 177/255.0};
+    leaf_material->get_material()->emissive = 1.5f * glm::vec3{37/255.0, 0/255.0, 255/255.0};
+    leaf_material->get_material()->metallic = 0.09f;
+    leaf_material->get_material()->subsurface = 1.0f;
+    leaf_material->get_material()->specular = 0.04;
+    leaf_material->get_material()->roughness = 0.4;
+    leaf_material->get_material()->specularTint = 0.f;
+    leaf_material->get_material()->clearcoat = 0.88;
+    leaf_material->get_material()->clearcoatGloss = 0.63;
+    leaf_material->get_material()->sheen = 0.35f;
+    leaf_material->get_material()->sheenTint = 0.5f;
     leaf_material->get_material()->diffuse_tex = ResourceManager::get_singleton().get_texture("coffee_leaf1.png");
 
     auto ground_material = ResourceManager::get_singleton().get_material("ground_mat");
@@ -77,7 +92,15 @@ GameState::GameState() {
 
     auto hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
     auto building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "house" / "house.obj");
+    for (auto& m : building0->materials) {
+        m->roughness = 0.26f;
+        m->clearcoat = 0.03f;
+        m->clearcoatGloss = 1.0f;
+        m->sheen = 0.77f;
+    }
+
     auto sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
+    auto wagon = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "Wagon.obj");
 
     marker = scene->create_node<ev2::VisualInstance>("marker");
     marker->set_model(ground);
@@ -93,6 +116,12 @@ GameState::GameState() {
     auto lh_node = scene->create_node<ev2::VisualInstance>("building");
     lh_node->transform.position = glm::vec3{30, 0, -10};
     lh_node->set_model(building0);
+
+    auto w_node = scene->create_node<ev2::VisualInstance>("Wagon");
+    w_node->transform.position = glm::vec3{0, 0.43, -20};
+    w_node->transform.rotate(glm::vec3{0, 0.2, -0.3});
+    w_node->transform.scale = glm::vec3{0.2};
+    w_node->set_model(wagon);
 
     auto instance_node = scene->create_node<ev2::InstancedGeometry>("instance_test");
     instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {0, 10, 0}));
@@ -154,7 +183,7 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     int unique_id = (int)randomFloatTo(9999999);
     std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
-    ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>(this, "Tree");
+    ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>(this, "Tree", breedable);
     auto debug = tree->get_parent();
     tree->plantInfo.ID = unique_id;
     tree->breedable = breedable;
