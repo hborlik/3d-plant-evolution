@@ -36,6 +36,10 @@ GameState::GameState() {
 
     tree_bark = bark;
 
+    auto light_material = ResourceManager::get_singleton().get_material("light_material");
+    light_material->get_material()->diffuse = glm::vec3{};
+    light_material->get_material()->emissive = glm::vec3{10, 10, 10};
+
     highlight_material = ResourceManager::get_singleton().get_material("highlight");
     highlight_material->get_material()->diffuse = glm::vec3{};
     highlight_material->get_material()->emissive = glm::vec3{10, 0, 0};
@@ -199,13 +203,19 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     tree->set_material_override(tree_bark->get_material());
     if (breedable)
     {
-        auto light = scene->create_node<ev2::PointLightNode>("point_light");
-        light->transform.position = glm::vec3{position} + glm::vec3{0, 1, 0};
-        light->set_color(color_0 * 3.f);
+        auto light_material = ResourceManager::get_singleton().get_material("light_material");
+        auto cube = ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
+        auto light_geom = scene->create_node<VisualInstance>("ground");
+        light_geom->set_model(cube);
+        light_geom->set_material_override(light_material->get_material());
+        light_geom->transform.scale = glm::vec3{0.1, 0.5, 0.1};
 
-        auto light2 = scene->create_node<ev2::PointLightNode>("point_light");
-        light2->transform.position = glm::vec3{position} + glm::vec3{0, 6, 0};
-        light2->set_color(color_1 * 3.f);
+        auto light = scene->create_node<ev2::PointLightNode>("point_light");
+        light->transform.position = glm::vec3{1, 0.3, 0};
+        light->set_color(color_0 * 3.f);
+        light->add_child(light_geom);
+
+        tree_hit_sphere->add_child(light);
 
         spawn_fruit(position + glm::vec3{0, 10, 0}, tree->fruit_params);
     }
