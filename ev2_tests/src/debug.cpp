@@ -41,6 +41,7 @@ void show_settings_editor_window() {
     ImGui::DragFloat("Gamma", &(ev2::renderer::Renderer::get_singleton().gamma), 0.01f, 0.8f, 2.8f, "%.1f", 1.0f);
     ImGui::DragInt("Bloom Quality", &(ev2::renderer::Renderer::get_singleton().bloom_iterations), 1, 1, 6);
     ImGui::DragFloat("Bloom Threshold", &(ev2::renderer::Renderer::get_singleton().bloom_threshold), 0.005f, 0.01f, 5.0f, "%.5f", 1.0f);
+    ImGui::DragFloat("Bloom Falloff", &(ev2::renderer::Renderer::get_singleton().bloom_falloff), 0.005f, 0.1f, 3.0f, "%.5f", 1.0f);
     ImGui::DragFloat("Shadow Bias World", &(ev2::renderer::Renderer::get_singleton().shadow_bias_world), 0.005f, 0.0001f, 1.0f, "%.5f", 1.0f);
     ImGui::Separator();
     ImGui::Text("World");

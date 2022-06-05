@@ -337,6 +337,7 @@ void Renderer::init() {
     post_fx_program.link();
     post_fx_gamma_loc = post_fx_program.getUniformInfo("gamma").Location;
     post_fx_exposure_loc = post_fx_program.getUniformInfo("exposure").Location;
+    post_fx_bloom_falloff_loc = post_fx_program.getUniformInfo("bloom_falloff").Location;
     post_fx_hdrt_loc = post_fx_program.getUniformInfo("hdrBuffer").Location;
     post_fx_bloomt_loc = post_fx_program.getUniformInfo("bloomBuffer").Location;
 
@@ -764,7 +765,6 @@ void Renderer::render(const Camera &camera) {
     globals_desc.setShaderParameter("CameraPos", camera.get_position(), shader_globals);
     globals_desc.setShaderParameter("CameraDir", camera.get_forward(), shader_globals);
 
-    // real render
     glm::mat4 light_vp;
 
     // render all geometry to g buffer
@@ -772,6 +772,8 @@ void Renderer::render(const Camera &camera) {
     glDisable(GL_BLEND);
     glDisable(GL_DITHER);
     glDisable(GL_STENCIL_TEST);
+
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Shadow Pass");
 
     if (shadow_directional_light_id >= 0) {
         //set up shadow shader
@@ -828,18 +830,20 @@ void Renderer::render(const Camera &camera) {
         depth_buffer.unbind();
     }
 
+    glPopDebugGroup();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Geometry Pass");
+
+    g_buffer.bind();
+    geometry_program.use();
+
+    glViewport(0, 0, width, height);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (wireframe)
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
     else
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-
-
-    geometry_program.use();
-    g_buffer.bind();
-    glViewport(0, 0, width, height);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
     // bind global shader UBO to shader
@@ -875,10 +879,12 @@ void Renderer::render(const Camera &camera) {
 
     g_buffer.unbind();
 
+    glPopDebugGroup();
+
     // glFlush();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "SSAO");
 
     // ssao pass
-    ssao_program.use();
     ssao_buffer.bind();
 
     glViewport(0, 0, width, height);
@@ -887,6 +893,8 @@ void Renderer::render(const Camera &camera) {
 
     glDisable(GL_DEPTH_TEST); // overdraw
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL );
+    
+    ssao_program.use();
 
     if (ssao_p_loc >= 0) {
         glActiveTexture(GL_TEXTURE0);
@@ -920,6 +928,9 @@ void Renderer::render(const Camera &camera) {
 
     ssao_program.unbind();
     ssao_buffer.unbind();
+
+    glPopDebugGroup();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Lighting Pass");
 
     // lighting pass
     // glFlush();
@@ -1061,12 +1072,7 @@ void Renderer::render(const Camera &camera) {
     point_lighting_program.unbind();
 
     // sky program
-    sky_program.use();
-    float time = (float)glfwGetTime() - 0.0f;
-    gl::glUniformf(time * cloud_speed, sky_time_loc);
-    gl::glUniformf(sun_position, sky_sun_position_loc);
-    gl::glUniformf(sky_brightness, sky_output_mul_loc);
-    // draw into non lit pixels
+    // draw into non lit pixels in hdr fbo
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
     glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -1074,23 +1080,33 @@ void Renderer::render(const Camera &camera) {
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
     glDisable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
+
+    sky_program.use();
     globals_desc.bind_buffer(shader_globals);
+
+    float time = (float)glfwGetTime() - 0.0f;
+    gl::glUniformf(time * cloud_speed, sky_time_loc);
+    gl::glUniformf(sun_position, sky_sun_position_loc);
+    gl::glUniformf(sky_brightness, sky_output_mul_loc);
 
     draw_screen_space_triangle();
 
     sky_program.unbind();
     lighting_buffer.unbind();
 
+    glPopDebugGroup();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Bloom");
+
     // bloom threshold and combine
     bloom_thresh_combine.bind();
-    post_fx_bloom_combine_program.use();
-
     glViewport(0, 0, width, height);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     glDisable(GL_DEPTH_TEST); // sst
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL );
+
+    post_fx_bloom_combine_program.use();
 
     if (post_fx_bc_hdrt_loc >= 0) {
         glActiveTexture(GL_TEXTURE0);
@@ -1131,14 +1147,18 @@ void Renderer::render(const Camera &camera) {
     }
     post_fx_bloom_blur.unbind();
 
-    // post fx pass
-    post_fx_program.use();
+    glPopDebugGroup();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Post Pass");
 
+    // post fx pass
     glDisable(GL_STENCIL_TEST);
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+    post_fx_program.use();
+
     gl::glUniformf(exposure, post_fx_exposure_loc);
+    gl::glUniformf(bloom_falloff, post_fx_bloom_falloff_loc);
     gl::glUniformf(gamma, post_fx_gamma_loc);
 
     if (post_fx_hdrt_loc >= 0) {
@@ -1158,6 +1178,8 @@ void Renderer::render(const Camera &camera) {
     hdr_texture->unbind();
 
     post_fx_program.unbind();
+
+    glPopDebugGroup();
 
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;

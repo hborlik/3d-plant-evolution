@@ -341,6 +341,7 @@ public:
 
     float exposure      = .8f;
     float gamma         = 2.2f;
+    float bloom_falloff = 0.9f;
 
     float sky_brightness = .22f;
     float sun_position  = .0f;
@@ -419,7 +420,7 @@ private:
     int post_fx_bb_hor_loc, post_fx_bb_bloom_in_loc;
 
     Program post_fx_program;
-    int post_fx_gamma_loc, post_fx_exposure_loc, post_fx_hdrt_loc, post_fx_bloomt_loc;
+    int post_fx_gamma_loc, post_fx_exposure_loc, post_fx_bloom_falloff_loc, post_fx_hdrt_loc, post_fx_bloomt_loc;
 
 
     FBO g_buffer;
