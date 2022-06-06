@@ -49,25 +49,34 @@ CPMAddPackage(
 
 # glfw3
 
-ExternalProject_Add(GLFW3_UTIL
-    PREFIX glfw3
-    GIT_REPOSITORY https://github.com/glfw/glfw.git
+
+CPMAddPackage(
+    NAME glfw
+    GITHUB_REPOSITORY glfw/glfw
     GIT_TAG ${GLFW3_VERSION}
-    INSTALL_COMMAND ""
-    UPDATE_COMMAND ""
-    LOG_DOWNLOAD ON
+    OPTION GLFW_BUILD_EXAMPLES OFF
+    OPTION GLFW_BUILD_TESTS OFF
 )
-ExternalProject_Get_Property(GLFW3_UTIL SOURCE_DIR)
-ExternalProject_Get_Property(GLFW3_UTIL BINARY_DIR)
-set(GLFW3_INCLUDE_DIR ${SOURCE_DIR}/include)
-set(GLFW3_BINARY_DIR ${BINARY_DIR}/src)
-message(STATUS "GLFW3 Source Dir: ${SOURCE_DIR}")
-message(STATUS "GLFW3 Binary Dir: ${BINARY_DIR}")
+
+# ExternalProject_Add(GLFW3_UTIL
+#     PREFIX glfw3
+#     GIT_REPOSITORY https://github.com/glfw/glfw.git
+#     GIT_TAG ${GLFW3_VERSION}
+#     INSTALL_COMMAND ""
+#     UPDATE_COMMAND ""
+#     LOG_DOWNLOAD ON
+# )
+# ExternalProject_Get_Property(GLFW3_UTIL SOURCE_DIR)
+# ExternalProject_Get_Property(GLFW3_UTIL BINARY_DIR)
+# set(GLFW3_INCLUDE_DIR ${SOURCE_DIR}/include)
+# set(GLFW3_BINARY_DIR ${BINARY_DIR}/src)
+# message(STATUS "GLFW3 Source Dir: ${SOURCE_DIR}")
+# message(STATUS "GLFW3 Binary Dir: ${BINARY_DIR}")
 
 add_library(glfw3 INTERFACE)
-add_dependencies(glfw3 INTERFACE GLFW3_UTIL)
-target_link_libraries(glfw3 INTERFACE ${GLFW3_BINARY_DIR}/libglfw3.a)
-target_include_directories(glfw3 INTERFACE ${GLFW3_INCLUDE_DIR})
+# add_dependencies(glfw3 INTERFACE glfw3)
+target_link_libraries(glfw3 INTERFACE glfw)
+target_include_directories(glfw3 INTERFACE ${glfw_SOURCE_DIR}/include)
 
 # OTHERS
 

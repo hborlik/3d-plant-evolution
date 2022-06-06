@@ -24,12 +24,70 @@ void VisualInstance::pre_render() {
     renderer::Renderer::get_singleton().set_instance_transform(iid, get_transform());
 }
 
-void VisualInstance::set_model(renderer::MID model) {
+void VisualInstance::set_model(renderer::Drawable* model) {
     renderer::Renderer::get_singleton().set_instance_model(iid, model);
 }
 
 void VisualInstance::set_material_override(renderer::Material* material_override) {
     renderer::Renderer::get_singleton().set_instance_material_override(iid, material_override);
+}
+
+void InstancedGeometry::on_init() {
+    VertexLayout quad_layout;
+    quad_layout .add_attribute(VertexAttributeType::Vertex)
+                .add_attribute(VertexAttributeType::Normal)
+                .add_attribute(VertexAttributeType::Texcoord)
+                .finalize();
+    geometry = renderer::Renderer::get_singleton().create_model(
+        VertexBuffer::vbInitVertexDataInstanced(
+            {
+                // positions         normals         texcoords
+                -0.05f,  0.05f, .0f, .0f, .0f, -1.f, 1.f, 1.f,
+                 0.05f, -0.05f, .0f, .0f, .0f, -1.f, 0.f, 0.f,
+                -0.05f, -0.05f, .0f, .0f, .0f, -1.f, 1.f, 0.f,
+
+                -0.05f,  0.05f, .0f, .0f, .0f, -1.f, 1.f, 1.f,
+                 0.05f,  0.05f, .0f, .0f, .0f, -1.f, 0.f, 1.f,
+                 0.05f, -0.05f, .0f, .0f, .0f, -1.f, 0.f, 0.f,
+                
+                // back
+                -0.05f,  0.05f, .0f, .0f, .0f, 1.f, 1.f, 1.f,
+                -0.05f, -0.05f, .0f, .0f, .0f, 1.f, 1.f, 0.f,
+                 0.05f, -0.05f, .0f, .0f, .0f, 1.f, 0.f, 0.f,
+
+                -0.05f,  0.05f, .0f, .0f, .0f, 1.f, 1.f, 1.f,
+                 0.05f, -0.05f, .0f, .0f, .0f, 1.f, 0.f, 0.f,
+                 0.05f,  0.05f, .0f, .0f, .0f, 1.f, 0.f, 1.f,
+            },
+            quad_layout),
+        std::vector<renderer::Primitive>{renderer::Primitive{0, 12, -1}},
+        std::vector<renderer::Material*>{},
+        glm::vec3{},
+        glm::vec3{},
+        gl::CullMode::BACK,
+        gl::FrontFacing::CCW
+    );
+
+}
+
+void InstancedGeometry::on_destroy() {
+    ev2::renderer::Renderer::get_singleton().destroy_model(geometry);
+}
+
+void InstancedGeometry::pre_render() {
+    geometry->instance_world_transform = get_transform();
+    geometry->vertex_buffer.get_buffer(geometry->vertex_buffer.get_instanced()).CopyData(instance_transforms);
+    geometry->vertex_buffer.set_n_instances(instance_transforms.size());
+}
+
+void InstancedGeometry::set_material_override(renderer::Material* material_override) {
+    if (material_override) {
+        geometry->materials.resize(1);
+        geometry->materials[0] = material_override;
+        geometry->primitives[0].material_ind = 0;
+    } else {
+        geometry->primitives[0].material_ind = -1;
+    }
 }
 
 // camera

@@ -16,32 +16,26 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
         glCullFace((GLenum)dr->cull_mode);
     }
     glFrontFace((GLenum)dr->front_facing);
-    int mat_loc = prog.getUniformInfo("materialId").Location;
-    int vert_col_w_loc = prog.getUniformInfo("vertex_color_weight").Location;
-    int diffuse_sampler_loc = prog.getUniformInfo("diffuse_tex").Location;
-    bool indexed = dr->vertex_buffer.get_indexed() != -1;
-    // TODO: support for multiple index buffers
+    const int mat_loc = prog.getUniformInfo("materialId").Location;
+    const int vert_col_w_loc = prog.getUniformInfo("vertex_color_weight").Location;
+    const int diffuse_sampler_loc = prog.getUniformInfo("diffuse_tex").Location;
+    const bool indexed = dr->vertex_buffer.get_indexed() != -1;
+    const int instanced_buffer_id = dr->vertex_buffer.get_instanced();
+    const bool instanced = instanced_buffer_id != -1;
+
     dr->vertex_buffer.bind();
     for (auto& m : dr->primitives) {
         Material* material_ptr = nullptr;
         if (use_materials) {
             mat_id_t material_slot = 0;
-            if (material_override < 0) {
+            if (m.material_ind >= 0 && material_override < 0) {
                 material_ptr = &materials.at(dr->materials[m.material_ind]->material_id);
-            } else {
+            } else if (material_override >= 0) {
                 material_ptr = &materials.at(material_override);
+            } else { // use default if no material is set
+                material_ptr = &materials.at(default_material_id);
             }
             material_slot = material_ptr->slot;
-
-            if (diffuse_sampler_loc >= 0) {
-                glActiveTexture(GL_TEXTURE0);
-                gl::glUniformSampler(0, diffuse_sampler_loc);
-            }
-            if (material_ptr->diffuse_tex) {
-                material_ptr->diffuse_tex->bind();
-            } else {
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
 
             // TODO does this go here?
             if (mat_loc >= 0) {
@@ -53,16 +47,38 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
             }
         }
 
-        if (indexed) {
-            dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed()).Bind(); // bind index buffer (again, @Windows)
-            glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
+        // textures
+        if (diffuse_sampler_loc >= 0) {
+            glActiveTexture(GL_TEXTURE0);
+            if (use_materials && material_ptr && material_ptr->diffuse_tex)
+                material_ptr->diffuse_tex->bind();
+            else
+                one_p_black_tex->bind();
+
+            gl::glUniformSampler(0, diffuse_sampler_loc);
         } else {
-            glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
+            // glBindTexture(GL_TEXTURE_2D, 0);
         }
 
-        if (material_ptr && diffuse_sampler_loc >= 0 && material_ptr->diffuse_tex) {
-            material_ptr->diffuse_tex->unbind();
+        if (indexed) {
+            Buffer& el_buf = dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed());
+            el_buf.Bind(); // bind index buffer (again, @Windows)
+            if (instanced) {
+                // Buffer& inst_buf = dr->vertex_buffer.get_buffer(instanced_buffer_id);
+                glDrawElementsInstanced(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0, dr->vertex_buffer.get_n_instances());
+            } else {
+                glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
+            }
+            el_buf.Unbind();
+        } else {
+            if (instanced) {
+                glDrawArraysInstanced(GL_TRIANGLES, m.start_index, m.num_elements, dr->vertex_buffer.get_n_instances());
+            } else {
+                glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
+            }
         }
+
+        // glBindTexture(GL_TEXTURE_2D, 0);
     }
     dr->vertex_buffer.unbind();
 }
@@ -75,7 +91,9 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
     g_buffer{gl::FBOTarget::RW},
     ssao_buffer{gl::FBOTarget::RW},
     lighting_buffer{gl::FBOTarget::RW},
-    d_buffer{gl::FBOTarget::RW},
+    depth_buffer{gl::FBOTarget::RW},
+    bloom_thresh_combine{gl::FBOTarget::RW},
+    bloom_blur_swap_fbo{FBO{gl::FBOTarget::RW}, FBO{gl::FBOTarget::RW}},
     sst_vb{VertexBuffer::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     lighting_materials{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
@@ -84,12 +102,13 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
     height{height} {
 
     // material id queue
-    for (mat_id_t i = 1; i < MAX_N_MATERIALS; i++) {
+    for (mat_id_t i = 0; i < MAX_N_MATERIALS; i++) {
         free_material_slots.push(i);
     }
 
     // create default material
-    materials[0] = {};
+    default_material_id = create_material()->material_id;
+    materials[default_material_id].diffuse = {1.00,0.00,1.00};
 
     for (auto& mat : material_data_buffer) {
         mat = {};
@@ -149,14 +168,21 @@ void Renderer::init() {
     if (!ssao_buffer.check())
         throw engine_exception{"Framebuffer is not complete"};
 
+    // black texture
+    one_p_black_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    one_p_black_tex->set_data2D(gl::TextureInternalFormat::RED, 1, 1, gl::PixelFormat::RED, gl::PixelType::UNSIGNED_BYTE, nullptr);
+    one_p_black_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::REPEAT);
+    one_p_black_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::REPEAT);
+    one_p_black_tex->generate_mips();
+
     // set up FBO textures
     shadow_depth_tex = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
     shadow_depth_tex->set_data2D(gl::TextureInternalFormat::DEPTH_COMPONENT16, ShadowMapWidth, ShadowMapHeight, gl::PixelFormat::DEPTH_COMPONENT, gl::PixelType::FLOAT, nullptr);
     shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_S, gl::TextureWrapMode::CLAMP_TO_BORDER);
     shadow_depth_tex->set_wrap_mode(gl::TextureParamWrap::TEXTURE_WRAP_T, gl::TextureWrapMode::CLAMP_TO_BORDER);
     shadow_depth_tex->set_border_color(glm::vec4{1.0f});
-    d_buffer.attach(shadow_depth_tex, gl::FBOAttachment::DEPTH);
-    if (!d_buffer.check())
+    depth_buffer.attach(shadow_depth_tex, gl::FBOAttachment::DEPTH);
+    if (!depth_buffer.check())
         throw engine_exception{"Framebuffer is not complete"};
     
 
@@ -176,6 +202,10 @@ void Renderer::init() {
     position->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
     g_buffer.attach(position, gl::FBOAttachment::COLOR0, 0);
 
+    emissive = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    emissive->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
+    g_buffer.attach(emissive, gl::FBOAttachment::COLOR4, 4);
+
     g_buffer.attach_renderbuffer(gl::RenderBufferInternalFormat::DEPTH_COMPONENT, width, height, gl::FBOAttachment::DEPTH);
 
     if (!g_buffer.check())
@@ -191,6 +221,25 @@ void Renderer::init() {
     if (!lighting_buffer.check())
         throw engine_exception{"Framebuffer is not complete"};
 
+    // blur pass texture and FBOs
+    bloom_blur_swap_tex[0] = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    bloom_blur_swap_tex[0]->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
+    bloom_blur_swap_fbo[0].attach(bloom_blur_swap_tex[0], gl::FBOAttachment::COLOR0, 0);
+
+    bloom_blur_swap_tex[1] = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    bloom_blur_swap_tex[1]->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
+    bloom_blur_swap_fbo[1].attach(bloom_blur_swap_tex[1], gl::FBOAttachment::COLOR0, 0);
+
+    // bloom threshold combine output HDR FBO
+    hdr_combined = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::NEAREST);
+    hdr_combined->set_data2D(gl::TextureInternalFormat::RGBA16F, width, height, gl::PixelFormat::RGBA, gl::PixelType::FLOAT, nullptr);
+    bloom_thresh_combine.attach(hdr_combined, gl::FBOAttachment::COLOR0, 0);
+
+    bloom_thresh_combine.attach(bloom_blur_swap_tex[0], gl::FBOAttachment::COLOR1, 1);
+
+    if (!bloom_thresh_combine.check())
+        throw engine_exception{"Framebuffer is not complete"};
+
     // set up programs
 
     ev2::ShaderPreprocessor prep{ResourceManager::get_singleton().asset_path / "shader"};
@@ -203,6 +252,12 @@ void Renderer::init() {
 
     gp_m_location = geometry_program.getUniformInfo("M").Location;
     gp_g_location = geometry_program.getUniformInfo("G").Location;
+
+    geometry_program_instanced.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "geometry_instanced.glsl.vert", prep);
+    geometry_program_instanced.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "geometry.glsl.frag", prep);
+    geometry_program_instanced.link();
+
+    gpi_m_location = geometry_program_instanced.getUniformInfo("M").Location;
 
     // Initialize the GLSL programs
     depth_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "simpleDepth.glsl.vert", prep);
@@ -262,13 +317,29 @@ void Renderer::init() {
     sky_cirrus_loc = sky_program.getUniformInfo("cirrus").Location;
     sky_cumulus_loc = sky_program.getUniformInfo("cumulus").Location;
     sky_sun_position_loc = sky_program.getUniformInfo("sun_position").Location;
+    sky_output_mul_loc = sky_program.getUniformInfo("output_mul").Location;
+
+    post_fx_bloom_combine_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
+    post_fx_bloom_combine_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "post_fx_bloom_combine.glsl.frag", prep);
+    post_fx_bloom_combine_program.link();
+    post_fx_bc_hdrt_loc = post_fx_bloom_combine_program.getUniformInfo("hdrBuffer").Location;
+    post_fx_bc_emist_loc = post_fx_bloom_combine_program.getUniformInfo("emissiveBuffer").Location;
+    post_fx_bc_thresh_loc = post_fx_bloom_combine_program.getUniformInfo("bloom_threshold").Location;
+
+    post_fx_bloom_blur.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
+    post_fx_bloom_blur.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "post_fx_bloom_blur.glsl.frag", prep);
+    post_fx_bloom_blur.link();
+    post_fx_bb_hor_loc = post_fx_bloom_blur.getUniformInfo("horizontal").Location;
+    post_fx_bb_bloom_in_loc = post_fx_bloom_blur.getUniformInfo("bloom_blur_in").Location;
 
     post_fx_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
     post_fx_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "post_fx.glsl.frag", prep);
     post_fx_program.link();
     post_fx_gamma_loc = post_fx_program.getUniformInfo("gamma").Location;
     post_fx_exposure_loc = post_fx_program.getUniformInfo("exposure").Location;
+    post_fx_bloom_falloff_loc = post_fx_program.getUniformInfo("bloom_falloff").Location;
     post_fx_hdrt_loc = post_fx_program.getUniformInfo("hdrBuffer").Location;
+    post_fx_bloomt_loc = post_fx_program.getUniformInfo("bloomBuffer").Location;
 
     // program block inputs
     globals_desc = geometry_program.getUniformBlockInfo("Globals");
@@ -276,6 +347,49 @@ void Renderer::init() {
 
     lighting_materials_desc = directional_lighting_program.getUniformBlockInfo("MaterialsInfo");
     lighting_materials.Allocate(lighting_materials_desc.block_size);
+
+    // extract all offsets for material buffer
+    for (const auto& layout_p : lighting_materials_desc.layouts) {
+        const auto& layout = layout_p.second;
+        std::string name = layout_p.first;
+        std::size_t b_begin = name.find('[');
+        std::size_t b_end = name.find(']');
+        if (b_begin != std::string::npos) {
+            if (b_end == std::string::npos)
+                throw engine_exception{"Invalid array name??"};
+            b_begin++;
+            uint32_t index = std::stoi(name.substr(b_begin, b_end - b_begin));
+            std::string var_name = name.substr(b_end + 2);
+            MaterialData& data_ref = material_data_buffer[index];
+            if (var_name == "diffuse") {
+                data_ref.diffuse_offset = layout.Offset;
+            } else if (var_name == "emissive") {
+                data_ref.emissive_offset = layout.Offset;
+            } else if (var_name == "metallic") {
+                data_ref.metallic_offset = layout.Offset;
+            } else if (var_name == "subsurface") {
+                data_ref.subsurface_offset = layout.Offset;
+            } else if (var_name == "specular") {
+                data_ref.specular_offset = layout.Offset;
+            } else if (var_name == "roughness") {
+                data_ref.roughness_offset = layout.Offset;
+            } else if (var_name == "specularTint") {
+                data_ref.specularTint_offset = layout.Offset;
+            } else if (var_name == "clearcoat") {
+                data_ref.clearcoat_offset = layout.Offset;
+            } else if (var_name == "clearcoatGloss") {
+                data_ref.clearcoatGloss_offset = layout.Offset;
+            } else if (var_name == "anisotropic") {
+                data_ref.anisotropic_offset = layout.Offset;
+            } else if (var_name == "sheen") {
+                data_ref.sheen_offset = layout.Offset;
+            } else if (var_name == "sheenTint") {
+                data_ref.sheenTint_offset = layout.Offset;
+            } else {
+                throw engine_exception{"invalid material array name " + var_name};
+            }
+        }
+    }
 
     ssao_kernel_desc = ssao_program.getUniformBlockInfo("Samples");
     ssao_kernel_buffer.Allocate(ssao_kernel_desc.block_size);
@@ -288,9 +402,7 @@ void Renderer::init() {
     }
 
     // light geometry
-    point_light_geometry_id = ResourceManager::get_singleton().get_model(std::filesystem::path("models") / "sphere.obj", false);
-    auto itr = models.find(point_light_geometry_id);
-    point_light_drawable = itr->second.get();
+    point_light_drawable = ResourceManager::get_singleton().get_model(std::filesystem::path("models") / "sphere.obj", false);;
     point_light_drawable->front_facing = gl::FrontFacing::CW; // render back facing only
     glm::vec3 scaling = glm::vec3{2} / (point_light_drawable->bmax - point_light_drawable->bmin);
     point_light_geom_tr = glm::scale(glm::identity<glm::mat4>(), scaling);
@@ -298,17 +410,18 @@ void Renderer::init() {
 
 void Renderer::update_material(mat_id_t material_slot, const MaterialData& material) {
     material_data_buffer[material_slot] = material;
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].diffuse", material.diffuse, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].metallic", material.metallic, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].subsurface", material.subsurface, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].specular", material.specular, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].roughness", material.roughness, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].specularTint", material.specularTint, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].clearcoat", material.clearcoat, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].clearcoatGloss", material.clearcoatGloss, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].anisotropic", material.anisotropic, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].sheen", material.sheen, lighting_materials);
-    lighting_materials_desc.setShaderParameter("materials[" + std::to_string(material_slot) + "].sheenTint", material.sheenTint, lighting_materials);
+    lighting_materials.SubData(material.diffuse,        material.diffuse_offset);
+    lighting_materials.SubData(material.emissive,       material.emissive_offset);
+    lighting_materials.SubData(material.metallic,       material.metallic_offset);
+    lighting_materials.SubData(material.subsurface,     material.subsurface_offset);
+    lighting_materials.SubData(material.specular,       material.specular_offset);
+    lighting_materials.SubData(material.roughness,      material.roughness_offset);
+    lighting_materials.SubData(material.specularTint,   material.specularTint_offset);
+    lighting_materials.SubData(material.clearcoat,      material.clearcoat_offset);
+    lighting_materials.SubData(material.clearcoatGloss, material.clearcoatGloss_offset);
+    lighting_materials.SubData(material.anisotropic,    material.anisotropic_offset);
+    lighting_materials.SubData(material.sheen,          material.sheen_offset);
+    lighting_materials.SubData(material.sheenTint,      material.sheenTint_offset);
 }
 
 Material* Renderer::create_material() {
@@ -422,20 +535,64 @@ void Renderer::destroy_light(LID lid) {
     point_lights.erase(lid._v);
 }
 
-MID Renderer::create_model(std::shared_ptr<Drawable> d) {
-    MID nmid = {next_model_id++};
-    models.insert_or_assign(nmid, d);
-    return nmid;
+Drawable *Renderer::create_model(VertexBuffer &&vb,
+                                 std::vector<Primitive> primitives,
+                                 std::vector<Material *> materials,
+                                 glm::vec3 bmin,
+                                 glm::vec3 bmax,
+                                 gl::CullMode cull,
+                                 gl::FrontFacing ff)
+{
+    uint32_t nmid = {next_model_id++};
+    if (vb.get_instanced() != -1) {
+        auto ins = instanced_models.emplace(
+            std::make_pair(
+                nmid,
+                Drawable{
+                    std::move(vb),
+                    std::move(primitives),
+                    std::move(materials),
+                    std::move(bmin),
+                    std::move(bmax),
+                    std::move(cull),
+                    std::move(ff),
+                    nmid
+                }
+            )
+        );
+        if (ins.second)
+            return &(ins.first->second);
+    } else {
+        auto ins = models.emplace(
+            std::make_pair(
+                nmid,
+                Drawable{
+                    std::move(vb),
+                    std::move(primitives),
+                    std::move(materials),
+                    std::move(bmin),
+                    std::move(bmax),
+                    std::move(cull),
+                    std::move(ff),
+                    nmid
+                }
+            )
+        );
+        if (ins.second)
+            return &(ins.first->second);
+    }
+    
+    return nullptr;
 }
 
-void Renderer::set_model_vertex_color_diffuse_weight(MID mid, float weight) {
-    if (!mid.is_valid())
-        return;
-    auto model = models.find(mid);
-    if (model != models.end()) {
-        model->second->vertex_color_weight = weight;
+void Renderer::destroy_model(Drawable* d) {
+    assert(d);
+    auto mitr = models.find(d->model_id);
+    if (mitr != models.end()) {
+        models.erase(mitr);
     }
 }
+
 
 IID Renderer::create_model_instance() {
     int32_t id = next_instance_id++;
@@ -445,12 +602,13 @@ IID Renderer::create_model_instance() {
     return {id};
 }
 
-void Renderer::set_instance_model(IID iid, MID mid) {
+void Renderer::set_instance_model(IID iid, Drawable* mid) {
+    assert(mid);
     if (!iid.is_valid())
         return;
-    auto model = models.find(mid);
+    auto model = models.find(mid->model_id);
     if (model != models.end()) {
-        model_instances[iid.v].drawable = (*model).second.get();
+        model_instances[iid.v].drawable = mid;
     }
 }
 
@@ -593,7 +751,8 @@ void Renderer::render(const Camera &camera) {
     }
 
     for(mat_id_t i = 0; i < MAX_N_MATERIALS; i++) {
-        update_material(i, material_data_buffer[i]);
+        if (material_data_buffer[i].changed)
+            update_material(i, material_data_buffer[i]);
     }
 
     // update globals buffer with frame info
@@ -606,7 +765,6 @@ void Renderer::render(const Camera &camera) {
     globals_desc.setShaderParameter("CameraPos", camera.get_position(), shader_globals);
     globals_desc.setShaderParameter("CameraDir", camera.get_forward(), shader_globals);
 
-    // real render
     glm::mat4 light_vp;
 
     // render all geometry to g buffer
@@ -615,10 +773,12 @@ void Renderer::render(const Camera &camera) {
     glDisable(GL_DITHER);
     glDisable(GL_STENCIL_TEST);
 
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Shadow Pass");
+
     if (shadow_directional_light_id >= 0) {
         //set up shadow shader
         depth_program.use();
-        d_buffer.bind();
+        depth_buffer.bind();
         //set up light's depth map
         glViewport(0, 0, ShadowMapWidth, ShadowMapHeight);
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -646,8 +806,8 @@ void Renderer::render(const Camera &camera) {
         const float shadow_near = 0.1f;
         const float shadow_far = 2.f * dist_to_camera;
         const float shadow_bias = 2.f * shadow_bias_world / (shadow_far - shadow_near);
-        glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY, shadow_near, shadow_far);
-        glm::mat4 bias_mat = {
+        const glm::mat4 LO = glm::ortho(minX, maxX, minY, maxY, shadow_near, shadow_far);
+        const glm::mat4 bias_mat = {
             glm::vec4{.5f, 0, 0, 0},
             glm::vec4{0, .5f, 0, 0},
             glm::vec4{0, 0, .5f, 0},
@@ -667,9 +827,18 @@ void Renderer::render(const Camera &camera) {
         }
 
         depth_program.unbind();
-        d_buffer.unbind();
+        depth_buffer.unbind();
     }
 
+    glPopDebugGroup();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Geometry Pass");
+
+    g_buffer.bind();
+    geometry_program.use();
+
+    glViewport(0, 0, width, height);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (wireframe)
         glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
@@ -677,15 +846,9 @@ void Renderer::render(const Camera &camera) {
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
 
-    geometry_program.use();
-    g_buffer.bind();
-    glViewport(0, 0, width, height);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
     // bind global shader UBO to shader
     globals_desc.bind_buffer(shader_globals);
+    lighting_materials_desc.bind_buffer(lighting_materials);
 
     for (auto &mPair : model_instances) {
         auto& m = mPair.second;
@@ -698,14 +861,30 @@ void Renderer::render(const Camera &camera) {
             draw(m.drawable, geometry_program, true, m.material_id_override);
         }
     }
-
     geometry_program.unbind();
+
+    // render instanced geometry
+    geometry_program_instanced.use();
+    // bind global shader UBO to shader
+    globals_desc.bind_buffer(shader_globals);
+    lighting_materials_desc.bind_buffer(lighting_materials);
+    for (auto &mPair : instanced_models) {
+        auto& m = mPair.second;
+
+        ev2::gl::glUniform(m.instance_world_transform, gpi_m_location);
+
+        draw(&m, geometry_program_instanced, true);
+    }
+    geometry_program_instanced.unbind();
+
     g_buffer.unbind();
 
+    glPopDebugGroup();
+
     // glFlush();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "SSAO");
 
     // ssao pass
-    ssao_program.use();
     ssao_buffer.bind();
 
     glViewport(0, 0, width, height);
@@ -713,7 +892,9 @@ void Renderer::render(const Camera &camera) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glDisable(GL_DEPTH_TEST); // overdraw
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL );
+    
+    ssao_program.use();
 
     if (ssao_p_loc >= 0) {
         glActiveTexture(GL_TEXTURE0);
@@ -747,6 +928,9 @@ void Renderer::render(const Camera &camera) {
 
     ssao_program.unbind();
     ssao_buffer.unbind();
+
+    glPopDebugGroup();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Lighting Pass");
 
     // lighting pass
     // glFlush();
@@ -888,11 +1072,7 @@ void Renderer::render(const Camera &camera) {
     point_lighting_program.unbind();
 
     // sky program
-    sky_program.use();
-    float time = (float)glfwGetTime() - 0.0f;
-    gl::glUniformf(time * cloud_speed, sky_time_loc);
-    gl::glUniformf(sun_position, sky_sun_position_loc);
-    // draw into non lit pixels
+    // draw into non lit pixels in hdr fbo
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
     glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
@@ -900,27 +1080,97 @@ void Renderer::render(const Camera &camera) {
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
     glDisable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
+
+    sky_program.use();
     globals_desc.bind_buffer(shader_globals);
+
+    float time = (float)glfwGetTime() - 0.0f;
+    gl::glUniformf(time * cloud_speed, sky_time_loc);
+    gl::glUniformf(sun_position, sky_sun_position_loc);
+    gl::glUniformf(sky_brightness, sky_output_mul_loc);
 
     draw_screen_space_triangle();
 
     sky_program.unbind();
     lighting_buffer.unbind();
 
-    // post fx pass
-    post_fx_program.use();
+    glPopDebugGroup();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Bloom");
 
+    // bloom threshold and combine
+    bloom_thresh_combine.bind();
+    glViewport(0, 0, width, height);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glDisable(GL_DEPTH_TEST); // sst
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL );
+
+    post_fx_bloom_combine_program.use();
+
+    if (post_fx_bc_hdrt_loc >= 0) {
+        glActiveTexture(GL_TEXTURE0);
+        hdr_texture->bind();
+        gl::glUniformSampler(0, post_fx_bc_hdrt_loc);
+    }
+
+    if (post_fx_bc_emist_loc >= 0) {
+        glActiveTexture(GL_TEXTURE1);
+        emissive->bind();
+        gl::glUniformSampler(1, post_fx_bc_emist_loc);
+    }
+
+    gl::glUniformf(bloom_threshold, post_fx_bc_thresh_loc);
+
+    draw_screen_space_triangle();
+
+    post_fx_bloom_combine_program.unbind();
+    bloom_thresh_combine.unbind();
+
+    // bloom blur
+    int bloom_output_tex_ind = 0;
+    post_fx_bloom_blur.use();
+    for (int i = 0; i < bloom_iterations * 2; i++) {
+        bloom_output_tex_ind = (i + 1) % 2;
+
+        bloom_blur_swap_fbo[bloom_output_tex_ind].bind();
+
+        glActiveTexture(GL_TEXTURE0);
+        bloom_blur_swap_tex[i%2]->bind();
+        gl::glUniformSampler(0, post_fx_bb_bloom_in_loc);
+
+        gl::glUniformi(bloom_output_tex_ind, post_fx_bb_hor_loc); // boolean
+
+        draw_screen_space_triangle();
+
+        bloom_blur_swap_fbo[bloom_output_tex_ind].unbind();
+    }
+    post_fx_bloom_blur.unbind();
+
+    glPopDebugGroup();
+    glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Post Pass");
+
+    // post fx pass
     glDisable(GL_STENCIL_TEST);
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+    post_fx_program.use();
+
     gl::glUniformf(exposure, post_fx_exposure_loc);
+    gl::glUniformf(bloom_falloff, post_fx_bloom_falloff_loc);
     gl::glUniformf(gamma, post_fx_gamma_loc);
 
     if (post_fx_hdrt_loc >= 0) {
         glActiveTexture(GL_TEXTURE0);
-        hdr_texture->bind();
+        hdr_combined->bind();
         gl::glUniformSampler(0, post_fx_hdrt_loc);
+    }
+
+    if (post_fx_bloomt_loc >= 0) {
+        glActiveTexture(GL_TEXTURE1);
+        bloom_blur_swap_tex[bloom_output_tex_ind]->bind();
+        gl::glUniformSampler(1, post_fx_bloomt_loc);
     }
 
     draw_screen_space_triangle();
@@ -928,6 +1178,8 @@ void Renderer::render(const Camera &camera) {
     hdr_texture->unbind();
 
     post_fx_program.unbind();
+
+    glPopDebugGroup();
 
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
@@ -946,6 +1198,9 @@ void Renderer::set_resolution(uint32_t width, uint32_t height) {
     g_buffer.resize_all(width, height);
     ssao_buffer.resize_all(width, height);
     lighting_buffer.resize_all(width, height);
+    bloom_thresh_combine.resize_all(width, height);
+    bloom_blur_swap_fbo[0].resize_all(width, height);
+    bloom_blur_swap_fbo[1].resize_all(width, height);
 }
 
 void Renderer::draw_screen_space_triangle() {

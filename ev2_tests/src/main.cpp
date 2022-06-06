@@ -59,9 +59,6 @@ public:
     int32_t window_height = 1080;
 
     bool show_debug = false;
-    bool cap_mouse = false;
-    ma_engine engine;
-
 
     ev2::Ref<ev2::CameraNode> getCameraNode() {
         return cam_orbital;
@@ -78,16 +75,16 @@ public:
             show_settings_editor_window();
             show_game_debug_window(game.get());
         }
-        if (game->selected_tree_1->plantInfo.ID != -1) {
-            ImGui::SetNextWindowSize(ImVec2(window_width/4, window_height/4));
-            ImGui::SetNextWindowPos(ImVec2(window_width - window_width/4, 0));
+        if (game->selected_tree_1) {
+            ImGui::SetNextWindowSize(ImVec2(window_width/5, window_height/5));
+            ImGui::SetNextWindowPos(ImVec2(window_width - window_width/5, 0));
             show_tree_window(game.get(), game->selected_tree_1);
         }
-        if (game->selected_tree_2->plantInfo.ID != -1) {
-            ImGui::SetNextWindowSize(ImVec2(window_width/4, window_height/4));
-            ImGui::SetNextWindowPos(ImVec2(window_width - window_width/4, window_height/4));
+        if (game->selected_tree_2) {
+            ImGui::SetNextWindowSize(ImVec2(window_width/5, window_height/5));
+            ImGui::SetNextWindowPos(ImVec2(window_width - window_width/5, window_height/5));
             show_tree_window(game.get(), game->selected_tree_2);
-        } 
+        }
 
         // Rendering
         ImGui::Render();
@@ -99,6 +96,7 @@ public:
 
     void initialize() {
         game = std::make_unique<GameState>();
+
         cam_orbital      = game->scene->create_node<ev2::CameraNode>("Orbital");
         cam_orbital_root = game->scene->create_node<ev2::Node>("cam_orbital_root");
 
@@ -140,8 +138,7 @@ public:
         ImGui_ImplOpenGL3_Init(glsl_version);
 
         game->scene->ready();
-        initAudio();
-    
+
         float dt = 0.05f;
         while(ev2::window::frame()) {
             //Passing io to manage focus between app behavior and imgui behavior on mouse events.
@@ -169,27 +166,6 @@ public:
         ev2::renderer::Renderer::get_singleton().set_wireframe(enabled);
     }
 
-    int initAudio() {
-        const char* filePath = "";
-        ma_result result;
-
-        filePath = "asset/stickerbrush.mp3";
-        if (filePath == "") {
-            printf("No input file.\n");
-            return -1;
-        }
-        printf(filePath);
-        result = ma_engine_init(NULL, &engine);
-        
-        if (result != MA_SUCCESS) {
-            printf("Failed to initialize audio engine.");
-            return -1;
-        }
-        ma_engine_play_sound(&engine, filePath, NULL);
-        game->engine = engine;
-
-
-    }
 
     void update(float dt, ImGuiIO& io) {
 
@@ -227,20 +203,14 @@ public:
             case ev2::input::Key::Esc:
                 if (down) {
                     show_debug = !show_debug;
-                    //ev2::window::setMouseCaptured(!show_debug);
+                    ev2::window::setMouseCaptured(!show_debug);
                     ev2::input::SetInputEnabled(!show_debug);
-                } 
-                break;
-            case ev2::input::Key::Tab:
-                if (down) {
-                    ev2::window::setMouseCaptured(cap_mouse);
-                    cap_mouse = !cap_mouse;
                 } 
                 break;
             default:
                 break;
         }
-        if (!show_debug && !cap_mouse)
+        if (!show_debug)
             ev2::input::SetKeyState(key, mods, down);
         if (show_debug && !io.WantCaptureMouse) {
             switch (key) {
@@ -287,7 +257,7 @@ public:
     }
 
     void cursor_pos(int32_t mouse_x, int32_t mouse_y, int32_t scroll_pos) override {
-        if (!show_debug && !cap_mouse) {
+        if (!show_debug) {
             glm::vec2 scr_size = ev2::window::getWindowSize();
             glm::vec2 s_pos = ev2::window::getCursorPosition() / scr_size;
             ev2::input::SetMousePosition(s_pos);
@@ -327,6 +297,47 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
     (void)pInput;
 }
 
+int initAudio(fs::path asset_path) {
+    ma_result result;
+    ma_decoder decoder;
+    ma_device_config deviceConfig;
+    ma_device device;
+    const char* filePath = "";
+
+    filePath = (asset_path / "stickerbrush.mp3").generic_string().c_str();
+    if (filePath == "") {
+        printf("No input file.\n");
+        return -1;
+    }
+    printf(filePath);
+    result = ma_decoder_init_file(filePath, NULL, &decoder);
+    if (result != MA_SUCCESS) {
+        return -2;
+    }
+
+    ma_data_source_set_looping(&decoder, MA_TRUE);
+
+    deviceConfig = ma_device_config_init(ma_device_type_playback);
+    deviceConfig.playback.format   = decoder.outputFormat;
+    deviceConfig.playback.channels = decoder.outputChannels;
+    deviceConfig.sampleRate        = decoder.outputSampleRate;
+    deviceConfig.dataCallback      = data_callback;
+    deviceConfig.pUserData         = &decoder;
+
+    if (ma_device_init(NULL, &deviceConfig, &device) != MA_SUCCESS) {
+        printf("Failed to open playback device.\n");
+        ma_decoder_uninit(&decoder);
+        return -3;
+    }
+
+    if (ma_device_start(&device) != MA_SUCCESS) {
+        printf("Failed to start playback device.\n");
+        ma_device_uninit(&device);
+        ma_decoder_uninit(&decoder);
+        return -4;
+    }
+}
+
 int main(int argc, char *argv[]) {
 
 
@@ -339,6 +350,7 @@ int main(int argc, char *argv[]) {
 
     std::unique_ptr<TestApp> app = std::make_unique<TestApp>(asset_path);
     ev2::window::setApplication(app.get());
+    //initAudio(asset_path);
     app->initialize();
 
     int rv = app->run();
@@ -346,8 +358,6 @@ int main(int argc, char *argv[]) {
     // shutdown
     ev2::window::setApplication(nullptr);
     app = {};
-    ma_engine_uninit(&app->engine);
-
     ev2::EV2_shutdown();
     return rv;
     //TODO: uninit audio device and decoder.

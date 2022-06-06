@@ -23,13 +23,26 @@ GameState::GameState() {
     light->set_color(glm::vec3{0, 1, 0});
 
     auto bark = ev2::ResourceManager::get_singleton().get_material("bark");
-    bark->get_material()->diffuse = glm::vec3{0};
+    bark->get_material()->diffuse = glm::vec3{};
     bark->get_material()->metallic = 0;
+    bark->get_material()->subsurface = 0.05;
+    bark->get_material()->specular = 0.08;
+    bark->get_material()->roughness = 0.75;
+    bark->get_material()->specularTint = 0.1;
+    bark->get_material()->clearcoat = 0.0;
+    bark->get_material()->clearcoatGloss = 0.0;
+    bark->get_material()->sheen = 0.1;
+    bark->get_material()->sheenTint = 0.54;
 
     tree_bark = bark;
 
+    auto light_material = ResourceManager::get_singleton().get_material("light_material");
+    light_material->get_material()->diffuse = glm::vec3{};
+    light_material->get_material()->emissive = glm::vec3{10, 10, 10};
+
     highlight_material = ResourceManager::get_singleton().get_material("highlight");
-    highlight_material->get_material()->diffuse = glm::vec3{235/255.0, 255/255.0, 0/255.0};
+    highlight_material->get_material()->diffuse = glm::vec3{};
+    highlight_material->get_material()->emissive = glm::vec3{10, 0, 0};
     highlight_material->get_material()->sheen = 1.0;
     highlight_material->get_material()->metallic = 0.9;
 
@@ -39,6 +52,20 @@ GameState::GameState() {
     fruit_material->get_material()->roughness = 0.4f;
     fruit_material->get_material()->clearcoat = 0.2f;
     fruit_material->get_material()->metallic = 0.0;
+
+    leaf_material = ResourceManager::get_singleton().get_material("leaf_material");
+    leaf_material->get_material()->diffuse = glm::vec3{165/255.0, 17/255.0, 177/255.0};
+    leaf_material->get_material()->emissive = 1.5f * glm::vec3{37/255.0, 0/255.0, 255/255.0};
+    leaf_material->get_material()->metallic = 0.09f;
+    leaf_material->get_material()->subsurface = 1.0f;
+    leaf_material->get_material()->specular = 0.04;
+    leaf_material->get_material()->roughness = 0.4;
+    leaf_material->get_material()->specularTint = 0.f;
+    leaf_material->get_material()->clearcoat = 0.88;
+    leaf_material->get_material()->clearcoatGloss = 0.63;
+    leaf_material->get_material()->sheen = 0.35f;
+    leaf_material->get_material()->sheenTint = 0.5f;
+    leaf_material->get_material()->diffuse_tex = ResourceManager::get_singleton().get_texture("coffee_leaf1.png");
 
     auto ground_material = ResourceManager::get_singleton().get_material("ground_mat");
     ground_material->get_material()->metallic = 0.16;
@@ -52,7 +79,7 @@ GameState::GameState() {
     ground_material->get_material()->sheenTint = 0.5;
     ground_material->get_material()->diffuse = glm::vec3{22/255.0, 116/255.0, 34/255.0};
 
-    renderer::MID ground = ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
+    auto ground = ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
     auto g_node = scene->create_node<VisualInstance>("ground");
     g_node->set_model(ground);
     g_node->set_material_override(ground_material->get_material());
@@ -67,9 +94,17 @@ GameState::GameState() {
     auto& material = ground_plane->get_collider(0)->getMaterial();
     material.setBounciness(0.01f);
 
-    ev2::renderer::MID hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
-    ev2::renderer::MID building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "house" / "house.obj");
-    ev2::renderer::MID sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
+    auto hid = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "rungholt" / "house.obj");
+    auto building0 = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "house" / "house.obj");
+    for (auto& m : building0->materials) {
+        m->roughness = 0.26f;
+        m->clearcoat = 0.03f;
+        m->clearcoatGloss = 1.0f;
+        m->sheen = 0.77f;
+    }
+
+    auto sphere = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "sphere.obj");
+    auto wagon = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "Wagon.obj");
 
     marker = scene->create_node<ev2::VisualInstance>("marker");
     marker->set_model(ground);
@@ -85,6 +120,18 @@ GameState::GameState() {
     auto lh_node = scene->create_node<ev2::VisualInstance>("building");
     lh_node->transform.position = glm::vec3{30, 0, -10};
     lh_node->set_model(building0);
+
+    auto w_node = scene->create_node<ev2::VisualInstance>("Wagon");
+    w_node->transform.position = glm::vec3{0, 0.43, -20};
+    w_node->transform.rotate(glm::vec3{0, 0.2, -0.3});
+    w_node->transform.scale = glm::vec3{0.2};
+    w_node->set_model(wagon);
+
+    auto instance_node = scene->create_node<ev2::InstancedGeometry>("instance_test");
+    instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {0, 10, 0}));
+    instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {1, 10, 0}));
+    instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {2, 10, 0}));
+    instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {3, 10, 0}));
 
     for (int n = 0; n < 20; n++)
     {
@@ -110,26 +157,20 @@ void GameState::update(float dt) {
     time_day += time_speed * dt / DayLength;
     const float sun_rads = 2.0 * M_PI * time_day;
     
-    if (time_accumulator > 0.005f) {
-        if (startedA && startedB)
-        {
-            //probably not very efficient, maybe use a queue for ungrown plants?
-            int j = 0;
-            for (int i = 0; i < scene->get_n_children(); i++) {
-                ev2::Ref<TreeNode> tree = scene->get_child(i).ref_cast<Node>()->get_child(0).ref_cast<TreeNode>();
-                if (tree && j < 3) {
-                    if (tree->growth_current < tree->growth_max) {
-                        tree->growth_current = tree->growth_current + tree->growth_rate * dt * (1/(log(tree->growth_current + 1.1f)));
-                        tree->setParams(tree->getParams(), tree->plantInfo.iterations, tree->growth_current);
-                        j++;
-                    }
+    int j = 0;
+    for (ev2::Ref<Node> node : scene->get_children()) {
+        ev2::Ref<TreeNode> tree = node.ref_cast<Node>()->get_child(0).ref_cast<TreeNode>();
+        // if (j < 3){
+            if (tree) {
+                if (tree->growth_current < tree->growth_max) {
+                    tree->growth_current = tree->growth_current + tree->growth_rate * dt * (1/(log(tree->growth_current + 1.1f)));
+                    tree->setParams(tree->getParams(), tree->plantInfo.iterations, tree->growth_current);
+                    j++;
                 }
             }
-        //Growtrees()
-        }
-        time_accumulator = 0.0f;
-    } {
-        time_accumulator += time_speed * dt;
+        // } else {
+        //     break;
+        // }
     }
     renderer::Renderer::get_singleton().sun_position = sun_rads;
 
@@ -146,7 +187,7 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     int unique_id = (int)randomFloatTo(9999999);
     std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
-    ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>("Tree");
+    ev2::Ref<TreeNode> tree = scene->create_node<TreeNode>(this, "Tree", breedable);
     auto debug = tree->get_parent();
     tree->plantInfo.ID = unique_id;
     tree->breedable = breedable;
@@ -162,27 +203,25 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     tree->set_material_override(tree_bark->get_material());
     if (breedable)
     {
-        auto light = scene->create_node<ev2::PointLightNode>("point_light");
-        light->transform.position = glm::vec3{position} + glm::vec3{0, 1, 0};
-        light->set_color(color_0 * 3.f);
+        auto light_material = ResourceManager::get_singleton().get_material("light_material");
+        auto cube = ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
+        auto light_geom = scene->create_node<VisualInstance>("ground");
+        light_geom->set_model(cube);
+        light_geom->set_material_override(light_material->get_material());
+        light_geom->transform.scale = glm::vec3{0.1, 0.5, 0.1};
 
-        auto light2 = scene->create_node<ev2::PointLightNode>("point_light");
-        light2->transform.position = glm::vec3{position} + glm::vec3{0, 6, 0};
-        light2->set_color(color_1 * 3.f);
+        auto light = scene->create_node<ev2::PointLightNode>("point_light");
+        light->transform.position = glm::vec3{1, 0.3, 0};
+        light->set_color(color_0 * 3.f);
+        light->add_child(light_geom);
+
+        tree_hit_sphere->add_child(light);
 
         spawn_fruit(position + glm::vec3{0, 10, 0}, tree->fruit_params);
     }
     tree->c0 = color_0;
     tree->c1 = color_1;
     tree->setParams(params, iterations, tree->growth_current);
-
-    if (!startedA) {
-        selected_tree_1 = tree;
-        startedA = true;
-    } else if (!startedB) {
-        selected_tree_2 = tree;
-        startedB = true;
-    }
 
 }
 
@@ -272,7 +311,7 @@ void GameState::spawn_fruit(const glm::vec3& position) {
 }
 
 void GameState::spawn_box(const glm::vec3& position) {
-    ev2::renderer::MID ground = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
+    auto ground = ev2::ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
     auto box_vis = scene->create_node<ev2::VisualInstance>("marker");
     box_vis->set_model(ground);
     box_vis->transform.scale = glm::vec3{0.5, 0.5, 0.5};

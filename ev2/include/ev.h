@@ -44,9 +44,10 @@ public:
 };
 
 struct Args {
+    Args() = default;
     Args(int argc, char* argv[]);
 
-    int height = -1, width = -1;
+    int height = 300, width = 600;
 
     std::map<std::string, std::string> args;
 };

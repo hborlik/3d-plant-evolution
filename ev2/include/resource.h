@@ -45,20 +45,27 @@ private:
     renderer::Material* material = nullptr;
 };
 
-// array vertex
+// single buffer model
 class Model {
 public:
-    Model(const std::string& name, std::vector<DrawObject> draw_objects, std::vector<Ref<MaterialResource>> materials, glm::vec3 bmin, glm::vec3 bmax, std::vector<float> vb, VertexFormat format) : 
-        name{name}, draw_objects{std::move(draw_objects)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, buffer{std::move(vb)}, bufferFormat{format} {}
-    
+    Model(const std::string &name,
+          std::vector<DrawObject> draw_objects,
+          std::vector<Ref<MaterialResource>> materials,
+          glm::vec3 bmin,
+          glm::vec3 bmax,
+          std::vector<float> vb) : name{name},
+                                   draw_objects{std::move(draw_objects)},
+                                   materials{std::move(materials)},
+                                   bmin{bmin},
+                                   bmax{bmax},
+                                   buffer{std::move(vb)} {}
+
     std::string             name;
     std::vector<DrawObject> draw_objects;
     std::vector<Ref<MaterialResource>>  materials;
     std::vector<float>      buffer;
 
     glm::vec3 bmin, bmax;
-
-    VertexFormat bufferFormat;
 };
 
 class ResourceManager : public Singleton<ResourceManager> {
@@ -71,20 +78,21 @@ public:
     };
 
     explicit ResourceManager(const std::filesystem::path& asset_path) : asset_path{asset_path}, model_lookup{} {}
+    ~ResourceManager();
 
     void pre_render();
-    
+
     /**
      * @brief Get the model object reference id, or load object if not available
      * 
      * @param filename 
      * @return renderer::MID 
      */
-    renderer::MID get_model(const std::filesystem::path& filename, bool cache = true);
+    renderer::Drawable* get_model(const std::filesystem::path& filename, bool cache = true);
 
-    renderer::MID create_model(std::shared_ptr<Model> model);
+    renderer::Drawable* create_model(std::shared_ptr<Model> model);
 
-    std::shared_ptr<Texture> get_texture(const std::filesystem::path& filename);
+    std::shared_ptr<Texture> get_texture(const std::filesystem::path& filename, bool ignore_asset_path = false);
 
     Ref<GLTFScene> loadGLTF(const std::filesystem::path& filename, bool normalize = false);
 
@@ -97,7 +105,7 @@ public:
     std::filesystem::path asset_path;
 
 private:
-    std::unordered_map<std::string, renderer::MID> model_lookup;
+    std::unordered_map<std::string, renderer::Drawable*> model_lookup;
 
     std::unordered_map<std::string, Ref<MaterialResource>> materials;
 

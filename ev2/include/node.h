@@ -26,9 +26,10 @@ public:
     virtual ~Node() = default;
 
     template<typename T, typename... Args>
-    static Ref<T> create_node(Args&&... args) {
+    Ref<T> create_node(Args&&... args) {
         Ref<T> node{new T(std::forward<Args&&>(args)...)};
         node->on_init();
+        add_child(node);
         return node;
     }
 
@@ -85,7 +86,11 @@ public:
             ;
         return *itr;
     }
+
     size_t get_n_children() const noexcept {return children.size();}
+
+    auto& get_children() {return children;}
+    const auto& get_children() const {return children;}
 
     Ref<Node> get_parent() const {
         if (parent)

@@ -627,11 +627,18 @@ static bool LoadObjAndConvert(glm::vec3 &bmin, glm::vec3 &bmax,
 
 namespace ev2 {
 
+ResourceManager::~ResourceManager() {
+    // TODO destroy models
+    // for (auto v : model_lookup) {
+    //     renderer::Renderer::get_singleton().destroy_mesh()
+    // }
+}
+
 void ResourceManager::pre_render() {
 
 }
 
-renderer::MID ResourceManager::get_model(const std::filesystem::path& filename, bool cache) {
+renderer::Drawable* ResourceManager::get_model(const std::filesystem::path& filename, bool cache) {
     auto itr = model_lookup.find(filename.generic_string());
     if (itr != model_lookup.end() && !cache) { // already loaded
         return itr->second;
@@ -661,7 +668,7 @@ renderer::MID ResourceManager::get_model(const std::filesystem::path& filename, 
             ev_mat[i++] = mat->get_material();
         }
 
-        std::shared_ptr<renderer::Drawable> d = std::make_shared<renderer::Drawable>(
+        renderer::Drawable* id = ev2::renderer::Renderer::get_singleton().create_model(
             VertexBuffer::vbInitArrayVertexData(loaded_model->buffer),
             std::move(ev_prim),
             std::move(ev_mat),
@@ -670,8 +677,6 @@ renderer::MID ResourceManager::get_model(const std::filesystem::path& filename, 
             gl::CullMode::BACK,
             gl::FrontFacing::CCW
         );
-
-        renderer::MID id = ev2::renderer::Renderer::get_singleton().create_model(d);
         if (cache)
             model_lookup.insert(std::make_pair(filename.generic_string(), id));
         return id;
@@ -681,7 +686,7 @@ renderer::MID ResourceManager::get_model(const std::filesystem::path& filename, 
     }
 }
 
-std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::path& filename) {
+std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::path& filename, bool ignore_asset_path) {
     auto itr = textures.find(filename.generic_string());
     if (itr != textures.end()) { // already loaded
         return itr->second;
@@ -689,7 +694,8 @@ std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::pat
 
     int w, h, ncomps;
     stbi_set_flip_vertically_on_load(false);
-    std::string input_file = filename.generic_string();
+    std::filesystem::path base_path = ignore_asset_path ? "" : asset_path;
+    std::string input_file = (base_path / filename).generic_string();
     unsigned char *data = stbi_load(input_file.c_str(), &w, &h, &ncomps, 0);
 
     if (data) {
@@ -717,7 +723,7 @@ std::shared_ptr<Texture> ResourceManager::get_texture(const std::filesystem::pat
                 return {};
         }
 
-        std::shared_ptr<Texture> texture = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::LINEAR);
+        std::shared_ptr<Texture> texture = std::make_shared<Texture>(gl::TextureType::TEXTURE_2D, gl::TextureFilterMode::LINEAR_MIPMAP_LINEAR);
         texture->set_data2D(internal_format, w, h, pixel_format, gl::PixelType::UNSIGNED_BYTE, data);
         texture->generate_mips();
         stbi_image_free(data);
@@ -756,40 +762,40 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
             Ref<MaterialResource> mat                   = rm->get_material(filename.generic_string() + "_" + m.name);
             mat->get_material()->name                   = filename.generic_string() + "_" + m.name;
             mat->get_material()->diffuse                = m.diffuse_texname.empty() ? glm::vec3{m.diffuse[0], m.diffuse[1], m.diffuse[2]} : glm::vec3{};
-            mat->get_material()->metallic               = m.metallic;
+            mat->get_material()->metallic               = glm::clamp(m.metallic, 0.f, 1.f);
             mat->get_material()->subsurface             = glm::clamp(glm::length(glm::vec3{m.transmittance[0], m.transmittance[1], m.transmittance[2]}), 0.f, 1.f);
-            mat->get_material()->specular               = m.shininess;
-            mat->get_material()->roughness              = m.roughness;
+            mat->get_material()->specular               = glm::clamp(m.shininess / 300.0f, 0.f, 1.f);
+            mat->get_material()->roughness              = glm::clamp(m.roughness, 0.f, 1.f);
             mat->get_material()->specularTint           = 0;
-            mat->get_material()->clearcoat              = m.clearcoat_roughness;
-            mat->get_material()->clearcoatGloss         = m.clearcoat_thickness;
-            mat->get_material()->anisotropic            = m.anisotropy;
-            mat->get_material()->sheen                  = m.sheen;
+            mat->get_material()->clearcoat              = glm::clamp(m.clearcoat_roughness, 0.f, 1.f);
+            mat->get_material()->clearcoatGloss         = glm::clamp(m.clearcoat_thickness, 0.f, 1.f);
+            mat->get_material()->anisotropic            = glm::clamp(m.anisotropy, 0.f, 1.f);
+            mat->get_material()->sheen                  = glm::clamp(m.sheen, 0.f, 1.f);
             mat->get_material()->sheenTint              = 0.5f;
 
             if (!m.ambient_texname.empty())
-                mat->get_material()->ambient_tex            = rm->get_texture((base_dir / m.ambient_texname).generic_string());
+                mat->get_material()->ambient_tex            = rm->get_texture((base_dir / m.ambient_texname).generic_string(), true);
             
             if (!m.diffuse_texname.empty())
-                mat->get_material()->diffuse_tex            = rm->get_texture((base_dir / m.diffuse_texname).generic_string());
+                mat->get_material()->diffuse_tex            = rm->get_texture((base_dir / m.diffuse_texname).generic_string(), true);
             
             if (!m.specular_texname.empty())
-                mat->get_material()->specular_tex           = rm->get_texture((base_dir / m.specular_texname).generic_string());
+                mat->get_material()->specular_tex           = rm->get_texture((base_dir / m.specular_texname).generic_string(), true);
             
             if (!m.specular_highlight_texname.empty())
-                mat->get_material()->specular_highlight_tex = rm->get_texture((base_dir / m.specular_highlight_texname).generic_string());
+                mat->get_material()->specular_highlight_tex = rm->get_texture((base_dir / m.specular_highlight_texname).generic_string(), true);
             
             if (!m.bump_texname.empty())
-                mat->get_material()->bump_tex               = rm->get_texture((base_dir / m.bump_texname).generic_string());
+                mat->get_material()->bump_tex               = rm->get_texture((base_dir / m.bump_texname).generic_string(), true);
             
             if (!m.displacement_texname.empty())
-                mat->get_material()->displacement_tex       = rm->get_texture((base_dir / m.displacement_texname).generic_string());
+                mat->get_material()->displacement_tex       = rm->get_texture((base_dir / m.displacement_texname).generic_string(), true);
             
             if (!m.alpha_texname.empty())
-                mat->get_material()->alpha_tex              = rm->get_texture((base_dir / m.alpha_texname).generic_string());
+                mat->get_material()->alpha_tex              = rm->get_texture((base_dir / m.alpha_texname).generic_string(), true);
             
             if (!m.reflection_texname.empty())
-                mat->get_material()->reflection_tex         = rm->get_texture((base_dir / m.reflection_texname).generic_string());
+                mat->get_material()->reflection_tex         = rm->get_texture((base_dir / m.reflection_texname).generic_string(), true);
 
 
             ev_mat[i++] = mat;
@@ -801,8 +807,7 @@ std::unique_ptr<Model> loadObj(const std::filesystem::path& filename, const std:
             std::move(ev_mat),
             bmin,
             bmax,
-            std::move(buffer),
-            VertexFormat::Array
+            std::move(buffer)
         );
 
     }

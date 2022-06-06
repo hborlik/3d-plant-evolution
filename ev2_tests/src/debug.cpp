@@ -14,6 +14,7 @@ void show_material_editor_window() {
             
             if (ImGui::TreeNode("Color")) {
                 ImGui::ColorPicker3("diffuse", glm::value_ptr(mas.second->get_material()->diffuse), ImGuiColorEditFlags_InputRGB);
+                ImGui::ColorPicker3("emissive", glm::value_ptr(mas.second->get_material()->emissive), ImGuiColorEditFlags_InputRGB);
                 ImGui::TreePop();
             }
             ImGui::DragFloat("metallic",    &mas.second->get_material()->metallic, 0.01f, 0.0f, 1.0f, "%.3f", 1.0f);
@@ -34,16 +35,21 @@ void show_material_editor_window() {
 void show_settings_editor_window() {
     ImGui::Begin("Settings");
     ImGui::Text("Application %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    ImGui::DragFloat("ssao radius", &(ev2::renderer::Renderer::get_singleton().ssao_radius), 0.01f, 0.0f, 3.0f, "%.3f", 1.0f);
-    ImGui::DragInt("ssao samples", (int32_t*)&(ev2::renderer::Renderer::get_singleton().ssao_kernel_samples), 1, 1, 64);
+    ImGui::DragFloat("SSAO radius", &(ev2::renderer::Renderer::get_singleton().ssao_radius), 0.01f, 0.0f, 3.0f, "%.3f", 1.0f);
+    ImGui::DragInt("SSAO samples", (int32_t*)&(ev2::renderer::Renderer::get_singleton().ssao_kernel_samples), 1, 1, 64);
     ImGui::DragFloat("Exposure", &(ev2::renderer::Renderer::get_singleton().exposure), 0.01f, 0.05f, 1.0f, "%.3f", 1.0f);
     ImGui::DragFloat("Gamma", &(ev2::renderer::Renderer::get_singleton().gamma), 0.01f, 0.8f, 2.8f, "%.1f", 1.0f);
+    ImGui::DragInt("Bloom Quality", &(ev2::renderer::Renderer::get_singleton().bloom_iterations), 1, 1, 6);
+    ImGui::DragFloat("Bloom Threshold", &(ev2::renderer::Renderer::get_singleton().bloom_threshold), 0.005f, 0.01f, 5.0f, "%.5f", 1.0f);
+    ImGui::DragFloat("Bloom Falloff", &(ev2::renderer::Renderer::get_singleton().bloom_falloff), 0.005f, 0.1f, 3.0f, "%.5f", 1.0f);
     ImGui::DragFloat("Shadow Bias World", &(ev2::renderer::Renderer::get_singleton().shadow_bias_world), 0.005f, 0.0001f, 1.0f, "%.5f", 1.0f);
     ImGui::Separator();
     ImGui::Text("World");
     if (ImGui::Checkbox("Enable Physics Timestep", &enable_physics_timestep)) {
         ev2::Physics::get_singleton().enable_simulation(enable_physics_timestep);
     }
+    ImGui::Separator();
+    ImGui::DragFloat("Sky Brightness", &(ev2::renderer::Renderer::get_singleton().sky_brightness), 0.01f, 0.01f, 2.f, "%.3f", 1.0f);
     ImGui::End();
 }
 

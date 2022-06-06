@@ -24,11 +24,27 @@ public:
 
     void pre_render() override;
 
-    void set_model(renderer::MID model);
+    void set_model(renderer::Drawable* model);
     void set_material_override(renderer::Material* material_override);
 
 private:
     renderer::IID iid{};
+};
+
+class InstancedGeometry : public Node {
+public:
+    explicit InstancedGeometry(const std::string &name) : Node{name} {}
+
+    void on_init() override;
+    void on_destroy() override;
+    void pre_render() override;
+
+    void set_material_override(renderer::Material* material_override);
+
+    std::vector<glm::mat4> instance_transforms{};
+
+private:
+    renderer::Drawable* geometry;
 };
 
 class CameraNode : public Node {

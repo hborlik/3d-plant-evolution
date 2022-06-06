@@ -27,37 +27,6 @@ constexpr uint16_t MAX_N_MATERIALS = 255;
 using mat_id_t = uint8_t;
 
 /**
- * @brief model id
- * 
- */
-struct MID {
-    MID() = default;
-
-    bool is_valid() const noexcept {return v != -1;}
-
-    int32_t v = -1;
-private:
-    friend bool operator==(const MID& a, const MID& b) noexcept {
-        return a.v == b.v;
-    }
-};
-
-} // namespace ev2
-
-
-template<> 
-struct std::hash<ev2::renderer::MID> {
-    std::size_t operator()(ev2::renderer::MID const& s) const noexcept {
-        std::size_t h1 = std::hash<int>{}(s.v);
-        // std::size_t h2 = std::hash<int>{}(s.y);
-        // return h1 ^ (h2 << 1);
-        return h1;
-    }
-};
-
-namespace ev2::renderer {
-
-/**
  * @brief light id
  * 
  */
@@ -84,27 +53,44 @@ struct DirectionalLight {
 };
 
 /**
- * @brief material data as represented on gpu
+ * @brief material data internal
  * 
  */
 struct MaterialData {
-    glm::vec3 diffuse   = {0.5, 0.4, 0.0};
-    float metallic       = 0;
-    float subsurface     = 0;
-    float specular       = .5f;
-    float roughness      = .5f;
-    float specularTint   = 0;
-    float clearcoat      = 0;
-    float clearcoatGloss = 1.f;
-    float anisotropic    = 0;
-    float sheen          = 0;
-    float sheenTint      = .5f;
+    glm::vec3 diffuse       = {0.5, 0.4, 0.0};
+    glm::vec3 emissive      = {};
+    float metallic          = 0;
+    float subsurface        = 0;
+    float specular          = .5f;
+    float roughness         = .5f;
+    float specularTint      = 0;
+    float clearcoat         = 0;
+    float clearcoatGloss    = 1.f;
+    float anisotropic       = 0;
+    float sheen             = 0;
+    float sheenTint         = .5f;
+
+    GLint diffuse_offset        = 0;
+    GLint emissive_offset       = 0;
+    GLint metallic_offset       = 0;
+    GLint subsurface_offset     = 0;
+    GLint specular_offset       = 0;
+    GLint roughness_offset      = 0;
+    GLint specularTint_offset   = 0;
+    GLint clearcoat_offset      = 0;
+    GLint clearcoatGloss_offset = 0;
+    GLint anisotropic_offset    = 0;
+    GLint sheen_offset          = 0;
+    GLint sheenTint_offset      = 0;
+
+    bool changed = false;
 };
 
 struct Material {
     std::string name = "default";
 
     glm::vec3 diffuse   = {1.00f,0.10f,0.85f};
+    glm::vec3 emissive  = {};
     float metallic       = 0;
     float subsurface     = 0;
     float specular       = .5f;
@@ -138,17 +124,34 @@ private:
 
     void update_internal() {
         if (internal_material) {
-            internal_material->diffuse          = diffuse;
-            internal_material->metallic         = metallic;
-            internal_material->subsurface       = subsurface;
-            internal_material->specular         = specular;
-            internal_material->roughness        = roughness;
-            internal_material->specularTint     = specularTint;
-            internal_material->clearcoat        = clearcoat;
-            internal_material->clearcoatGloss   = clearcoatGloss;
-            internal_material->anisotropic      = anisotropic;
-            internal_material->sheen            = sheen;
-            internal_material->sheenTint        = sheenTint;
+            if (
+                internal_material->diffuse          != diffuse ||
+                internal_material->emissive         != emissive ||
+                internal_material->metallic         != metallic ||
+                internal_material->subsurface       != subsurface ||
+                internal_material->specular         != specular ||
+                internal_material->roughness        != roughness ||
+                internal_material->specularTint     != specularTint ||
+                internal_material->clearcoat        != clearcoat ||
+                internal_material->clearcoatGloss   != clearcoatGloss ||
+                internal_material->anisotropic      != anisotropic ||
+                internal_material->sheen            != sheen ||
+                internal_material->sheenTint        != sheenTint
+            ) {
+                internal_material->changed = true;
+                internal_material->diffuse          = diffuse;
+                internal_material->emissive         = emissive;
+                internal_material->metallic         = metallic;
+                internal_material->subsurface       = subsurface;
+                internal_material->specular         = specular;
+                internal_material->roughness        = roughness;
+                internal_material->specularTint     = specularTint;
+                internal_material->clearcoat        = clearcoat;
+                internal_material->clearcoatGloss   = clearcoatGloss;
+                internal_material->anisotropic      = anisotropic;
+                internal_material->sheen            = sheen;
+                internal_material->sheenTint        = sheenTint;
+            }
         }
     }
 
@@ -223,8 +226,25 @@ struct Primitive {
 };
 
 struct Drawable {
-    Drawable(VertexBuffer&& vb, std::vector<Primitive> primitives, std::vector<Material*> materials, glm::vec3 bmin, glm::vec3 bmax, gl::CullMode cull, gl::FrontFacing ff) : 
-        vertex_buffer{std::move(vb)}, primitives{std::move(primitives)}, materials{std::move(materials)}, bmin{bmin}, bmax{bmax}, cull_mode{cull}, front_facing{ff} {}
+    Drawable(VertexBuffer &&vb,
+             std::vector<Primitive> primitives,
+             std::vector<Material *> materials,
+             glm::vec3 bmin,
+             glm::vec3 bmax,
+             gl::CullMode cull,
+             gl::FrontFacing ff,
+             uint32_t model_id) :
+                                   vertex_buffer{std::move(vb)},
+                                   primitives{std::move(primitives)},
+                                   materials{std::move(materials)},
+                                   bmin{bmin},
+                                   bmax{bmax},
+                                   cull_mode{cull},
+                                   front_facing{ff},
+                                   model_id{model_id}
+    {
+    }
+
     VertexBuffer vertex_buffer;
     std::vector<Primitive> primitives;
     std::vector<Material*> materials;
@@ -235,6 +255,13 @@ struct Drawable {
     gl::FrontFacing front_facing = gl::FrontFacing::CCW;
 
     float vertex_color_weight = 0.f;
+
+    glm::mat4 instance_world_transform = glm::identity<glm::mat4>();
+
+private:
+    friend class Renderer;
+
+    uint32_t model_id{};
 };
 
 struct ModelInstance {
@@ -260,11 +287,17 @@ public:
     void set_light_ambient(LID lid, const glm::vec3& color);
     void destroy_light(LID lid);
 
-    MID create_model(std::shared_ptr<Drawable> d);
-    void set_model_vertex_color_diffuse_weight(MID mid, float weight);
+    Drawable *create_model(VertexBuffer &&vb,
+                           std::vector<Primitive> primitives,
+                           std::vector<Material *> materials,
+                           glm::vec3 bmin,
+                           glm::vec3 bmax,
+                           gl::CullMode cull,
+                           gl::FrontFacing ff);
+    void destroy_model(Drawable* d);
 
     IID create_model_instance();
-    void set_instance_model(IID iid, MID mid);
+    void set_instance_model(IID iid, Drawable* mid);
     void set_instance_transform(IID iid, const glm::mat4& transform);
 
 
@@ -306,14 +339,20 @@ public:
     float ssao_bias = 0.025f;
     uint32_t ssao_kernel_samples = 32;
 
-    float exposure      = .2f;
+    float exposure      = .8f;
     float gamma         = 2.2f;
+    float bloom_falloff = 0.9f;
+
+    float sky_brightness = .22f;
     float sun_position  = .0f;
     float cloud_speed   = .1f;
 
     const uint32_t ShadowMapWidth = 4096;
     const uint32_t ShadowMapHeight = 4096;
-    float shadow_bias_world = 0.3f;
+    float shadow_bias_world = 0.17f;
+
+    int32_t bloom_iterations = 2;
+    float bloom_threshold = 2.17f;
 
 private:
 
@@ -322,7 +361,8 @@ private:
     void update_material(mat_id_t material_slot, const MaterialData& material);
 
     // model, instance vertex data
-    std::unordered_map<MID, std::shared_ptr<Drawable>> models;
+    std::unordered_map<uint32_t, Drawable> models;
+    std::unordered_map<uint32_t, Drawable> instanced_models;
     uint32_t next_model_id = 1;
 
     // material management
@@ -354,6 +394,9 @@ private:
     int gp_m_location;
     int gp_g_location;
 
+    Program geometry_program_instanced;
+    int gpi_m_location;
+
     Program depth_program;
     int sdp_m_location;
     int sdp_lpv_location;
@@ -368,28 +411,45 @@ private:
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
 
     Program sky_program;
-    int sky_time_loc, sky_cirrus_loc, sky_cumulus_loc, sky_sun_position_loc;
+    int sky_time_loc, sky_cirrus_loc, sky_cumulus_loc, sky_sun_position_loc, sky_output_mul_loc;
+
+    Program post_fx_bloom_combine_program;
+    int post_fx_bc_hdrt_loc, post_fx_bc_emist_loc, post_fx_bc_thresh_loc;
+
+    Program post_fx_bloom_blur;
+    int post_fx_bb_hor_loc, post_fx_bb_bloom_in_loc;
 
     Program post_fx_program;
-    int post_fx_gamma_loc, post_fx_exposure_loc, post_fx_hdrt_loc;
+    int post_fx_gamma_loc, post_fx_exposure_loc, post_fx_bloom_falloff_loc, post_fx_hdrt_loc, post_fx_bloomt_loc;
+
 
     FBO g_buffer;
     FBO ssao_buffer;
     FBO lighting_buffer;
-    FBO d_buffer;
+    FBO depth_buffer;
+    FBO bloom_thresh_combine;
+    std::array<FBO, 2> bloom_blur_swap_fbo;
     
     VertexBuffer sst_vb;
 
     std::shared_ptr<Texture> shadow_depth_tex;
+
     std::shared_ptr<Texture> material_tex;
     std::shared_ptr<Texture> albedo_spec;
     std::shared_ptr<Texture> normals;
     std::shared_ptr<Texture> position;
+    std::shared_ptr<Texture> emissive;
 
     std::shared_ptr<Texture> ssao_kernel_noise;
     std::shared_ptr<Texture> ssao_kernel_color;
 
+    std::shared_ptr<Texture> one_p_black_tex;
+
     std::shared_ptr<Texture> hdr_texture;
+    std::shared_ptr<Texture> hdr_combined;
+
+    // texture in the 0 index is used for the bloom combined output
+    std::array<std::shared_ptr<Texture>, 2> bloom_blur_swap_tex;
 
     Buffer shader_globals;
     ProgramUniformBlockDescription globals_desc;
@@ -403,9 +463,10 @@ private:
     uint32_t width, height;
     bool wireframe = false;
 
-    MID point_light_geometry_id;
     glm::mat4 point_light_geom_tr;
     Drawable* point_light_drawable;
+
+    int32_t default_material_id = 0;
 };
 
 }

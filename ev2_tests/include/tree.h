@@ -48,9 +48,10 @@ struct PNVertex {
 
 class TreeNode : public ev2::VisualInstance {
 public:
-    explicit TreeNode(const std::string& name);
+    explicit TreeNode(class GameState* game, const std::string& name, bool has_leafs = false);
 
     void on_init() override;
+    void on_destroy() override;
 
     void generate(int iterations);
     void setParams(const std::map<std::string, float>& paramsNew, int iterations, float growth);
@@ -62,16 +63,20 @@ public:
     float growth_max = 1;
 
     float thickness = 1.0f;
+    float leaf_scale = 5.f;
+    bool has_leafs = false;
     glm::vec3 c0, c1;
     ptree::Skeleton tree_skeleton;
     ptree::Tree tree;
     std::map<std::string, float> params;
     ev2::VertexLayout buffer_layout;
-    ev2::renderer::MID tree_geometry;
-    std::shared_ptr<ev2::renderer::Drawable> model;
+    ev2::renderer::Drawable* tree_geometry;
 
     PlantInfo plantInfo{};
     SuperShapeParams fruit_params{};
+    
+    ev2::Ref<ev2::InstancedGeometry> leafs;
+    class GameState* const game;
 };
 
 class Fruit : public ev2::VisualInstance {
@@ -86,8 +91,7 @@ public:
     const float radius_mul = 0.25f;
     SuperSphere supershape{};
     SuperShapeParams params{};
-    std::shared_ptr<ev2::renderer::Drawable> model{};
-    ev2::renderer::MID geometry{};
+    ev2::renderer::Drawable* geometry{};
 };
 
 #endif // PLANT_GAME_TREE_H

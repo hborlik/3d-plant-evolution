@@ -29,7 +29,7 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& verti
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffer) {
+VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffer, bool instanced) {
     VertexBuffer vb;
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
@@ -52,6 +52,27 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
     glVertexAttribPointer(gl::TEXCOORD_BINDING_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size * 3));
 
     vb.buffers.at(0).Unbind();
+
+    if (instanced) {
+        // mat4 instance info, note: max size for a vertex attribute is a vec4
+        constexpr std::size_t vec4Size = sizeof(glm::vec4);
+        glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION);
+        glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+
+        glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION + 1);
+        glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION + 1, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+
+        glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION + 2);
+        glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION + 2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 2));
+
+        glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION + 3);
+        glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION + 3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 3));
+
+        glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION, 1);
+        glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+1, 1);
+        glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+2, 1);
+        glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+3, 1);
+    }
 
     glBindVertexArray(0);
 
@@ -112,7 +133,7 @@ VertexBuffer VertexBuffer::vbInitSST() {
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitArrayVertexDataInstanced(const std::vector<float>& buffer) {
+VertexBuffer VertexBuffer::vbInitVertexDataInstanced(const std::vector<float>& buffer, const VertexLayout& layout) {
     VertexBuffer vb;
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
@@ -121,41 +142,42 @@ VertexBuffer VertexBuffer::vbInitArrayVertexDataInstanced(const std::vector<floa
     vb.buffers.emplace(0, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
     vb.buffers.at(0).Bind();
 
-    constexpr std::size_t vec3Size = sizeof(glm::vec3);
-    glEnableVertexAttribArray(gl::VERTEX_BINDING_LOCATION);
-    glVertexAttribPointer(gl::VERTEX_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)0);
+    std::size_t offset = 0;
+    for (const auto& l : layout.attributes) {
+        glEnableVertexAttribArray(l.location);
+        glVertexAttribPointer(l.location, l.count, (GLenum)l.type, GL_FALSE, layout.stride, (void*)offset);
 
-    glEnableVertexAttribArray(gl::NORMAL_BINDING_LOCATION);
-    glVertexAttribPointer(gl::NORMAL_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size));
+        offset += l.count * l.element_size;
+    }
+    
+    vb.buffers.at(0).Unbind();
 
-    glEnableVertexAttribArray(gl::COLOR_BINDING_LOCATION);
-    glVertexAttribPointer(gl::COLOR_BINDING_LOCATION, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size * 2));
-
-    glEnableVertexAttribArray(gl::TEXCOORD_BINDING_LOCATION);
-    glVertexAttribPointer(gl::TEXCOORD_BINDING_LOCATION, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 11, (void*)(vec3Size * 3));
+    // instance buffer
+    vb.buffers.emplace(1, Buffer{gl::BindingTarget::ARRAY, gl::Usage::DYNAMIC_DRAW});
+    vb.buffers.at(1).Bind();
+    vb.instanced = 1;
 
     // mat4 instance info, note: max size for a vertex attribute is a vec4
     constexpr std::size_t vec4Size = sizeof(glm::vec4);
-    glEnableVertexAttribArray(4);
-    glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+    glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION);
+    glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
 
-    glEnableVertexAttribArray(5);
-    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+    glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION + 1);
+    glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION + 1, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
 
-    glEnableVertexAttribArray(6);
-    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 2));
+    glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION + 2);
+    glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION + 2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 2));
 
-    glEnableVertexAttribArray(7);
-    glVertexAttribPointer(7, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 3));
+    glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION + 3);
+    glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION + 3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 3));
 
-    glVertexAttribDivisor(4, 1);
-    glVertexAttribDivisor(5, 1);
-    glVertexAttribDivisor(6, 1);
-    glVertexAttribDivisor(7, 1);
-
-    vb.buffers.at(0).Unbind();
+    glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION, 1);
+    glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+1, 1);
+    glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+2, 1);
+    glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+3, 1);
 
     glBindVertexArray(0);
+    vb.buffers.at(1).Unbind();
 
     return std::move(vb);
 }

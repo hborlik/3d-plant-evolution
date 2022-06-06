@@ -1,4 +1,5 @@
 #include <tree.h>
+#include <game.h>
 
 #include <skinning.hpp>
 
@@ -157,22 +158,12 @@ struct P_3 : public MonopodialProduction {
 
 }
 
-TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
+TreeNode::TreeNode(GameState* game, const std::string& name, bool has_leafs) : ev2::VisualInstance{name}, game{game}, has_leafs{has_leafs} {
     buffer_layout.add_attribute(ev2::VertexAttributeType::Vertex)
         .add_attribute(ev2::VertexAttributeType::Normal)
         .add_attribute(ev2::VertexAttributeType::Color)
         .finalize();
-    
-    model = std::make_shared<ev2::renderer::Drawable>(
-        ev2::VertexBuffer::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
-        std::vector<ev2::renderer::Primitive>{},
-        std::vector<ev2::renderer::Material*>{},
-        glm::vec3{}, // TODO
-        glm::vec3{}, // TODO
-        ev2::gl::CullMode::BACK,
-        ev2::gl::FrontFacing::CCW);
 
-    model->vertex_color_weight = 1.0f;
 
     params = monopodial::DefaultParamsA;
 }
@@ -180,10 +171,29 @@ TreeNode::TreeNode(const std::string& name) : ev2::VisualInstance{name} {
 void TreeNode::on_init() {
     ev2::VisualInstance::on_init();
 
-    generate(5);
+    if (has_leafs) {
+        leafs = create_node<ev2::InstancedGeometry>("leafs");
+        leafs->set_material_override(game->leaf_material->get_material());
+    }
 
-    tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(model);
+    tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(
+        ev2::VertexBuffer::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
+        std::vector<ev2::renderer::Primitive>{},
+        std::vector<ev2::renderer::Material*>{},
+        glm::vec3{}, // TODO
+        glm::vec3{}, // TODO
+        ev2::gl::CullMode::BACK,
+        ev2::gl::FrontFacing::CCW
+    );
+    tree_geometry->vertex_color_weight = 1.0f;
     set_model(tree_geometry);
+    generate(5);
+}
+
+void TreeNode::on_destroy() {
+    VisualInstance::on_destroy();
+
+    ev2::renderer::Renderer::get_singleton().destroy_model(tree_geometry);
 }
 
 void TreeNode::setParams(const std::map<std::string, float>& paramsNew, int iterations, float growth) {
@@ -240,6 +250,20 @@ void TreeNode::generate(int iterations) {
         // tree.simple_skeleton(5);
         tree_skeleton = tree.to_skeleton();
 
+        if (leafs) {
+            leafs->instance_transforms.clear();
+            leafs->instance_transforms.reserve(tree_skeleton.endpoints.size());
+            const glm::mat4 rot_leaf = glm::mat4(glm::rotate<float>(glm::identity<glm::quat>(), M_PI / 2.f, glm::vec3{1, 0, 0}));
+            for (const auto& ind : tree_skeleton.endpoints) {
+                glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), tree_skeleton.joints[ind].position) 
+                    * glm::mat4(glm::quatLookAt(tree_skeleton.joints[ind].tangent, glm::vec3{0, 1, 0}))
+                    * rot_leaf
+                    * glm::translate(glm::identity<glm::mat4>(), {0, leaf_scale * -0.05, 0})
+                    * glm::scale(glm::identity<glm::mat4>(), glm::vec3{leaf_scale});
+                leafs->instance_transforms.push_back(tr);
+            }
+        }
+
         ptree::DefaultColorizer dc{c0, c1, tree.max_joint_depth};
 
         std::vector<ptree::Vertex> vertices;
@@ -254,50 +278,38 @@ void TreeNode::generate(int iterations) {
             g_vertices[i].color = sv.color;
         }
 
-        model->vertex_buffer.get_buffer(0).CopyData(g_vertices);
-        model->vertex_buffer.get_buffer(model->vertex_buffer.get_indexed()).CopyData(indices);
+        tree_geometry->vertex_buffer.get_buffer(0).CopyData(g_vertices);
+        tree_geometry->vertex_buffer.get_buffer(tree_geometry->vertex_buffer.get_indexed()).CopyData(indices);
 
-        model->primitives.clear();
-        model->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
+        tree_geometry->primitives.clear();
+        tree_geometry->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
     }
 }
 
 Fruit::Fruit(const std::string& name, const SuperShapeParams& params) : ev2::VisualInstance{name}, supershape{radius_mul, 50, 50, params} {
-    const std::vector<uint32_t>& indices = supershape.getIndicesv();
-    std::vector<ev2::renderer::Primitive> ev_meshs;
-    ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
     
-    model = std::make_shared<ev2::renderer::Drawable>(
-        ev2::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices),
-        std::move(ev_meshs),
-        std::vector<ev2::renderer::Material*>{},
-        glm::vec3{}, // TODO
-        glm::vec3{}, // TODO
-        ev2::gl::CullMode::BACK,
-        ev2::gl::FrontFacing::CCW);
-    // model->vertex_color_weight = 1.0f;
 }
 
 Fruit::Fruit(const std::string& name) : ev2::VisualInstance{name}, supershape{radius_mul, 50, 50} {
-    const std::vector<uint32_t>& indices = supershape.getIndicesv();
-    std::vector<ev2::renderer::Primitive> ev_meshs;
-    ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
     
-    model = std::make_shared<ev2::renderer::Drawable>(
-        ev2::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices),
-        std::move(ev_meshs),
-        std::vector<ev2::renderer::Material*>{},
-        glm::vec3{}, // TODO
-        glm::vec3{}, // TODO
-        ev2::gl::CullMode::BACK,
-        ev2::gl::FrontFacing::CCW);
-    // model->vertex_color_weight = 1.0f;
 }
 
 void Fruit::on_init() {
     ev2::VisualInstance::on_init();
 
-    geometry = ev2::renderer::Renderer::get_singleton().create_model(model);
+    const std::vector<uint32_t>& indices = supershape.getIndicesv();
+
+    std::vector<ev2::renderer::Primitive> ev_meshs;
+    ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
+
+    geometry = ev2::renderer::Renderer::get_singleton().create_model(
+        ev2::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices),
+        std::move(ev_meshs),
+        std::vector<ev2::renderer::Material*>{},
+        glm::vec3{}, // TODO
+        glm::vec3{}, // TODO
+        ev2::gl::CullMode::BACK,
+        ev2::gl::FrontFacing::CCW);
     set_model(geometry);
 }
 
@@ -305,9 +317,9 @@ void Fruit::generate() {
     const std::vector<uint32_t>& indices = supershape.getIndicesv();
     const std::vector<float> vbuffer = supershape.getInterleavedVerticesv();
 
-    model->vertex_buffer.get_buffer(0).CopyData(vbuffer);
-    model->vertex_buffer.get_buffer(model->vertex_buffer.get_indexed()).CopyData(indices);
+    geometry->vertex_buffer.get_buffer(0).CopyData(vbuffer);
+    geometry->vertex_buffer.get_buffer(geometry->vertex_buffer.get_indexed()).CopyData(indices);
 
-    model->primitives.clear();
-    model->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
+    geometry->primitives.clear();
+    geometry->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
 }
