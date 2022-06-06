@@ -55,12 +55,16 @@ public:
 
     void generate(int iterations);
     void setParams(const std::map<std::string, float>& paramsNew, int iterations, float growth);
+    void spawn_fruit(const glm::vec3& position, const SuperShapeParams& params);
     std::map<std::string, float> getParams() {return params;}
     
     bool breedable = true;
     float growth_current = 0;
     float growth_rate = 0.05f;
     float growth_max = 1;
+    float fruit_growth_max = 2;
+    float fruit_growth_rate = 0.05f;
+    bool fruits_spawned = false;
 
     float thickness = 1.0f;
     float leaf_scale = 5.f;
@@ -76,6 +80,7 @@ public:
     SuperShapeParams fruit_params{};
     
     ev2::Ref<ev2::InstancedGeometry> leafs;
+    
     class GameState* const game;
 };
 
@@ -86,7 +91,7 @@ public:
 
     void on_init() override;
 
-    void generate();
+    void generate(float growth);
 
     const float radius_mul = 0.25f;
     SuperSphere supershape{};

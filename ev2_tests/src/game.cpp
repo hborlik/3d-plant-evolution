@@ -133,7 +133,7 @@ GameState::GameState() {
     instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {2, 10, 0}));
     instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {3, 10, 0}));
 
-    for (int n = 0; n < 20; n++)
+    for (int n = 0; n < 2; n++)
     {
         spawn_random_tree(glm::vec3{}, 40, 9, 1.0f);
     }
@@ -166,7 +166,18 @@ void GameState::update(float dt) {
                     tree->growth_current = tree->growth_current + tree->growth_rate * dt * (1/(log(tree->growth_current + 1.1f)));
                     tree->setParams(tree->getParams(), tree->plantInfo.iterations, tree->growth_current);
                     j++;
+                } else if (tree->growth_current < tree->fruit_growth_max) {
+                    tree->growth_current = tree->growth_current + tree->growth_rate * dt * (1/(log(tree->growth_current + 1.1f)));
+                    for (ev2::Ref<Node> node : tree->get_children()) {
+                        ev2::Ref<Fruit> fruit = node.ref_cast<Node>().ref_cast<Fruit>();
+                        if (fruit) {
+                            fruit->generate(tree->growth_current - 1.0f);
+                        }
+
+                    }
+                    //for fruit on tree update fruit growth.
                 }
+
             }
         // } else {
         //     break;
@@ -183,7 +194,7 @@ void GameState::update(float dt) {
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
 }
 
-void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1, float starting_growth, bool breedable) {
+void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1, float starting_growth, float adjusted_leaf_scale, bool breedable) {
     int unique_id = (int)randomFloatTo(9999999);
     std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
@@ -194,7 +205,9 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     tree->plantInfo.iterations = iterations;
     SuperSphere supershape(1.0f, 20, 20);
     tree->growth_current = starting_growth;
-    
+
+    tree->leaf_scale = adjusted_leaf_scale;
+
     ev2::Ref<ev2::RigidBody> tree_hit_sphere = scene->create_node<ev2::RigidBody>(unique_hit_tag.c_str());
     tree_hit_sphere->add_shape(ev2::make_referenced<ev2::CapsuleShape>(.5 * params.find("thickness")->second/2, 5.0), glm::vec3{0, 2.5, 0});
     tree_hit_sphere->transform.position = position;
@@ -217,12 +230,15 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
 
         tree_hit_sphere->add_child(light);
 
-        spawn_fruit(position + glm::vec3{0, 10, 0}, tree->fruit_params);
+
+        //spawn_fruit(position + glm::vec3{0, 10, 0}, tree->fruit_params);
+    } else {
+        tree->fruits_spawned = true;
     }
     tree->c0 = color_0;
     tree->c1 = color_1;
     tree->setParams(params, iterations, tree->growth_current);
-
+    
 }
 
 void GameState::spawn_random_tree(const glm::vec3& position, float range_extent, int iterations, float starting_growth) {
@@ -247,19 +263,21 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
         {"q3",  randomFloatRange(.9f, 2.f)},
         {"k",   (int)randomFloatRange(1, 3.f)},
         {"c",   randomFloatRange(.99f, 1.05f)},
-        {"d_f", randomFloatRange(.99f, 1.05f)}
+        {"d_f", randomFloatRange(.99f, 1.05f)},
     };
+
+
 
     glm::vec3 color_0 = glm::vec3{randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f), randomFloatRange(0.1f, 1.0f)};
     glm::vec3 color_1 = glm::vec3{randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f), randomFloatRange(0.2f, 1.0f)};
 
     float r = sqrt(randomFloatTo(1)) * range_extent;
     float th = randomFloatTo(ptree::degToRad(360));
-
+    float random_leaf_scale = randomFloatRange(0.5f, 15.f);
     glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
 //    glm::vec3 pos = position;
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, starting_growth, true);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, .05f, random_leaf_scale, true);
 }
 
 
@@ -283,10 +301,10 @@ void GameState::spawn_mountain_tree(const glm::vec3& position, float range_exten
 //    glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
     glm::vec3 pos = position;
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.f, false);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.f, 0.0f, false);
 }
 
-void GameState::spawn_fruit(const glm::vec3& position, const SuperShapeParams& params) {
+void GameState::spawn_fruit(const glm::vec3& position, const SuperShapeParams& params, float fruit_growth) {
     ev2::Ref<Fruit> fruit = scene->create_node<Fruit>("Fruit", params);
     
     ev2::Ref<ev2::RigidBody> fruit_hit_sphere = scene->create_node<ev2::RigidBody>("fruit");
@@ -350,10 +368,8 @@ void GameState::spawn_cross(const glm::vec3& position, float rotation, int itera
         std::map<std::string, float> crossed_params = crossParams(selected_tree_1->getParams(), selected_tree_2->getParams());
         glm::vec3 color_0 = glm::vec3(randomFloatRange(selected_tree_1->c0.r, selected_tree_2->c0.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.g, selected_tree_2->c0.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.b, selected_tree_2->c0.b) + randomFloatRange(-.2f, .2f)); 
         glm::vec3 color_1 = glm::vec3(randomFloatRange(selected_tree_1->c1.r, selected_tree_2->c1.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.g, selected_tree_2->c1.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.b, selected_tree_2->c1.b) + randomFloatRange(-.2f, .2f));
-        
-        ma_engine_play_sound(&engine, "asset/plantGrowing.mp3", NULL);
-
-        spawn_tree(position, rotation, crossed_params, (selected_tree_1->plantInfo.iterations + selected_tree_2->plantInfo.iterations)/2, color_0, color_1, 0.f, true);
+        float cross_leaf_scale = randomFloatRange(selected_tree_1->leaf_scale, selected_tree_2->leaf_scale) + randomFloatRange(-.2f, .2f);
+        spawn_tree(position, rotation, crossed_params, iterations, color_0, color_1, 0.f, cross_leaf_scale, true);
     }
     //plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
 }

@@ -209,7 +209,7 @@ void TreeNode::setParams(const std::map<std::string, float>& paramsNew, int iter
 
     thickness = temp_params.at("thickness");
     params = temp_params;
-    this->generate(iterations * growth_current);
+    this->generate((iterations * growth_current) + 1);
     params = paramsNew; // save target parameters after generation of vertex buffers
 
     /*
@@ -253,15 +253,37 @@ void TreeNode::generate(int iterations) {
         if (leafs) {
             leafs->instance_transforms.clear();
             leafs->instance_transforms.reserve(tree_skeleton.endpoints.size());
-            const glm::mat4 rot_leaf = glm::mat4(glm::rotate<float>(glm::identity<glm::quat>(), M_PI / 2.f, glm::vec3{1, 0, 0}));
+            const glm::mat4 rot_leaf = glm::mat4(glm::rotate<float>(glm::identity<glm::quat>(), M_PI / 2, glm::vec3{1, 0, 0}));
             for (const auto& ind : tree_skeleton.endpoints) {
                 glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), tree_skeleton.joints[ind].position) 
                     * glm::mat4(glm::quatLookAt(tree_skeleton.joints[ind].tangent, glm::vec3{0, 1, 0}))
                     * rot_leaf
-                    * glm::translate(glm::identity<glm::mat4>(), {0, leaf_scale * -0.05, 0})
-                    * glm::scale(glm::identity<glm::mat4>(), glm::vec3{leaf_scale});
+                    * glm::translate(glm::identity<glm::mat4>(), {0, leaf_scale * growth_current * -0.05, 0})
+                    * glm::scale(glm::identity<glm::mat4>(), glm::vec3{leaf_scale * growth_current});
                 leafs->instance_transforms.push_back(tr);
             }
+        }
+
+        if ((growth_current >= growth_max) && !fruits_spawned) {
+             fruit_params.n1 = randomFloatRange(.2f, .5f);
+             fruit_params.n2 =  randomFloatRange(.9f, 2.f);
+             fruit_params.n3 =  randomFloatRange(.9f, 2.f);
+             fruit_params.m =   (int)randomFloatRange(1, 7.f);
+             fruit_params.a =   randomFloatRange(.99f, 1.05f);
+             fruit_params.b =   randomFloatRange(.99f, 1.05f);
+
+             fruit_params.q1 =  randomFloatRange(.2f, .5f);
+             fruit_params.q2 =  randomFloatRange(.9f, 2.f);
+             fruit_params.q3 =  randomFloatRange(.9f, 2.f);
+             fruit_params.k =   (int)randomFloatRange(1, 3.f);
+             fruit_params.c =   randomFloatRange(.99f, 1.05f);            
+            for (const auto& ind : tree_skeleton.endpoints) {
+                if (randomFloatRange(0.f, 1.f) <= 0.01f) 
+                    {
+                        spawn_fruit(tree_skeleton.joints[ind].position + glm::vec3{0, -0.5, 0}, fruit_params);
+                    }                
+            }            
+            fruits_spawned = true;
         }
 
         ptree::DefaultColorizer dc{c0, c1, tree.max_joint_depth};
@@ -284,6 +306,18 @@ void TreeNode::generate(int iterations) {
         tree_geometry->primitives.clear();
         tree_geometry->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
     }
+}
+
+void TreeNode::spawn_fruit(const glm::vec3& position, const SuperShapeParams& params) {
+    
+    ev2::Ref<Fruit> fruit = create_node<Fruit>("Fruit", params);
+    ev2::Ref<ev2::RigidBody> fruit_hit_sphere = fruit->create_node<ev2::RigidBody>("fruit");
+    fruit_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(.5f), glm::vec3{0, 0, 0});
+    fruit->transform.position = position;
+    fruit->add_child(fruit_hit_sphere);
+    // fruit_hit_sphere->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
+
+    fruit->set_material_override(game->fruit_material->get_material());
 }
 
 Fruit::Fruit(const std::string& name, const SuperShapeParams& params) : ev2::VisualInstance{name}, supershape{radius_mul, 50, 50, params} {
@@ -313,7 +347,13 @@ void Fruit::on_init() {
     set_model(geometry);
 }
 
-void Fruit::generate() {
+void Fruit::generate(float growth) {
+
+    SuperShapeParams updated_params = params;
+    updated_params.n2 = params.n2 * growth;
+
+    
+    supershape = SuperSphere(radius_mul, 50, 50, updated_params);
     const std::vector<uint32_t>& indices = supershape.getIndicesv();
     const std::vector<float> vbuffer = supershape.getInterleavedVerticesv();
 
