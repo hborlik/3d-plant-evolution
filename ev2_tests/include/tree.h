@@ -81,6 +81,7 @@ public:
     float growth_max = 1;
     float fruit_growth_max = 2;
     float fruit_growth_rate = 0.05f;
+    float fruit_spawn_rate = 0.01f;
     bool fruits_spawned = false;
 
     float thickness = 1.0f;

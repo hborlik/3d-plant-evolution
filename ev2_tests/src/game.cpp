@@ -197,7 +197,7 @@ void GameState::update(float dt) {
 void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, 
                                  glm::vec3 color_0, glm::vec3 color_1, float starting_growth, float adjusted_leaf_scale, 
                                  ev2::Ref<ev2::MaterialResource> new_leaf_material, ev2::Ref<ev2::MaterialResource> new_fruit_material, 
-                                 bool breedable) {
+                                 float fruit_spawn_rate, bool breedable) {
     int unique_id = (int)randomFloatTo(9999999);
     std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
@@ -234,6 +234,7 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
 
         tree_hit_sphere->add_child(light);
 
+        tree->fruit_spawn_rate = fruit_spawn_rate;
 
         //spawn_fruit(position + glm::vec3{0, 10, 0}, tree->fruit_params);
     } else {
@@ -289,8 +290,9 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
     fruit_material->get_material()->clearcoat = 0.2f;
     fruit_material->get_material()->metallic = randomFloatRange(0.0001, 0.5);
     fruit_material->get_material()->emissive = randomFloatRange(0.0001, 1.) * fruit_material->get_material()->diffuse;
+    float fruit_spawn_rate = randomFloatRange(0.001f, 0.5);
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, starting_growth, random_leaf_scale, leaf_material, fruit_material, true);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, (int)randomFloatRange(3, 10), color_0, color_1, starting_growth, random_leaf_scale, leaf_material, fruit_material, fruit_spawn_rate, true);
 }
 
 
@@ -314,7 +316,7 @@ void GameState::spawn_mountain_tree(const glm::vec3& position, float range_exten
 //    glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
     glm::vec3 pos = position;
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.f, 0.0f, leaf_material, fruit_material, false);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.f, 0.0f, leaf_material, fruit_material, -1.0f, false);
 }
 
 void GameState::spawn_fruit(const glm::vec3& position, const SuperShapeParams& params, float fruit_growth) {
@@ -438,7 +440,8 @@ void GameState::spawn_cross(const glm::vec3& position, float rotation, int itera
         glm::vec3 color_0 = glm::vec3(randomFloatRange(selected_tree_1->c0.r, selected_tree_2->c0.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.g, selected_tree_2->c0.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.b, selected_tree_2->c0.b) + randomFloatRange(-.2f, .2f)); 
         glm::vec3 color_1 = glm::vec3(randomFloatRange(selected_tree_1->c1.r, selected_tree_2->c1.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.g, selected_tree_2->c1.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.b, selected_tree_2->c1.b) + randomFloatRange(-.2f, .2f));
         float cross_leaf_scale = randomFloatRange(selected_tree_1->leaf_scale, selected_tree_2->leaf_scale) + randomFloatRange(-.2f, .2f);
-        spawn_tree(position, rotation, crossed_params, iterations, color_0, color_1, 0.f, cross_leaf_scale, new_leaf_material, new_fruit_material, true);
+        float cross_fruit_spawn_rate = (selected_tree_1->fruit_spawn_rate + selected_tree_2->fruit_spawn_rate)/randomFloatRange(1.5f, 2.5f);
+        spawn_tree(position, rotation, crossed_params, (selected_tree_1->plantInfo.iterations + selected_tree_2->plantInfo.iterations)/2, color_0, color_1, 0.f, cross_leaf_scale, new_leaf_material, new_fruit_material, cross_fruit_spawn_rate, true);
     }
     //plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
 }

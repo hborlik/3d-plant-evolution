@@ -295,7 +295,7 @@ void TreeNode::generate(int iterations) {
             fruit_params.k =   (int)randomFloatRange(1, 3.f);
             fruit_params.c =   randomFloatRange(.99f, 1.05f);
             for (const auto& ind : tree_skeleton.endpoints) {
-                if (randomFloatRange(0.f, 1.f) <= 0.01f)
+                if (randomFloatRange(0.f, 1.f) <= fruit_spawn_rate)
                 {
                     glm::vec4 pos = get_transform() * glm::vec4{tree_skeleton.joints[ind].position + glm::vec3{0, -0.5, 0}, 1.0f};
                     spawn_fruit(glm::vec3{pos}, fruit_params);
@@ -333,7 +333,7 @@ void TreeNode::spawn_fruit(const glm::vec3& position, const SuperShapeParams& pa
     ev2::Ref<ev2::RigidBody> fruit_hit_sphere = get_scene()->create_node<ev2::RigidBody>("fruit");
     fruit_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(.5f), glm::vec3{0, 0, 0});
     auto light = create_node<ev2::PointLightNode>("point_light");
-    light->set_color(c0 * 0.1f);
+    light->set_color(fruit_material->get_material()->diffuse * 0.5f);
 
     fruit_hit_sphere->add_child(light);
     fruit_hit_sphere->transform.position = position;
@@ -374,7 +374,9 @@ void Fruit::on_init() {
 void Fruit::generate(float growth) {
 
     SuperShapeParams updated_params = params;
+    updated_params.n1 = params.n1 * growth * growth;
     updated_params.n2 = params.n2 * growth * growth * growth;
+    updated_params.n3 = params.n3 * growth;
     updated_params.q2 = params.q2 * growth * growth;
 
     
