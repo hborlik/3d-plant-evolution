@@ -158,7 +158,13 @@ struct P_3 : public MonopodialProduction {
 
 }
 
-TreeNode::TreeNode(GameState* game, const std::string& name, bool has_leafs, int u_id) : ev2::VisualInstance{name}, game{game}, has_leafs{has_leafs} {
+TreeNode::TreeNode(GameState* game, const std::string& name, bool has_leafs, int u_id, ev2::Ref<ev2::MaterialResource> fruit_material, ev2::Ref<ev2::MaterialResource> leaf_material) : 
+    ev2::VisualInstance{name}, 
+    game{game}, 
+    has_leafs{has_leafs}, 
+    fruit_material{fruit_material}, 
+    leaf_material{leaf_material} {
+
     buffer_layout.add_attribute(ev2::VertexAttributeType::Vertex)
         .add_attribute(ev2::VertexAttributeType::Normal)
         .add_attribute(ev2::VertexAttributeType::Color)
@@ -173,24 +179,24 @@ void TreeNode::on_init() {
 
     if (has_leafs) {
 
-        std::string leaf_mat = std::to_string(this->plantInfo.ID).append("leaf_material");
-        leaf_material = ResourceManager::get_singleton().get_material(leaf_mat);
-        leaf_material->get_material()->diffuse = glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
-        leaf_material->get_material()->emissive = randomFloatRange(0.0001, 1.) * glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
-        leaf_material->get_material()->metallic = randomFloatRange(0.0001, 0.3);
-        leaf_material->get_material()->subsurface = randomFloatRange(0.5, 1);
-        leaf_material->get_material()->specular = randomFloatRange(0.0001, 0.2);;
-        leaf_material->get_material()->roughness = randomFloatRange(0.0001, 1);;
-        leaf_material->get_material()->specularTint = 0.f;
-        leaf_material->get_material()->clearcoat = randomFloatRange(0.0001, 1.0);;
-        leaf_material->get_material()->clearcoatGloss = 0.63;
-        leaf_material->get_material()->sheen = randomFloatRange(0.0001, 0.8);;
-        leaf_material->get_material()->sheenTint = 0.5f;
-        leaf_material->get_material()->diffuse_tex = ResourceManager::get_singleton().get_texture("coffee_leaf1.png");
+        if (!leaf_material) {
+            leaf_material = ev2::make_referenced<ev2::MaterialResource>(ev2::renderer::Renderer::get_singleton().create_material());
+            leaf_material->get_material()->diffuse = glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
+            leaf_material->get_material()->emissive = randomFloatRange(0.0001, 1.) * glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
+            leaf_material->get_material()->metallic = randomFloatRange(0.0001, 0.3);
+            leaf_material->get_material()->subsurface = randomFloatRange(0.5, 1);
+            leaf_material->get_material()->specular = randomFloatRange(0.0001, 0.2);;
+            leaf_material->get_material()->roughness = randomFloatRange(0.0001, 1);;
+            leaf_material->get_material()->specularTint = 0.f;
+            leaf_material->get_material()->clearcoat = randomFloatRange(0.0001, 1.0);;
+            leaf_material->get_material()->clearcoatGloss = 0.63;
+            leaf_material->get_material()->sheen = randomFloatRange(0.0001, 0.8);;
+            leaf_material->get_material()->sheenTint = 0.5f;
+            leaf_material->get_material()->diffuse_tex = ResourceManager::get_singleton().get_texture("coffee_leaf1.png");
+        }
 
         leafs = create_node<ev2::InstancedGeometry>("leafs");
         leafs->set_material_override(leaf_material->get_material());
-
     }
 
     tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(
@@ -294,13 +300,18 @@ void TreeNode::generate(int iterations) {
             fruit_params.q3 =  randomFloatRange(.9f, 2.f);
             fruit_params.k =   (int)randomFloatRange(1, 3.f);
             fruit_params.c =   randomFloatRange(.99f, 1.05f);
+
+            fruits = create_node<Fruit>("Fruit", fruit_params, 0.05f);
+            fruits->set_material_override(fruit_material->get_material());
+            fruits->generate(1.0f);
+
             for (const auto& ind : tree_skeleton.endpoints) {
                 if (randomFloatRange(0.f, 1.f) <= fruit_spawn_rate)
                 {
-                    glm::vec4 pos = get_transform() * glm::vec4{tree_skeleton.joints[ind].position + glm::vec3{0, -0.5, 0}, 1.0f};
-                    spawn_fruit(glm::vec3{pos}, fruit_params);
+                    glm::vec3 pos = tree_skeleton.joints[ind].position + glm::vec3{0, -0.5, 0};
+                    spawn_fruit(pos);
                 }
-            }            
+            }
             fruits_spawned = true;
         }
 
@@ -326,34 +337,37 @@ void TreeNode::generate(int iterations) {
     }
 }
 
-void TreeNode::spawn_fruit(const glm::vec3& position, const SuperShapeParams& params) {
-    ev2::Ref<Fruit> fruit = create_node<Fruit>("Fruit", params);
-    fruit->params = params;
-    fruit->generate(0.00000001f);
+void TreeNode::spawn_fruit(const glm::vec3& position) {
+    // ev2::Ref<Fruit> fruit = create_node<Fruit>("Fruit", params, 0.05f);
+    // fruit->params = params;
+    // fruit->generate(1.0f);
+
+    glm::vec3 wpos = get_transform() * glm::vec4{position, 1.0f};
+
     ev2::Ref<ev2::RigidBody> fruit_hit_sphere = get_scene()->create_node<ev2::RigidBody>("fruit");
     fruit_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(.5f), glm::vec3{0, 0, 0});
     auto light = create_node<ev2::PointLightNode>("point_light");
     light->set_color(fruit_material->get_material()->diffuse * 0.5f);
 
     fruit_hit_sphere->add_child(light);
-    fruit_hit_sphere->transform.position = position;
-    fruit_hit_sphere->add_child(fruit);
-    fruits.insert(fruits.begin(), fruit);
+    fruit_hit_sphere->transform.position = wpos;
+    // fruit_hit_sphere->add_child(fruit);
+
+    fruits->add_fruit(position);
     // fruit_hit_sphere->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
 
-    fruit->set_material_override(fruit_material->get_material());
+    // 
 }
 
-Fruit::Fruit(const std::string& name, const SuperShapeParams& params) : ev2::VisualInstance{name}, supershape{radius_mul, 50, 50, params} {
+Fruit::Fruit(const std::string& name, const SuperShapeParams& params, float growth_dt) : ev2::InstancedGeometry{name}, supershape{radius_mul, 50, 50, params}, growth_dt{growth_dt} {
     
 }
 
-Fruit::Fruit(const std::string& name) : ev2::VisualInstance{name}, supershape{radius_mul, 50, 50} {
+Fruit::Fruit(const std::string& name) : ev2::InstancedGeometry{name}, supershape{radius_mul, 50, 50} {
     
 }
 
 void Fruit::on_init() {
-    ev2::VisualInstance::on_init();
 
     const std::vector<uint32_t>& indices = supershape.getIndicesv();
 
@@ -361,14 +375,25 @@ void Fruit::on_init() {
     ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
 
     geometry = ev2::renderer::Renderer::get_singleton().create_model(
-        ev2::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices),
+        ev2::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices, true),
         std::move(ev_meshs),
         std::vector<ev2::renderer::Material*>{},
         glm::vec3{}, // TODO
         glm::vec3{}, // TODO
         ev2::gl::CullMode::BACK,
         ev2::gl::FrontFacing::CCW);
-    set_model(geometry);
+}
+
+void Fruit::on_process(float dt) {
+    if (growth < 1.0f) {
+        growth += dt * growth_dt;
+
+        instance_transforms.clear();
+        for (auto& f: fruit_transforms) {
+            f.scale = glm::vec3{growth};
+            instance_transforms.push_back(f.get_transform());
+        }
+    }
 }
 
 void Fruit::generate(float growth) {

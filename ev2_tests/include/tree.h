@@ -46,31 +46,43 @@ struct PNVertex {
     glm::vec3 color;
 };
 
-class Fruit : public ev2::VisualInstance {
+class Fruit : public ev2::InstancedGeometry {
 public:
-    Fruit(const std::string& name, const SuperShapeParams& params);
+    Fruit(const std::string& name, const SuperShapeParams& params, float growth_dt);
     Fruit(const std::string& name);
 
     void on_init() override;
+    void on_process(float dt) override;
 
     void generate(float growth);
 
+    void add_fruit(const glm::vec3& pos) {
+        ev2::Transform ft{};
+        ft.position = pos;
+        fruit_transforms.push_back(ft);
+    }
+
+    std::vector<ev2::Transform> fruit_transforms;
+
     const float radius_mul = 0.25f;
+    float growth = 0.01f;
+    float growth_dt = 0.01f;
     SuperSphere supershape{};
     SuperShapeParams params{};
-    ev2::renderer::Drawable* geometry{};
 };
 
 class TreeNode : public ev2::VisualInstance {
 public:
-    explicit TreeNode(class GameState* game, const std::string& name, bool has_leafs = false, int u_id = -1);
+    explicit TreeNode(class GameState* game, const std::string& name, bool has_leafs = false, int u_id = -1,
+                     ev2::Ref<ev2::MaterialResource> fruit_material = nullptr,
+                     ev2::Ref<ev2::MaterialResource> leaf_material = nullptr);
 
     void on_init() override;
     void on_destroy() override;
 
     void generate(int iterations);
     void setParams(const std::map<std::string, float>& paramsNew, int iterations, float growth);
-    void spawn_fruit(const glm::vec3& position, const SuperShapeParams& params);
+    void spawn_fruit(const glm::vec3& position);
     std::map<std::string, float> getParams() {return params;}
     ev2::Ref<ev2::MaterialResource> fruit_material;
     ev2::Ref<ev2::MaterialResource> leaf_material;
@@ -93,12 +105,12 @@ public:
     std::map<std::string, float> params;
     ev2::VertexLayout buffer_layout;
     ev2::renderer::Drawable* tree_geometry;
-    std::list<ev2::Ref<Fruit>> fruits;
 
     PlantInfo plantInfo{};
     SuperShapeParams fruit_params{};
     
     ev2::Ref<ev2::InstancedGeometry> leafs;
+    ev2::Ref<Fruit> fruits;
     
     class GameState* const game;
 };

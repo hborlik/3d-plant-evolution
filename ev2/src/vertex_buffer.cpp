@@ -54,6 +54,9 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
     vb.buffers.at(0).Unbind();
 
     if (instanced) {
+        vb.buffers.emplace(1, Buffer{gl::BindingTarget::ARRAY, gl::Usage::DYNAMIC_DRAW});
+        vb.buffers.at(1).Bind();
+        vb.instanced = 1;
         // mat4 instance info, note: max size for a vertex attribute is a vec4
         constexpr std::size_t vec4Size = sizeof(glm::vec4);
         glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION);
@@ -72,6 +75,8 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
         glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+1, 1);
         glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+2, 1);
         glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+3, 1);
+
+        vb.buffers.at(1).Unbind();
     }
 
     glBindVertexArray(0);
@@ -79,7 +84,7 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer) {
+VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, bool instanced) {
     VertexBuffer vb;
 
     vb.buffers.emplace(0, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
@@ -104,6 +109,32 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
 
     vb.buffers.at(0).Unbind();
     vb.buffers.at(1).Unbind();
+
+    if (instanced) {
+        vb.buffers.emplace(2, Buffer{gl::BindingTarget::ARRAY, gl::Usage::DYNAMIC_DRAW});
+        vb.buffers.at(2).Bind();
+        vb.instanced = 2;
+        // mat4 instance info, note: max size for a vertex attribute is a vec4
+        constexpr std::size_t vec4Size = sizeof(glm::vec4);
+        glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION);
+        glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)0);
+
+        glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION + 1);
+        glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION + 1, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size));
+
+        glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION + 2);
+        glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION + 2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 2));
+
+        glEnableVertexAttribArray(gl::INSTANCE_BINDING_LOCATION + 3);
+        glVertexAttribPointer(gl::INSTANCE_BINDING_LOCATION + 3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * 3));
+
+        glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION  , 1);
+        glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+1, 1);
+        glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+2, 1);
+        glVertexAttribDivisor(gl::INSTANCE_BINDING_LOCATION+3, 1);
+
+        vb.buffers.at(2).Unbind();
+    }
 
     glBindVertexArray(0);
 

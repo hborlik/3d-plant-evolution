@@ -30,6 +30,9 @@ public:
     MaterialResource() {
         material = renderer::Renderer::get_singleton().create_material();
     }
+
+    explicit MaterialResource(renderer::Material* material) : material{material} {}
+
     virtual ~MaterialResource() {
         renderer::Renderer::get_singleton().destroy_material(material);
     }

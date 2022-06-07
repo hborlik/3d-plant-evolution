@@ -162,7 +162,7 @@ public:
      * @return VertexBuffer 
      */
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& buffer, bool instanced = false);
-    static VertexBuffer vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer);
+    static VertexBuffer vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, bool instanced = false);
 
     /**
      * @brief init vertex buffer for a screen space triangle (vertices only)

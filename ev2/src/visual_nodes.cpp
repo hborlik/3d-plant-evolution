@@ -75,12 +75,15 @@ void InstancedGeometry::on_destroy() {
 }
 
 void InstancedGeometry::pre_render() {
-    geometry->instance_world_transform = get_transform();
-    geometry->vertex_buffer.get_buffer(geometry->vertex_buffer.get_instanced()).CopyData(instance_transforms);
-    geometry->vertex_buffer.set_n_instances(instance_transforms.size());
+    if (geometry) {
+        geometry->instance_world_transform = get_transform();
+        geometry->vertex_buffer.get_buffer(geometry->vertex_buffer.get_instanced()).CopyData(instance_transforms);
+        geometry->vertex_buffer.set_n_instances(instance_transforms.size());
+    }
 }
 
 void InstancedGeometry::set_material_override(renderer::Material* material_override) {
+    assert(geometry);
     if (material_override) {
         geometry->materials.resize(1);
         geometry->materials[0] = material_override;

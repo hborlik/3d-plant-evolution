@@ -43,8 +43,8 @@ public:
 
     std::vector<glm::mat4> instance_transforms{};
 
-private:
-    renderer::Drawable* geometry;
+protected:
+    renderer::Drawable* geometry = nullptr;
 };
 
 class CameraNode : public Node {
