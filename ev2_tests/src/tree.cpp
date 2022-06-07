@@ -450,7 +450,7 @@ void FireFlies::on_init() {
         Particle p{};
         p.m_fSize = 0.9f;
         p.m_fAge = randomFloatRange(0, 5);
-        p.m_Position = glm::vec3{randomFloatRange(-50, 50), randomFloatRange(0, 20), randomFloatRange(-50, 50)};
+        p.m_Position = glm::vec3{randomFloatRange(-50, 50), randomFloatRange(0, 15), randomFloatRange(-50, 50)};
         p.m_fLifeTime = 10.0f;
         particles.push_back(p);
     }
