@@ -27,9 +27,10 @@ public:
     Ref<Scene> scene;
     ev2::Ref<ev2::MaterialResource> tree_bark;
     ev2::Ref<ev2::MaterialResource> highlight_material;
+/*
     ev2::Ref<ev2::MaterialResource> fruit_material;
     ev2::Ref<ev2::MaterialResource> leaf_material;
-
+*/
     ev2::Ref<ev2::CameraNode> cam_first_person{};
     ev2::Ref<ev2::VisualInstance> marker{};
     ev2::Ref<Player> player;

@@ -158,12 +158,12 @@ struct P_3 : public MonopodialProduction {
 
 }
 
-TreeNode::TreeNode(GameState* game, const std::string& name, bool has_leafs) : ev2::VisualInstance{name}, game{game}, has_leafs{has_leafs} {
+TreeNode::TreeNode(GameState* game, const std::string& name, bool has_leafs, int u_id) : ev2::VisualInstance{name}, game{game}, has_leafs{has_leafs} {
     buffer_layout.add_attribute(ev2::VertexAttributeType::Vertex)
         .add_attribute(ev2::VertexAttributeType::Normal)
         .add_attribute(ev2::VertexAttributeType::Color)
         .finalize();
-
+    this->plantInfo.ID = u_id;
 
     params = monopodial::DefaultParamsA;
 }
@@ -172,8 +172,34 @@ void TreeNode::on_init() {
     ev2::VisualInstance::on_init();
 
     if (has_leafs) {
+
+        std::string fruit_mat = std::to_string(this->plantInfo.ID).append("fruit_material");
+        fruit_material = ResourceManager::get_singleton().get_material(fruit_mat);
+        fruit_material->get_material()->diffuse = glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
+        fruit_material->get_material()->sheen = randomFloatRange(0.2, 1.0);;
+        fruit_material->get_material()->roughness = randomFloatRange(0.0001, 1.0);
+        fruit_material->get_material()->clearcoat = 0.2f;
+        fruit_material->get_material()->metallic = randomFloatRange(0.0001, 0.5);
+        fruit_material->get_material()->emissive = randomFloatRange(0.0001, 1.) * fruit_material->get_material()->diffuse;
+
+        std::string leaf_mat = std::to_string(this->plantInfo.ID).append("leaf_material");
+        leaf_material = ResourceManager::get_singleton().get_material(leaf_mat);
+        leaf_material->get_material()->diffuse = glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
+        leaf_material->get_material()->emissive = randomFloatRange(0.0001, 1.) * glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
+        leaf_material->get_material()->metallic = randomFloatRange(0.0001, 0.3);
+        leaf_material->get_material()->subsurface = randomFloatRange(0.5, 1);
+        leaf_material->get_material()->specular = randomFloatRange(0.0001, 0.2);;
+        leaf_material->get_material()->roughness = randomFloatRange(0.0001, 1);;
+        leaf_material->get_material()->specularTint = 0.f;
+        leaf_material->get_material()->clearcoat = randomFloatRange(0.0001, 1.0);;
+        leaf_material->get_material()->clearcoatGloss = 0.63;
+        leaf_material->get_material()->sheen = randomFloatRange(0.0001, 0.8);;
+        leaf_material->get_material()->sheenTint = 0.5f;
+        leaf_material->get_material()->diffuse_tex = ResourceManager::get_singleton().get_texture("coffee_leaf1.png");
+
         leafs = create_node<ev2::InstancedGeometry>("leafs");
-        leafs->set_material_override(game->leaf_material->get_material());
+        leafs->set_material_override(leaf_material->get_material());
+
     }
 
     tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(
@@ -310,20 +336,21 @@ void TreeNode::generate(int iterations) {
 }
 
 void TreeNode::spawn_fruit(const glm::vec3& position, const SuperShapeParams& params) {
-    
     ev2::Ref<Fruit> fruit = create_node<Fruit>("Fruit", params);
+    fruit->params = params;
+    fruit->generate(0.00000001f);
     ev2::Ref<ev2::RigidBody> fruit_hit_sphere = get_scene()->create_node<ev2::RigidBody>("fruit");
     fruit_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(.5f), glm::vec3{0, 0, 0});
-    fruit_hit_sphere->transform.position = position;
-    fruit_hit_sphere->add_child(fruit);
-    // fruit_hit_sphere->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
-
     auto light = create_node<ev2::PointLightNode>("point_light");
     light->set_color(c0 * 0.1f);
 
     fruit_hit_sphere->add_child(light);
+    fruit_hit_sphere->transform.position = position;
+    fruit_hit_sphere->add_child(fruit);
+    fruits.insert(fruits.begin(), fruit);
+    // fruit_hit_sphere->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
 
-    fruit->set_material_override(game->fruit_material->get_material());
+    fruit->set_material_override(fruit_material->get_material());
 }
 
 Fruit::Fruit(const std::string& name, const SuperShapeParams& params) : ev2::VisualInstance{name}, supershape{radius_mul, 50, 50, params} {
@@ -356,10 +383,11 @@ void Fruit::on_init() {
 void Fruit::generate(float growth) {
 
     SuperShapeParams updated_params = params;
-    updated_params.n2 = params.n2 * growth;
+    updated_params.n2 = params.n2 * growth * growth * growth;
+    updated_params.q2 = params.q2 * growth * growth;
 
     
-    supershape = SuperSphere(radius_mul, 50, 50, updated_params);
+    supershape = SuperSphere(radius_mul, 20, 20, updated_params);
     const std::vector<uint32_t>& indices = supershape.getIndicesv();
     const std::vector<float> vbuffer = supershape.getInterleavedVerticesv();
 

@@ -46,9 +46,24 @@ struct PNVertex {
     glm::vec3 color;
 };
 
+class Fruit : public ev2::VisualInstance {
+public:
+    Fruit(const std::string& name, const SuperShapeParams& params);
+    Fruit(const std::string& name);
+
+    void on_init() override;
+
+    void generate(float growth);
+
+    const float radius_mul = 0.25f;
+    SuperSphere supershape{};
+    SuperShapeParams params{};
+    ev2::renderer::Drawable* geometry{};
+};
+
 class TreeNode : public ev2::VisualInstance {
 public:
-    explicit TreeNode(class GameState* game, const std::string& name, bool has_leafs = false);
+    explicit TreeNode(class GameState* game, const std::string& name, bool has_leafs = false, int u_id = -1);
 
     void on_init() override;
     void on_destroy() override;
@@ -57,6 +72,8 @@ public:
     void setParams(const std::map<std::string, float>& paramsNew, int iterations, float growth);
     void spawn_fruit(const glm::vec3& position, const SuperShapeParams& params);
     std::map<std::string, float> getParams() {return params;}
+    ev2::Ref<ev2::MaterialResource> fruit_material;
+    ev2::Ref<ev2::MaterialResource> leaf_material;
     
     bool breedable = true;
     float growth_current = 0;
@@ -75,6 +92,7 @@ public:
     std::map<std::string, float> params;
     ev2::VertexLayout buffer_layout;
     ev2::renderer::Drawable* tree_geometry;
+    std::list<ev2::Ref<Fruit>> fruits;
 
     PlantInfo plantInfo{};
     SuperShapeParams fruit_params{};
@@ -82,21 +100,6 @@ public:
     ev2::Ref<ev2::InstancedGeometry> leafs;
     
     class GameState* const game;
-};
-
-class Fruit : public ev2::VisualInstance {
-public:
-    Fruit(const std::string& name, const SuperShapeParams& params);
-    Fruit(const std::string& name);
-
-    void on_init() override;
-
-    void generate(float growth);
-
-    const float radius_mul = 0.25f;
-    SuperSphere supershape{};
-    SuperShapeParams params{};
-    ev2::renderer::Drawable* geometry{};
 };
 
 class FireFlies : public ev2::Node {
