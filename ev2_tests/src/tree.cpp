@@ -173,15 +173,6 @@ void TreeNode::on_init() {
 
     if (has_leafs) {
 
-        std::string fruit_mat = std::to_string(this->plantInfo.ID).append("fruit_material");
-        fruit_material = ResourceManager::get_singleton().get_material(fruit_mat);
-        fruit_material->get_material()->diffuse = glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
-        fruit_material->get_material()->sheen = randomFloatRange(0.2, 1.0);;
-        fruit_material->get_material()->roughness = randomFloatRange(0.0001, 1.0);
-        fruit_material->get_material()->clearcoat = 0.2f;
-        fruit_material->get_material()->metallic = randomFloatRange(0.0001, 0.5);
-        fruit_material->get_material()->emissive = randomFloatRange(0.0001, 1.) * fruit_material->get_material()->diffuse;
-
         std::string leaf_mat = std::to_string(this->plantInfo.ID).append("leaf_material");
         leaf_material = ResourceManager::get_singleton().get_material(leaf_mat);
         leaf_material->get_material()->diffuse = glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};

@@ -27,10 +27,10 @@ public:
     Ref<Scene> scene;
     ev2::Ref<ev2::MaterialResource> tree_bark;
     ev2::Ref<ev2::MaterialResource> highlight_material;
-/*
+
     ev2::Ref<ev2::MaterialResource> fruit_material;
     ev2::Ref<ev2::MaterialResource> leaf_material;
-*/
+
     ev2::Ref<ev2::CameraNode> cam_first_person{};
     ev2::Ref<ev2::VisualInstance> marker{};
     ev2::Ref<Player> player;
@@ -50,7 +50,7 @@ public:
 
     void update(float dt);
 
-    void spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1, float starting_growth, float adjusted_leaf_scale, bool breedable);
+    void spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1, float starting_growth, float adjusted_leaf_scale, ev2::Ref<ev2::MaterialResource> new_leaf_material, ev2::Ref<ev2::MaterialResource> new_fruit_material, bool breedable);
     void spawn_mountain_tree(const glm::vec3& position, float range_extent, int iterations);
     void spawn_random_tree(const glm::vec3& position, float range_extent, int iterations, float starting_growth);
     void spawn_fruit(const glm::vec3& position, const SuperShapeParams& params, float fruit_growth);

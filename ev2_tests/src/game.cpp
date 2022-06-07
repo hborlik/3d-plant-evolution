@@ -45,7 +45,7 @@ GameState::GameState() {
     highlight_material->get_material()->emissive = glm::vec3{10, 0, 0};
     highlight_material->get_material()->sheen = 1.0;
     highlight_material->get_material()->metallic = 0.9;
-/*
+
     fruit_material = ResourceManager::get_singleton().get_material("fruit_material");
     // fruit_material->get_material()->emissive = glm::vec3{2.29, 6.02, 4.78};
     fruit_material->get_material()->diffuse = glm::vec3{0.229, 0.602, 0.478};
@@ -67,7 +67,7 @@ GameState::GameState() {
     leaf_material->get_material()->sheen = 0.35f;
     leaf_material->get_material()->sheenTint = 0.5f;
     leaf_material->get_material()->diffuse_tex = ResourceManager::get_singleton().get_texture("coffee_leaf1.png");
-*/
+
     auto ground_material = ResourceManager::get_singleton().get_material("ground_mat");
     ground_material->get_material()->metallic = 0.16;
     ground_material->get_material()->subsurface = 0.95;
@@ -194,7 +194,10 @@ void GameState::update(float dt) {
     sun_light->transform.position = glm::rotate(glm::identity<glm::quat>(), -sun_rads, glm::vec3(1, 0, 0)) * glm::vec3{0, 0, 100};
 }
 
-void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, glm::vec3 color_0, glm::vec3 color_1, float starting_growth, float adjusted_leaf_scale, bool breedable) {
+void GameState::spawn_tree(const glm::vec3& position, float rotation, const std::map<std::string, float>& params, int iterations, 
+                                 glm::vec3 color_0, glm::vec3 color_1, float starting_growth, float adjusted_leaf_scale, 
+                                 ev2::Ref<ev2::MaterialResource> new_leaf_material, ev2::Ref<ev2::MaterialResource> new_fruit_material, 
+                                 bool breedable) {
     int unique_id = (int)randomFloatTo(9999999);
     std::string unique_hit_tag = std::string("Tree_root_") + std::to_string(unique_id);
     
@@ -205,7 +208,8 @@ void GameState::spawn_tree(const glm::vec3& position, float rotation, const std:
     tree->plantInfo.iterations = iterations;
     SuperSphere supershape(1.0f, 20, 20);
     tree->growth_current = starting_growth;
-
+    tree->leaf_material = new_leaf_material;
+    tree->fruit_material = new_fruit_material;
     tree->leaf_scale = adjusted_leaf_scale;
 
     ev2::Ref<ev2::RigidBody> tree_hit_sphere = scene->create_node<ev2::RigidBody>(unique_hit_tag.c_str());
@@ -277,7 +281,16 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
     glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
 //    glm::vec3 pos = position;
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, starting_growth, random_leaf_scale, true);
+    std::string fruit_mat = std::to_string((int)randomFloatTo(99999999)).append("fruit_material");
+    fruit_material = ResourceManager::get_singleton().get_material(fruit_mat);
+    fruit_material->get_material()->diffuse = glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
+    fruit_material->get_material()->sheen = randomFloatRange(0.2, 1.0);;
+    fruit_material->get_material()->roughness = randomFloatRange(0.0001, 1.0);
+    fruit_material->get_material()->clearcoat = 0.2f;
+    fruit_material->get_material()->metallic = randomFloatRange(0.0001, 0.5);
+    fruit_material->get_material()->emissive = randomFloatRange(0.0001, 1.) * fruit_material->get_material()->diffuse;
+
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, starting_growth, random_leaf_scale, leaf_material, fruit_material, true);
 }
 
 
@@ -301,7 +314,7 @@ void GameState::spawn_mountain_tree(const glm::vec3& position, float range_exten
 //    glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
     glm::vec3 pos = position;
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.f, 0.0f, false);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, 1.f, 0.0f, leaf_material, fruit_material, false);
 }
 
 void GameState::spawn_fruit(const glm::vec3& position, const SuperShapeParams& params, float fruit_growth) {
@@ -366,10 +379,66 @@ std::map<std::string, float> crossParams(std::map<std::string, float> paramsA, s
 void GameState::spawn_cross(const glm::vec3& position, float rotation, int iterations) {
     if (selected_tree_1 && selected_tree_2) {
         std::map<std::string, float> crossed_params = crossParams(selected_tree_1->getParams(), selected_tree_2->getParams());
+        SuperShapeParams cross_fruit_params;
+
+        cross_fruit_params.a = (selected_tree_1->fruit_params.a + selected_tree_2->fruit_params.a)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.b = (selected_tree_1->fruit_params.b + selected_tree_2->fruit_params.b)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.c = (selected_tree_1->fruit_params.c + selected_tree_2->fruit_params.c)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.d = (selected_tree_1->fruit_params.d + selected_tree_2->fruit_params.d)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.k = (selected_tree_1->fruit_params.k + selected_tree_2->fruit_params.k)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.m = (selected_tree_1->fruit_params.m + selected_tree_2->fruit_params.m)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.n1 = (selected_tree_1->fruit_params.n1 + selected_tree_2->fruit_params.n1)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.n2 = (selected_tree_1->fruit_params.n2 + selected_tree_2->fruit_params.n2)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.n3 = (selected_tree_1->fruit_params.n3 + selected_tree_2->fruit_params.n3)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.q1 = (selected_tree_1->fruit_params.q1 + selected_tree_2->fruit_params.q1)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.q2 = (selected_tree_1->fruit_params.q2 + selected_tree_2->fruit_params.q2)/randomFloatRange(1.5f, 2.5f);
+        cross_fruit_params.q3 = (selected_tree_1->fruit_params.q3 + selected_tree_2->fruit_params.q3)/randomFloatRange(1.5f, 2.5f);
+
+/*
+        fruit_material->get_material()->diffuse = glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
+        fruit_material->get_material()->sheen = randomFloatRange(0.2, 1.0);;
+        fruit_material->get_material()->roughness = randomFloatRange(0.0001, 1.0);
+        fruit_material->get_material()->clearcoat = 0.2f;
+        fruit_material->get_material()->metallic = randomFloatRange(0.0001, 0.5);
+        fruit_material->get_material()->emissive = randomFloatRange(0.0001, 1.) * fruit_material->get_material()->diffuse;
+*/
+
+        std::string leaf_mat = std::to_string(selected_tree_1->plantInfo.ID + selected_tree_2->plantInfo.ID).append("leaf_material");
+        std::string fruit_mat = std::to_string(selected_tree_1->plantInfo.ID + selected_tree_2->plantInfo.ID).append("fruit_material");
+
+        ev2::Ref<ev2::MaterialResource> new_fruit_material =  ResourceManager::get_singleton().get_material(fruit_mat);
+        ev2::Ref<ev2::MaterialResource> new_leaf_material = ResourceManager::get_singleton().get_material(leaf_mat);
+        
+        new_fruit_material->get_material()->diffuse = (selected_tree_1->fruit_material->get_material()->diffuse + selected_tree_2->fruit_material->get_material()->diffuse)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->emissive = (selected_tree_1->fruit_material->get_material()->emissive + selected_tree_2->fruit_material->get_material()->emissive)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->metallic = (selected_tree_1->fruit_material->get_material()->metallic + selected_tree_2->fruit_material->get_material()->metallic)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->subsurface = (selected_tree_1->fruit_material->get_material()->subsurface + selected_tree_2->fruit_material->get_material()->subsurface)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->specular = (selected_tree_1->fruit_material->get_material()->specular + selected_tree_2->fruit_material->get_material()->specular)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->roughness = (selected_tree_1->fruit_material->get_material()->roughness + selected_tree_2->fruit_material->get_material()->roughness)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->specularTint = (selected_tree_1->fruit_material->get_material()->specularTint + selected_tree_2->fruit_material->get_material()->specularTint)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->clearcoat = (selected_tree_1->fruit_material->get_material()->clearcoat + selected_tree_2->fruit_material->get_material()->clearcoat)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->clearcoatGloss = (selected_tree_1->fruit_material->get_material()->clearcoatGloss + selected_tree_2->fruit_material->get_material()->clearcoatGloss)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->sheen = (selected_tree_1->fruit_material->get_material()->sheen + selected_tree_2->fruit_material->get_material()->sheen)/randomFloatRange(1.5f, 2.5f);
+        new_fruit_material->get_material()->sheenTint = (selected_tree_1->fruit_material->get_material()->sheenTint + selected_tree_2->fruit_material->get_material()->sheenTint)/randomFloatRange(1.5f, 2.5f);
+
+
+        new_leaf_material->get_material()->diffuse = (selected_tree_1->leaf_material->get_material()->diffuse + selected_tree_2->leaf_material->get_material()->diffuse)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->emissive = (selected_tree_1->leaf_material->get_material()->emissive + selected_tree_2->leaf_material->get_material()->emissive)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->metallic = (selected_tree_1->leaf_material->get_material()->metallic + selected_tree_2->leaf_material->get_material()->metallic)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->subsurface = (selected_tree_1->leaf_material->get_material()->subsurface + selected_tree_2->leaf_material->get_material()->subsurface)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->specular = (selected_tree_1->leaf_material->get_material()->specular + selected_tree_2->leaf_material->get_material()->specular)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->roughness = (selected_tree_1->leaf_material->get_material()->roughness + selected_tree_2->leaf_material->get_material()->roughness)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->specularTint = (selected_tree_1->leaf_material->get_material()->specularTint + selected_tree_2->leaf_material->get_material()->specularTint)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->clearcoat = (selected_tree_1->leaf_material->get_material()->clearcoat + selected_tree_2->leaf_material->get_material()->clearcoat)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->clearcoatGloss = (selected_tree_1->leaf_material->get_material()->clearcoatGloss + selected_tree_2->leaf_material->get_material()->clearcoatGloss)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->sheen = (selected_tree_1->leaf_material->get_material()->sheen + selected_tree_2->leaf_material->get_material()->sheen)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->sheenTint = (selected_tree_1->leaf_material->get_material()->sheenTint + selected_tree_2->leaf_material->get_material()->sheenTint)/randomFloatRange(1.5f, 2.5f);
+        new_leaf_material->get_material()->diffuse_tex = ResourceManager::get_singleton().get_texture("coffee_leaf1.png");
+
         glm::vec3 color_0 = glm::vec3(randomFloatRange(selected_tree_1->c0.r, selected_tree_2->c0.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.g, selected_tree_2->c0.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c0.b, selected_tree_2->c0.b) + randomFloatRange(-.2f, .2f)); 
         glm::vec3 color_1 = glm::vec3(randomFloatRange(selected_tree_1->c1.r, selected_tree_2->c1.r) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.g, selected_tree_2->c1.g) + randomFloatRange(-.2f, .2f), randomFloatRange(selected_tree_1->c1.b, selected_tree_2->c1.b) + randomFloatRange(-.2f, .2f));
         float cross_leaf_scale = randomFloatRange(selected_tree_1->leaf_scale, selected_tree_2->leaf_scale) + randomFloatRange(-.2f, .2f);
-        spawn_tree(position, rotation, crossed_params, iterations, color_0, color_1, 0.f, cross_leaf_scale, true);
+        spawn_tree(position, rotation, crossed_params, iterations, color_0, color_1, 0.f, cross_leaf_scale, new_leaf_material, new_fruit_material, true);
     }
     //plantlist.push_back((Plant(unique_id, glm::vec3(0, 0, 0), glm::vec3(0, 0, 0), supershape, tree, tree_hit_sphere)));
 }
