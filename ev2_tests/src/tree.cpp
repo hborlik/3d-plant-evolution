@@ -428,12 +428,23 @@ void FireFlies::on_init() {
     flies->set_material_override(material->get_material());
 
     flies->instance_transforms.resize(NFlies, glm::identity<glm::mat4>());
+    
+    for (int i = 0; i < NFlies; i++) {
+        Particle p{};
+        p.m_fSize = 0.9f;
+        p.m_fAge = randomFloatRange(0, 5);
+        p.m_Position = glm::vec3{randomFloatRange(-50, 50), randomFloatRange(0, 20), randomFloatRange(-50, 50)};
+        p.m_fLifeTime = 10.0f;
+        particles.push_back(p);
+    }
 }
 
 void FireFlies::on_process(float dt) {
-    int i = 0;
-    for (auto& tr : flies->instance_transforms) {
-        
-        i++;
+    flies->instance_transforms.clear();
+    for (auto& p : particles) {
+        p.m_fAge += dt;
+        p.m_Velocity = glm::vec3(glm::sin(p.m_fAge) + glm::sin(2 * p.m_Position.y + randomFloatRange(-1, 1)), glm::cos(p.m_fAge) + glm::sin(3 * p.m_Position.z + randomFloatRange(-2, 2)), 0);
+        p.m_Position += dt * p.m_Velocity;
+        flies->instance_transforms.push_back(p.particle_transform());
     }
 }

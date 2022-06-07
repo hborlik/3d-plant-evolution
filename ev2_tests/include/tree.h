@@ -115,6 +115,32 @@ public:
     class GameState* const game;
 };
 
+
+struct Particle
+{
+    Particle()
+        : m_Position(0)
+        , m_Velocity(0)
+        , m_Color(0)
+        , m_fRotate(0)
+        , m_fAge(0)
+        , m_fLifeTime(0)
+    {}
+ 
+    glm::vec3   m_Position; // Center point of particle
+    glm::vec3   m_Velocity; // Current particle velocity
+    glm::vec4   m_Color;    // Particle color
+    float       m_fRotate;  // Rotate the particle the center
+    float       m_fSize;    // Size of the particle
+    float       m_fAge;
+    float       m_fLifeTime;
+
+    glm::mat4 particle_transform() const {
+        glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), m_Position) * glm::scale(glm::identity<glm::mat4>(), glm::vec3{m_fSize});
+        return tr;
+    }
+};
+
 class FireFlies : public ev2::Node {
 public:
     FireFlies(class GameState* game, const std::string& name, int32_t n_flies);
@@ -122,8 +148,11 @@ public:
     void on_init() override;
     void on_process(float dt) override;
 
-    ev2::Ref<ev2::InstancedGeometry> flies;
+    std::vector<Particle> particles;
     const int32_t NFlies;
+
+private:
+    ev2::Ref<ev2::InstancedGeometry> flies;
 };
 
 #endif // PLANT_GAME_TREE_H
