@@ -93,10 +93,12 @@ void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity,
         output_type = "MARKER";
         break;
     case GL_DEBUG_TYPE_PUSH_GROUP:
-        output_type = "PUSH_GROUP";
+        // output_type = "PUSH_GROUP";
+        return;
         break;
     case GL_DEBUG_TYPE_POP_GROUP:
-        output_type = "POP_GROUP";
+        // output_type = "POP_GROUP";
+        return;
         break;
     case GL_DEBUG_TYPE_OTHER:
         output_type = "OTHER";
