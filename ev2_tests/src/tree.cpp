@@ -253,35 +253,36 @@ void TreeNode::generate(int iterations) {
         if (leafs) {
             leafs->instance_transforms.clear();
             leafs->instance_transforms.reserve(tree_skeleton.endpoints.size());
-            const glm::mat4 rot_leaf = glm::mat4(glm::rotate<float>(glm::identity<glm::quat>(), M_PI / 2, glm::vec3{1, 0, 0}));
+            const glm::mat4 rot_leaf = glm::mat4(glm::rotate<float>(glm::identity<glm::quat>(), M_PI / 2.1f, glm::vec3{1, 0, 0}));
             for (const auto& ind : tree_skeleton.endpoints) {
                 glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), tree_skeleton.joints[ind].position) 
                     * glm::mat4(glm::quatLookAt(tree_skeleton.joints[ind].tangent, glm::vec3{0, 1, 0}))
                     * rot_leaf
-                    * glm::translate(glm::identity<glm::mat4>(), {0, leaf_scale * growth_current * -0.05, 0})
-                    * glm::scale(glm::identity<glm::mat4>(), glm::vec3{leaf_scale * growth_current});
+                    * glm::translate(glm::identity<glm::mat4>(), {0, 2 * leaf_scale * growth_current * -0.05, 0})
+                    * glm::scale(glm::identity<glm::mat4>(), glm::vec3{leaf_scale * growth_current, 2 * leaf_scale * growth_current, 1.0f});
                 leafs->instance_transforms.push_back(tr);
             }
         }
 
         if ((growth_current >= growth_max) && !fruits_spawned) {
-             fruit_params.n1 = randomFloatRange(.2f, .5f);
-             fruit_params.n2 =  randomFloatRange(.9f, 2.f);
-             fruit_params.n3 =  randomFloatRange(.9f, 2.f);
-             fruit_params.m =   (int)randomFloatRange(1, 7.f);
-             fruit_params.a =   randomFloatRange(.99f, 1.05f);
-             fruit_params.b =   randomFloatRange(.99f, 1.05f);
+            fruit_params.n1 = randomFloatRange(.2f, .5f);
+            fruit_params.n2 =  randomFloatRange(.9f, 2.f);
+            fruit_params.n3 =  randomFloatRange(.9f, 2.f);
+            fruit_params.m =   (int)randomFloatRange(1, 7.f);
+            fruit_params.a =   randomFloatRange(.99f, 1.05f);
+            fruit_params.b =   randomFloatRange(.99f, 1.05f);
 
-             fruit_params.q1 =  randomFloatRange(.2f, .5f);
-             fruit_params.q2 =  randomFloatRange(.9f, 2.f);
-             fruit_params.q3 =  randomFloatRange(.9f, 2.f);
-             fruit_params.k =   (int)randomFloatRange(1, 3.f);
-             fruit_params.c =   randomFloatRange(.99f, 1.05f);            
+            fruit_params.q1 =  randomFloatRange(.2f, .5f);
+            fruit_params.q2 =  randomFloatRange(.9f, 2.f);
+            fruit_params.q3 =  randomFloatRange(.9f, 2.f);
+            fruit_params.k =   (int)randomFloatRange(1, 3.f);
+            fruit_params.c =   randomFloatRange(.99f, 1.05f);
             for (const auto& ind : tree_skeleton.endpoints) {
-                if (randomFloatRange(0.f, 1.f) <= 0.01f) 
-                    {
-                        spawn_fruit(tree_skeleton.joints[ind].position + glm::vec3{0, -0.5, 0}, fruit_params);
-                    }                
+                if (randomFloatRange(0.f, 1.f) <= 0.01f)
+                {
+                    glm::vec4 pos = get_transform() * glm::vec4{tree_skeleton.joints[ind].position + glm::vec3{0, -0.5, 0}, 1.0f};
+                    spawn_fruit(glm::vec3{pos}, fruit_params);
+                }
             }            
             fruits_spawned = true;
         }
@@ -311,11 +312,16 @@ void TreeNode::generate(int iterations) {
 void TreeNode::spawn_fruit(const glm::vec3& position, const SuperShapeParams& params) {
     
     ev2::Ref<Fruit> fruit = create_node<Fruit>("Fruit", params);
-    ev2::Ref<ev2::RigidBody> fruit_hit_sphere = fruit->create_node<ev2::RigidBody>("fruit");
+    ev2::Ref<ev2::RigidBody> fruit_hit_sphere = get_scene()->create_node<ev2::RigidBody>("fruit");
     fruit_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(.5f), glm::vec3{0, 0, 0});
-    fruit->transform.position = position;
-    fruit->add_child(fruit_hit_sphere);
+    fruit_hit_sphere->transform.position = position;
+    fruit_hit_sphere->add_child(fruit);
     // fruit_hit_sphere->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
+
+    auto light = create_node<ev2::PointLightNode>("point_light");
+    light->set_color(c0 * 0.1f);
+
+    fruit_hit_sphere->add_child(light);
 
     fruit->set_material_override(game->fruit_material->get_material());
 }
@@ -362,4 +368,26 @@ void Fruit::generate(float growth) {
 
     geometry->primitives.clear();
     geometry->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
+}
+
+
+FireFlies::FireFlies(GameState* game, const std::string& name, int32_t n_flies) : ev2::Node{name}, NFlies{n_flies} {
+
+}
+
+void FireFlies::on_init() {
+    auto material = ResourceManager::get_singleton().get_material("flies_material");
+    material->get_material()->emissive = glm::vec3{10, 10, 5};
+    flies = create_node<ev2::InstancedGeometry>("flies");
+    flies->set_material_override(material->get_material());
+
+    flies->instance_transforms.resize(NFlies, glm::identity<glm::mat4>());
+}
+
+void FireFlies::on_process(float dt) {
+    int i = 0;
+    for (auto& tr : flies->instance_transforms) {
+        
+        i++;
+    }
 }

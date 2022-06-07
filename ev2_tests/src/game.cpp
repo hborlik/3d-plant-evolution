@@ -47,6 +47,7 @@ GameState::GameState() {
     highlight_material->get_material()->metallic = 0.9;
 
     fruit_material = ResourceManager::get_singleton().get_material("fruit_material");
+    // fruit_material->get_material()->emissive = glm::vec3{2.29, 6.02, 4.78};
     fruit_material->get_material()->diffuse = glm::vec3{0.229, 0.602, 0.478};
     fruit_material->get_material()->sheen = 0.7;
     fruit_material->get_material()->roughness = 0.4f;
@@ -78,6 +79,7 @@ GameState::GameState() {
     ground_material->get_material()->sheen = 0.43;
     ground_material->get_material()->sheenTint = 0.5;
     ground_material->get_material()->diffuse = glm::vec3{22/255.0, 116/255.0, 34/255.0};
+
 
     auto ground = ResourceManager::get_singleton().get_model( fs::path("models") / "cube.obj");
     auto g_node = scene->create_node<VisualInstance>("ground");
@@ -127,11 +129,13 @@ GameState::GameState() {
     w_node->transform.scale = glm::vec3{0.2};
     w_node->set_model(wagon);
 
-    auto instance_node = scene->create_node<ev2::InstancedGeometry>("instance_test");
-    instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {0, 10, 0}));
-    instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {1, 10, 0}));
-    instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {2, 10, 0}));
-    instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {3, 10, 0}));
+    auto flies = scene->create_node<FireFlies>(this, "flies", 100);
+
+    // auto instance_node = scene->create_node<ev2::InstancedGeometry>("instance_test");
+    // instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {0, 10, 0}));
+    // instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {1, 10, 0}));
+    // instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {2, 10, 0}));
+    // instance_node->instance_transforms.push_back(glm::translate(glm::identity<glm::mat4>(), {3, 10, 0}));
 
     for (int n = 0; n < 2; n++)
     {
@@ -167,14 +171,13 @@ void GameState::update(float dt) {
                     tree->setParams(tree->getParams(), tree->plantInfo.iterations, tree->growth_current);
                     j++;
                 } else if (tree->growth_current < tree->fruit_growth_max) {
-                    tree->growth_current = tree->growth_current + tree->growth_rate * dt * (1/(log(tree->growth_current + 1.1f)));
-                    for (ev2::Ref<Node> node : tree->get_children()) {
-                        ev2::Ref<Fruit> fruit = node.ref_cast<Node>().ref_cast<Fruit>();
-                        if (fruit) {
-                            fruit->generate(tree->growth_current - 1.0f);
-                        }
+                    // for (ev2::Ref<Node> node : tree->get_children()) {
+                    //     ev2::Ref<Fruit> fruit = node.ref_cast<Node>().ref_cast<Fruit>();
+                    //     if (fruit) {
+                    //         fruit->generate(tree->growth_current - 1.0f);
+                    //     }
 
-                    }
+                    // }
                     //for fruit on tree update fruit growth.
                 }
 
@@ -247,7 +250,7 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
         {"R_2", randomFloatRange(.6f, 1.f)},
         {"a_0", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
         {"a_2", ptree::degToRad(randomFloatRange(12.5f, 60.f))},
-        {"d",   ptree::degToRad(randomFloatRange(.0f, 360.f))},
+        {"d",   ptree::degToRad(randomFloatRange(.0f, 720.f))},
         {"thickness", randomFloatRange(0.5f, 2.0f)},
         {"w_r", randomFloatRange(0.6f, 0.89f)},
         // fruit params
@@ -277,7 +280,7 @@ void GameState::spawn_random_tree(const glm::vec3& position, float range_extent,
     glm::vec3 pos = glm::vec3{r * cos(th) , 0, r * sin(th)} + position;
 //    glm::vec3 pos = position;
 
-    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, .05f, random_leaf_scale, true);
+    spawn_tree(pos, randomFloatTo(ptree::degToRad(360)), params, iterations, color_0, color_1, starting_growth, random_leaf_scale, true);
 }
 
 

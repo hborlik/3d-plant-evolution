@@ -99,4 +99,15 @@ public:
     ev2::renderer::Drawable* geometry{};
 };
 
+class FireFlies : public ev2::Node {
+public:
+    FireFlies(class GameState* game, const std::string& name, int32_t n_flies);
+
+    void on_init() override;
+    void on_process(float dt) override;
+
+    ev2::Ref<ev2::InstancedGeometry> flies;
+    const int32_t NFlies;
+};
+
 #endif // PLANT_GAME_TREE_H
