@@ -42,7 +42,7 @@ void Player::on_process(float dt) {
             cv_d_av = glm::dot(glm::normalize(velocity), glm::normalize(target_vel));
         }
         apply_force(
-            0.5f * ((1.f - vel_p) + (1.f - cv_d_av*cv_d_av)) * (target_vel - correction)
+            2.0f * ((1.f - vel_p) + (1.f - cv_d_av*cv_d_av)) * (target_vel - correction)
         );
         material.setFrictionCoefficient(0.05f);
     } else {

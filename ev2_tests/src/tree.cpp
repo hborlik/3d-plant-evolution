@@ -460,7 +460,7 @@ void FireFlies::on_process(float dt) {
     flies->instance_transforms.clear();
     for (auto& p : particles) {
         p.m_fAge += dt;
-        p.m_Velocity = glm::vec3(glm::sin(p.m_fAge) + glm::sin(2 * p.m_Position.y + randomFloatRange(-1, 1)), glm::cos(p.m_fAge) + glm::sin(3 * p.m_Position.z + randomFloatRange(-2, 2)), 0);
+        p.m_Velocity = glm::vec3(glm::sin(p.m_fAge) + glm::sin(2 * p.m_Position.y + randomFloatRange(-1, 1)), glm::cos(p.m_fAge) + glm::sin(randomFloatRange(-2, 2)), 0);
         p.m_Position += dt * p.m_Velocity;
         flies->instance_transforms.push_back(p.particle_transform());
     }
