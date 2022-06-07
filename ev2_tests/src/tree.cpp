@@ -354,6 +354,8 @@ void TreeNode::spawn_fruit(const glm::vec3& position) {
     // fruit_hit_sphere->add_child(fruit);
 
     fruits->add_fruit(position);
+    fruits->set_material_override(fruit_material->get_material());
+
     // fruit_hit_sphere->get_body()->setType(reactphysics3d::BodyType::DYNAMIC);
 
     // 
