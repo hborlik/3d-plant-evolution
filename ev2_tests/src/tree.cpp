@@ -195,6 +195,21 @@ void TreeNode::on_init() {
             leaf_material->get_material()->diffuse_tex = ResourceManager::get_singleton().get_texture("coffee_leaf1.png");
         }
 
+        if (!fruit_material) {
+            fruit_material = ev2::make_referenced<ev2::MaterialResource>(ev2::renderer::Renderer::get_singleton().create_material());
+            fruit_material->get_material()->diffuse = glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
+            fruit_material->get_material()->emissive = randomFloatRange(0.0001, 1.) * glm::vec3{randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.), randomFloatRange(0.0001, 1.)};
+            fruit_material->get_material()->metallic = randomFloatRange(0.0001, 0.3);
+            fruit_material->get_material()->subsurface = randomFloatRange(0.5, 1);
+            fruit_material->get_material()->specular = randomFloatRange(0.0001, 0.2);;
+            fruit_material->get_material()->roughness = randomFloatRange(0.0001, 1);;
+            fruit_material->get_material()->specularTint = 0.f;
+            fruit_material->get_material()->clearcoat = randomFloatRange(0.0001, 1.0);;
+            fruit_material->get_material()->clearcoatGloss = 0.63;
+            fruit_material->get_material()->sheen = randomFloatRange(0.0001, 0.8);;
+            fruit_material->get_material()->sheenTint = 0.5f;
+        }
+
         leafs = create_node<ev2::InstancedGeometry>("leafs");
         leafs->set_material_override(leaf_material->get_material());
     }
@@ -430,12 +445,23 @@ void FireFlies::on_init() {
     flies->set_material_override(material->get_material());
 
     flies->instance_transforms.resize(NFlies, glm::identity<glm::mat4>());
+    
+    for (int i = 0; i < NFlies; i++) {
+        Particle p{};
+        p.m_fSize = 0.9f;
+        p.m_fAge = randomFloatRange(0, 5);
+        p.m_Position = glm::vec3{randomFloatRange(-50, 50), randomFloatRange(0, 20), randomFloatRange(-50, 50)};
+        p.m_fLifeTime = 10.0f;
+        particles.push_back(p);
+    }
 }
 
 void FireFlies::on_process(float dt) {
-    int i = 0;
-    for (auto& tr : flies->instance_transforms) {
-        
-        i++;
+    flies->instance_transforms.clear();
+    for (auto& p : particles) {
+        p.m_fAge += dt;
+        p.m_Velocity = glm::vec3(glm::sin(p.m_fAge) + glm::sin(2 * p.m_Position.y + randomFloatRange(-1, 1)), glm::cos(p.m_fAge) + glm::sin(3 * p.m_Position.z + randomFloatRange(-2, 2)), 0);
+        p.m_Position += dt * p.m_Velocity;
+        flies->instance_transforms.push_back(p.particle_transform());
     }
 }
