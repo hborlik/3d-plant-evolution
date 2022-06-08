@@ -6,8 +6,5 @@ build/*
 !*.gitkeep
 
 testapp/asset/models/*
-DeferBase22/**
-ShadowBase22/*
-2022NormalBase/*
-2022CuteKitty/*
+
 ev2_tests/imgui.ini
