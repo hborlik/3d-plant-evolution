@@ -285,29 +285,29 @@ void Renderer::init() {
     point_lighting_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "point_lighting.glsl.frag", prep);
     point_lighting_program.link();
 
-    plp_p_location = point_lighting_program.getUniformInfo("gPosition").Location;
-    plp_n_location = point_lighting_program.getUniformInfo("gNormal").Location;
-    plp_as_location = point_lighting_program.getUniformInfo("gAlbedoSpec").Location;
-    plp_mt_location = point_lighting_program.getUniformInfo("gMaterialTex").Location;
-    plp_m_location = point_lighting_program.getUniformInfo("M").Location;
+    plp_p_location       = point_lighting_program.getUniformInfo("gPosition").Location;
+    plp_n_location       = point_lighting_program.getUniformInfo("gNormal").Location;
+    plp_as_location      = point_lighting_program.getUniformInfo("gAlbedoSpec").Location;
+    plp_mt_location      = point_lighting_program.getUniformInfo("gMaterialTex").Location;
+    plp_m_location       = point_lighting_program.getUniformInfo("M").Location;
     plp_light_p_location = point_lighting_program.getUniformInfo("lightPos").Location;
     plp_light_c_location = point_lighting_program.getUniformInfo("lightColor").Location;
-    plp_k_c_loc = point_lighting_program.getUniformInfo("k_c").Location;
-    plp_k_l_loc = point_lighting_program.getUniformInfo("k_l").Location;
-    plp_k_q_loc = point_lighting_program.getUniformInfo("k_q").Location;
-    plp_k_radius_loc = point_lighting_program.getUniformInfo("radius").Location;
+    plp_k_c_loc          = point_lighting_program.getUniformInfo("k_c").Location;
+    plp_k_l_loc          = point_lighting_program.getUniformInfo("k_l").Location;
+    plp_k_q_loc          = point_lighting_program.getUniformInfo("k_q").Location;
+    plp_k_radius_loc     = point_lighting_program.getUniformInfo("radius").Location;
 
 
     ssao_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
     ssao_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "ssao.glsl.frag", prep);
     ssao_program.link();
 
-    ssao_p_loc = ssao_program.getUniformInfo("gPosition").Location;
-    ssao_n_loc = ssao_program.getUniformInfo("gNormal").Location;
+    ssao_p_loc         = ssao_program.getUniformInfo("gPosition").Location;
+    ssao_n_loc         = ssao_program.getUniformInfo("gNormal").Location;
     ssao_tex_noise_loc = ssao_program.getUniformInfo("texNoise").Location;
-    ssao_radius_loc = ssao_program.getUniformInfo("radius").Location;
-    ssao_bias_loc = ssao_program.getUniformInfo("bias").Location;
-    ssao_nSamples_loc = ssao_program.getUniformInfo("nSamples").Location;
+    ssao_radius_loc    = ssao_program.getUniformInfo("radius").Location;
+    ssao_bias_loc      = ssao_program.getUniformInfo("bias").Location;
+    ssao_nSamples_loc  = ssao_program.getUniformInfo("nSamples").Location;
 
 
     sky_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, std::filesystem::path("sky") / "sky.glsl.vert", prep);
