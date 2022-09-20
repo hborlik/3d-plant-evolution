@@ -1,4 +1,4 @@
-#include <vertex_buffer.h>
+#include <renderer/vertex_buffer.h>
 
 namespace ev2 {
 

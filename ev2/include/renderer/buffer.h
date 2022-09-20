@@ -12,7 +12,7 @@
 
 #include <vector>
 
-#include <ev_gl.h>
+#include <renderer/ev_gl.h>
 
 namespace ev2 {
 

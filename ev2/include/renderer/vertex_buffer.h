@@ -9,8 +9,8 @@
 
 #include <memory>
 
-#include <buffer.h>
-#include <shader.h>
+#include <renderer/buffer.h>
+#include <renderer/shader.h>
 #include <transform.h>
 
 namespace ev2 {

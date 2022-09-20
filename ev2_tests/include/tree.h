@@ -8,7 +8,7 @@
 #define PLANT_GAME_TREE_H
 
 #include <visual_nodes.h>
-#include <vertex_buffer.h>
+#include <renderer/vertex_buffer.h>
 
 #include <Sphere.h>
 

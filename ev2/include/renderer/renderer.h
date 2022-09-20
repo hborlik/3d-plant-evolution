@@ -14,10 +14,10 @@
 #include <queue>
 
 #include <singleton.h>
-#include <vertex_buffer.h>
-#include <shader.h>
-#include <texture.h>
-#include <camera.h>
+#include <renderer/vertex_buffer.h>
+#include <renderer/shader.h>
+#include <renderer/texture.h>
+#include <renderer/camera.h>
 
 
 namespace ev2::renderer {

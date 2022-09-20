@@ -9,7 +9,7 @@
 #define EV2_GLTF_H
 
 #include <scene.h>
-#include <renderer.h>
+#include <renderer/renderer.h>
 
 namespace ev2 {
 

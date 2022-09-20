@@ -14,11 +14,11 @@
 #include <iostream>
 #include <string>
 
-#include <ev_gl.h>
+#include <renderer/ev_gl.h>
 #include <glad/glad.h>
 
 #include <window.h>
-#include <renderer.h>
+#include <renderer/renderer.h>
 #include <resource.h>
 #include <physics.h>
 

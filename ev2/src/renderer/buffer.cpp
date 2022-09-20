@@ -8,7 +8,7 @@
  * 
  */
 
-#include <buffer.h>
+#include <renderer/buffer.h>
 
 using namespace ev2;
 using namespace ev2::gl;

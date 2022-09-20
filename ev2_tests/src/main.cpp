@@ -14,17 +14,17 @@
 #include <miniaudio.h> 
 
 #include <ev.h>
-#include <ev_gl.h>
+#include <renderer/ev_gl.h>
 #include <window.h>
-#include <shader.h>
+#include <renderer/shader.h>
 #include <application.h>
-#include <camera.h>
+#include <renderer/camera.h>
 #include <window.h>
-#include <vertex_buffer.h>
+#include <renderer/vertex_buffer.h>
 #include <resource.h>
 #include <Sphere.h>
 #include <physics.h>
-#include <renderer.h>
+#include <renderer/renderer.h>
 #include <scene.h>
 #include <physics.h>
 #include <visual_nodes.h>

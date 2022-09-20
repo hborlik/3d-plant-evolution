@@ -10,8 +10,8 @@
 #include <tiny_obj_loader.h>
 #include <stb_image.h>
 
-#include <buffer.h>
-#include <renderer.h>
+#include <renderer/buffer.h>
+#include <renderer/renderer.h>
 
 namespace {
 

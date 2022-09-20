@@ -16,8 +16,8 @@
 #include <filesystem>
 
 #include <ev.h>
-#include <ev_gl.h>
-#include <buffer.h>
+#include <renderer/ev_gl.h>
+#include <renderer/buffer.h>
 
 namespace ev2
 {

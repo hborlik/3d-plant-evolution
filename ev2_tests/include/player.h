@@ -9,7 +9,7 @@
 #define GAME_PLAYER_H
 
 #include <physics.h>
-#include <renderer.h>
+#include <renderer/renderer.h>
 #include <input.h>
 #include <visual_nodes.h>
 

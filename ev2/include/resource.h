@@ -11,10 +11,10 @@
 
 #include <glm/glm.hpp>
 
-#include <vertex_buffer.h>
-#include <renderer.h>
+#include <renderer/vertex_buffer.h>
+#include <renderer/renderer.h>
 #include <scene.h>
-#include <texture.h>
+#include <renderer/texture.h>
 #include <gltf.h>
 
 namespace ev2 {
