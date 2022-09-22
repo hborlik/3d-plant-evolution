@@ -14,7 +14,7 @@
 #include <queue>
 
 #include <singleton.h>
-#include <renderer/vertex_buffer.h>
+#include <renderer/mesh.h>
 #include <renderer/shader.h>
 #include <renderer/texture.h>
 #include <renderer/camera.h>
@@ -206,7 +206,7 @@ struct MeshPrimitive {
     GLuint gl_vao = 0;                          // vao for primitive (internal use)
 };
 
-struct Mesh {
+struct RenderObj {
     std::vector<MeshPrimitive>      primitives{};
     gl::CullMode                    cull_mode = gl::CullMode::NONE;
     gl::FrontFacing                 front_facing = gl::FrontFacing::CCW;
@@ -214,7 +214,7 @@ struct Mesh {
 
 struct MeshInstance {
     glm::mat4               transform = glm::identity<glm::mat4>();
-    Mesh*                   mesh = nullptr;
+    RenderObj*              mesh = nullptr;
 };
 
 // instance drawable primitive setup
@@ -226,7 +226,7 @@ struct Primitive {
 };
 
 struct Drawable {
-    Drawable(VertexBuffer &&vb,
+    Drawable(Mesh &&vb,
              std::vector<Primitive> primitives,
              std::vector<Material *> materials,
              glm::vec3 bmin,
@@ -245,7 +245,7 @@ struct Drawable {
     {
     }
 
-    VertexBuffer vertex_buffer;
+    Mesh vertex_buffer;
     std::vector<Primitive> primitives;
     std::vector<Material*> materials;
 
@@ -287,7 +287,7 @@ public:
     void set_light_ambient(LID lid, const glm::vec3& color);
     void destroy_light(LID lid);
 
-    Drawable *create_model(VertexBuffer &&vb,
+    Drawable *create_model(Mesh &&vb,
                            std::vector<Primitive> primitives,
                            std::vector<Material *> materials,
                            glm::vec3 bmin,
@@ -302,7 +302,7 @@ public:
 
 
     VBID create_vertex_buffer();
-    VertexBuffer* get_vertex_buffer(VBID vbid);
+    Mesh* get_vertex_buffer(VBID vbid);
     void destroy_vertex_buffer(VBID vbid);
 
     MSID create_mesh();
@@ -375,10 +375,10 @@ private:
     uint32_t next_instance_id = 100;
 
     // Mesh, vb vertex data
-    std::unordered_map<int32_t, VertexBuffer> vertex_buffers;
+    std::unordered_map<int32_t, Mesh> vertex_buffers;
     uint32_t next_vb_id = 1;
 
-    std::unordered_map<int32_t, Mesh> meshes;
+    std::unordered_map<int32_t, RenderObj> meshes;
     uint32_t next_mesh_id = 1;
 
     std::unordered_map<int32_t, MeshInstance> mesh_instances;
@@ -430,7 +430,7 @@ private:
     FBO bloom_thresh_combine;
     std::array<FBO, 2> bloom_blur_swap_fbo;
     
-    VertexBuffer sst_vb;
+    Mesh sst_vb;
 
     std::shared_ptr<Texture> shadow_depth_tex;
 

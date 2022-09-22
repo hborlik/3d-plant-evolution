@@ -39,7 +39,7 @@ void InstancedGeometry::on_init() {
                 .add_attribute(VertexAttributeType::Texcoord)
                 .finalize();
     geometry = renderer::Renderer::get_singleton().create_model(
-        VertexBuffer::vbInitVertexDataInstanced(
+        Mesh::vbInitVertexDataInstanced(
             {
                 // positions         normals         texcoords
                 -0.05f,  0.05f, .0f, .0f, .0f, -1.f, 1.f, 1.f,

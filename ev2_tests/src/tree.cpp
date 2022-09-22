@@ -215,7 +215,7 @@ void TreeNode::on_init() {
     }
 
     tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(
-        ev2::VertexBuffer::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
+        ev2::Mesh::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
         std::vector<ev2::renderer::Primitive>{},
         std::vector<ev2::renderer::Material*>{},
         glm::vec3{}, // TODO
@@ -392,7 +392,7 @@ void Fruit::on_init() {
     ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
 
     geometry = ev2::renderer::Renderer::get_singleton().create_model(
-        ev2::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices, true),
+        ev2::Mesh::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices, true),
         std::move(ev_meshs),
         std::vector<ev2::renderer::Material*>{},
         glm::vec3{}, // TODO

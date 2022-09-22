@@ -94,7 +94,7 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
     depth_buffer{gl::FBOTarget::RW},
     bloom_thresh_combine{gl::FBOTarget::RW},
     bloom_blur_swap_fbo{FBO{gl::FBOTarget::RW}, FBO{gl::FBOTarget::RW}},
-    sst_vb{VertexBuffer::vbInitSST()},
+    sst_vb{Mesh::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     lighting_materials{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     ssao_kernel_buffer{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
@@ -535,7 +535,7 @@ void Renderer::destroy_light(LID lid) {
     point_lights.erase(lid._v);
 }
 
-Drawable *Renderer::create_model(VertexBuffer &&vb,
+Drawable *Renderer::create_model(Mesh &&vb,
                                  std::vector<Primitive> primitives,
                                  std::vector<Material *> materials,
                                  glm::vec3 bmin,
@@ -640,11 +640,11 @@ void Renderer::set_instance_transform(IID iid, const glm::mat4& transform) {
 
 VBID Renderer::create_vertex_buffer() {
     int32_t id = next_vb_id++;
-    vertex_buffers.emplace(id, VertexBuffer{});
+    vertex_buffers.emplace(id, Mesh{});
     return {id};
 }
 
-VertexBuffer* Renderer::get_vertex_buffer(VBID vbid) {
+Mesh* Renderer::get_vertex_buffer(VBID vbid) {
     if (vbid.is_valid()) {
         auto itr = vertex_buffers.find(vbid.v);
         if (itr != vertex_buffers.end()) {
@@ -675,7 +675,7 @@ void Renderer::set_mesh_primitives(MSID mesh_id, const std::vector<MeshPrimitive
         mi->second.primitives = primitives;
 
         for (auto& m_pri : mi->second.primitives) {
-            VertexBuffer* vb = get_vertex_buffer(m_pri.vbid);
+            Mesh* vb = get_vertex_buffer(m_pri.vbid);
             if (vb) {
                 m_pri.gl_vao = vb->gen_vao_for_attributes(m_pri.attributes);
             }

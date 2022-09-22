@@ -31,7 +31,7 @@ public:
             ev2::renderer::Renderer::get_singleton().destroy_vertex_buffer(vertex_buffer_id);
     }
 
-    VertexBuffer* get_vertex_buffer() {
+    renderer::Mesh* get_vertex_buffer() {
         return ev2::renderer::Renderer::get_singleton().get_vertex_buffer(vertex_buffer_id);
     }
 

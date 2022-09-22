@@ -1,9 +1,9 @@
-#include <renderer/vertex_buffer.h>
+#include <renderer/mesh.h>
 
-namespace ev2 {
+namespace ev2::renderer {
 
-VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<float>& vertex_colors) {
-    VertexBuffer vb;
+Mesh Mesh::vbInitArrayVertexData(const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<float>& vertex_colors) {
+    Mesh vb;
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
 
@@ -29,8 +29,8 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& verti
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffer, bool instanced) {
-    VertexBuffer vb;
+Mesh Mesh::vbInitArrayVertexData(const std::vector<float>& buffer, bool instanced) {
+    Mesh vb;
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
@@ -84,8 +84,8 @@ VertexBuffer VertexBuffer::vbInitArrayVertexData(const std::vector<float>& buffe
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, bool instanced) {
-    VertexBuffer vb;
+Mesh Mesh::vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, bool instanced) {
+    Mesh vb;
 
     vb.buffers.emplace(0, Buffer{gl::BindingTarget::ARRAY, gl::Usage::STATIC_DRAW, buffer});
     vb.buffers.emplace(1, Buffer{gl::BindingTarget::ELEMENT_ARRAY, gl::Usage::STATIC_DRAW, indexBuffer});
@@ -141,8 +141,8 @@ VertexBuffer VertexBuffer::vbInitSphereArrayVertexData(const std::vector<float>&
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitSST() {
-    VertexBuffer vb;
+Mesh Mesh::vbInitSST() {
+    Mesh vb;
     vb.indexed = -1;
 
     // pos(3float), normal(3float), color(3float), texcoord(2float)
@@ -164,8 +164,8 @@ VertexBuffer VertexBuffer::vbInitSST() {
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitVertexDataInstanced(const std::vector<float>& buffer, const VertexLayout& layout) {
-    VertexBuffer vb;
+Mesh Mesh::vbInitVertexDataInstanced(const std::vector<float>& buffer, const VertexLayout& layout) {
+    Mesh vb;
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
@@ -213,8 +213,8 @@ VertexBuffer VertexBuffer::vbInitVertexDataInstanced(const std::vector<float>& b
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout) {
-    VertexBuffer vb;
+Mesh Mesh::vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout) {
+    Mesh vb;
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
@@ -237,8 +237,8 @@ VertexBuffer VertexBuffer::vbInitArrayVertexSpec(const std::vector<float>& buffe
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout) {
-    VertexBuffer vb;
+Mesh Mesh::vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout) {
+    Mesh vb;
     // pos(3float), normal(3float), color(3float), texcoord(2float)
     glGenVertexArrays(1, &vb.gl_vao);
     glBindVertexArray(vb.gl_vao);
@@ -267,13 +267,13 @@ VertexBuffer VertexBuffer::vbInitArrayVertexSpecIndexed(const std::vector<float>
     return std::move(vb);
 }
 
-VertexBuffer VertexBuffer::vbInitDefault() {
-    VertexBuffer vb;
+Mesh Mesh::vbInitDefault() {
+    Mesh vb;
     glGenVertexArrays(1, &vb.gl_vao);
     return std::move(vb);
 }
 
-GLuint VertexBuffer::gen_vao_for_attributes(const std::map<int, int>& attributes) {
+GLuint Mesh::gen_vao_for_attributes(const std::map<int, int>& attributes) {
     GLuint vao_id;
     glGenVertexArrays(1, &vao_id);
     glBindVertexArray(vao_id);

@@ -669,7 +669,7 @@ renderer::Drawable* ResourceManager::get_model(const std::filesystem::path& file
         }
 
         renderer::Drawable* id = ev2::renderer::Renderer::get_singleton().create_model(
-            VertexBuffer::vbInitArrayVertexData(loaded_model->buffer),
+            renderer::Mesh::vbInitArrayVertexData(loaded_model->buffer),
             std::move(ev_prim),
             std::move(ev_mat),
             loaded_model->bmin,

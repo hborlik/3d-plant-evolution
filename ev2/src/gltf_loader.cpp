@@ -124,7 +124,7 @@ Ref<GLTFScene> ResourceManager::loadGLTF(const std::filesystem::path& filename, 
     }
 
     Ref<GLTFScene> scene = make_referenced<GLTFScene>(filename.generic_string());
-    VertexBuffer* state = scene->get_vertex_buffer();
+    Mesh* state = scene->get_vertex_buffer();
     renderer::VBID vertex_buffer_id = scene->get_vertex_buffer_id();    
 
     for (std::size_t i = 0; i < model.bufferViews.size(); i++)

@@ -11,7 +11,7 @@
 
 #include <glm/glm.hpp>
 
-#include <renderer/vertex_buffer.h>
+#include <renderer/mesh.h>
 #include <renderer/renderer.h>
 #include <scene.h>
 #include <renderer/texture.h>
