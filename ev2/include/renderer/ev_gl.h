@@ -370,20 +370,24 @@ namespace ev2 {
         CW             = GL_CW
     };
 
-    constexpr uint32_t VERTEX_BINDING_LOCATION = 0;
-    constexpr uint32_t NORMAL_BINDING_LOCATION = 1;
-    constexpr uint32_t COLOR_BINDING_LOCATION = 2;
-    constexpr uint32_t TEXCOORD_BINDING_LOCATION = 3;
-    constexpr uint32_t INSTANCE_BINDING_LOCATION = 4;
+    constexpr uint32_t VERTEX_BINDING_LOCATION      = 0;
+    constexpr uint32_t NORMAL_BINDING_LOCATION      = 1;
+    constexpr uint32_t COLOR_BINDING_LOCATION       = 2;
+    constexpr uint32_t TEXCOORD_BINDING_LOCATION    = 3;
+    constexpr uint32_t TANGENT_BINDING_LOCATION     = 5;
+    constexpr uint32_t BITANGENT_BINDING_LOCATION   = 6;
+    constexpr uint32_t INSTANCE_BINDING_LOCATION    = 7;
 
-    const std::unordered_map<std::string, uint32_t> attributes{
-        std::make_pair("POSITION", VERTEX_BINDING_LOCATION),
-        std::make_pair("NORMAL", NORMAL_BINDING_LOCATION),
-        std::make_pair("COLOR", COLOR_BINDING_LOCATION),
-        std::make_pair("TEXCOORD_0", TEXCOORD_BINDING_LOCATION)
+    const std::unordered_map<std::string, uint32_t> AttributeBindings {
+        std::make_pair("POSITION",  VERTEX_BINDING_LOCATION),
+        std::make_pair("NORMAL",    NORMAL_BINDING_LOCATION),
+        std::make_pair("COLOR",     COLOR_BINDING_LOCATION),
+        std::make_pair("TEXCOORD_0",TEXCOORD_BINDING_LOCATION),
+        std::make_pair("TANGENT",   TANGENT_BINDING_LOCATION),
+        std::make_pair("BITANGENT", BITANGENT_BINDING_LOCATION)
     };
 
-    inline uint32_t glBindingLocation(const std::string& attribute_name) {return attributes.at(attribute_name);}
+    inline uint32_t glBindingLocation(const std::string& attribute_name) {return AttributeBindings.at(attribute_name);}
 
     inline void glUniformSampler(const GLint& value, GLint location)      {glUniform1i(location, value);}
 

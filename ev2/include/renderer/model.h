@@ -11,9 +11,52 @@
 
 #include <renderer/buffer.h>
 #include <renderer/shader.h>
+#include <renderer/texture.h>
 #include <transform.h>
 
 namespace ev2::renderer {
+
+struct Material {
+    std::string name = "default";
+
+    glm::vec3 diffuse   = {1.00f,0.10f,0.85f};
+    glm::vec3 emissive  = {};
+    float metallic       = 0;
+    float subsurface     = 0;
+    float specular       = .5f;
+    float roughness      = .5f;
+    float specularTint   = 0;
+    float clearcoat      = 0;
+    float clearcoatGloss = 1.f;
+    float anisotropic    = 0;
+    float sheen          = 0;
+    float sheenTint      = .5f;
+
+    std::shared_ptr<Texture> ambient_tex;             // map_Ka
+    std::shared_ptr<Texture> diffuse_tex;             // map_Kd
+    std::shared_ptr<Texture> specular_tex;            // map_Ks
+    std::shared_ptr<Texture> specular_highlight_tex;  // map_Ns
+    std::shared_ptr<Texture> bump_tex;                // map_bump, map_Bump, bump
+    std::shared_ptr<Texture> displacement_tex;        // disp
+    std::shared_ptr<Texture> alpha_tex;               // map_d
+    std::shared_ptr<Texture> reflection_tex;          // refl
+
+    Material() = default;
+    Material(std::string name) : name{std::move(name)} {}
+
+    Material(const Material&) = default;
+    Material(Material&&) = default;
+    Material& operator=(const Material&) = default;
+    Material& operator=(Material&&) noexcept = default;
+
+private:
+    friend class Renderer;
+
+    bool is_registered() noexcept {return material_id != -1 && material_slot != -1;}
+
+    int32_t material_id = -1;
+    int32_t material_slot = -1;
+};
 
 enum class VertexAttributeType {
     Vertex = 0,
@@ -94,29 +137,18 @@ struct VertexBufferAccessor {
     size_t stride = 0;
 };
 
-class Mesh {
+class VertexBuffer {
 public:
-    Mesh() = default;
-    Mesh(const Mesh&) = delete;
-    Mesh& operator=(const Mesh&) = delete;
+    VertexBuffer() = default;
+    VertexBuffer(const VertexBuffer&) = delete;
+    VertexBuffer& operator=(const VertexBuffer&) = delete;
 
-    Mesh(Mesh&& o) : buffers{std::move(o.buffers)} {
-        std::swap(gl_vao, o.gl_vao);
+    VertexBuffer(VertexBuffer&& o) : buffers{std::move(o.buffers)} {
         std::swap(indexed, o.indexed);
-        std::swap(instanced, o.instanced);
     }
-    Mesh& operator=(Mesh&& o) = delete;
-
-    ~Mesh() {
-        if (gl_vao != 0)
-            glDeleteVertexArrays(1, &gl_vao);
-    }
-
-    void bind() const {glBindVertexArray(gl_vao);}
-    void unbind() const {glBindVertexArray(0);}
+    VertexBuffer& operator=(VertexBuffer&& o) = delete;
     
     int get_indexed() const {return indexed;}
-    int get_instanced() const {return instanced;}
 
     void add_buffer(uint32_t buffer_id, Buffer&& buffer) {
         if (buffer.target == gl::BindingTarget::ELEMENT_ARRAY) {
@@ -143,13 +175,13 @@ public:
     /**
      * @brief create a vertex array object using stored accessors and locations specified in map
      * 
-     * @param attributes map where key is binding location for attribute and value is the accessor it is targeting in this 
+     * @param attributes map where key is the attribute identifier and value is the binding location in the shader 
      *  vertex_buffer
      * @return GLuint 
      */
-    GLuint gen_vao_for_attributes(const std::map<int, int>& attributes);
+    GLuint gen_vao_for_attributes(const std::unordered_map<int, int>& attributes);
 
-    static Mesh vbInitArrayVertexData(const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<float>& vertex_colors);
+    static std::pair<VertexBuffer, int32_t> vbInitArrayVertexData(const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<float>& vertex_colors);
     
     /**
      * @brief buffer format pos(3float), normal(3float), color(3float), texcoord(2float)
@@ -157,38 +189,36 @@ public:
      * @param buffer 
      * @return VertexBuffer 
      */
-    static Mesh vbInitArrayVertexData(const std::vector<float>& buffer, bool instanced = false);
-    static Mesh vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, bool instanced = false);
+    static std::pair<VertexBuffer, int32_t> vbInitArrayVertexData(const std::vector<float>& buffer, bool instanced = false);
+    static std::pair<VertexBuffer, int32_t> vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, bool instanced = false);
 
     /**
      * @brief init vertex buffer for a screen space triangle (vertices only)
      * 
      * @return VertexBuffer 
      */
-    static Mesh vbInitSST();
+    static std::pair<VertexBuffer, int32_t> vbInitSST();
 
     /**
      * @brief buffer format pos(3float), normal(3float), color(3float), texcoord(2float). 
      *  Instanced array contains mat4 model matrices
      * 
      * @param buffer 
+     * @param instance_buffer instance buffer to be used with the returned VAO
      * @return VertexBuffer 
      */
-    static Mesh vbInitVertexDataInstanced(const std::vector<float>& buffer, const VertexLayout& layout);
+    static std::pair<VertexBuffer, int32_t> vbInitVertexDataInstanced(const std::vector<float>& buffer, const Buffer& instance_buffer, const VertexLayout& layout);
 
-    static Mesh vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout);
-    static Mesh vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout);
+    static std::pair<VertexBuffer, int32_t> vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout);
+    static std::pair<VertexBuffer, int32_t> vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout);
 
-    static Mesh vbInitDefault();
+    static std::pair<VertexBuffer, int32_t> vbInitDefault();
 
 private:
     std::unordered_map<uint32_t, Buffer> buffers;
     std::unordered_map<uint32_t, VertexBufferAccessor> accessors;
-    GLuint gl_vao = 0;
 
     int indexed = -1;
-
-    int instanced = -1;
 };
 
 }

@@ -11,12 +11,14 @@
 #include <scene.h>
 #include <renderer/renderer.h>
 
+#if 0
+
 namespace ev2 {
 
 class GLTFScene : public Scene {
 public:
     explicit GLTFScene(const std::string& path) : Scene{path} {
-        vertex_buffer_id = ev2::renderer::Renderer::get_singleton().create_vertex_buffer();
+        vertex_buffer_id = ev2::renderer::Renderer::get_singleton().create_model();
     }
 
     void on_init() override {
@@ -26,12 +28,12 @@ public:
     void on_destroy() override {
         Scene::on_destroy();
         for (auto& msid : meshes)
-            ev2::renderer::Renderer::get_singleton().destroy_mesh(msid);
+            ev2::renderer::Renderer::get_singleton().destroy_render_obj(msid);
         if (vertex_buffer_id.is_valid())
             ev2::renderer::Renderer::get_singleton().destroy_vertex_buffer(vertex_buffer_id);
     }
 
-    renderer::Mesh* get_vertex_buffer() {
+    renderer::VertexBuffer* get_vertex_buffer() {
         return ev2::renderer::Renderer::get_singleton().get_vertex_buffer(vertex_buffer_id);
     }
 
@@ -72,5 +74,7 @@ private:
 };
 
 }
+
+#endif
 
 #endif // EV2_GLTF_H

@@ -122,7 +122,19 @@
 			"any": "cpp",
 			"strstream": "cpp",
 			"*.ipp": "cpp",
-			"span": "cpp"
+			"span": "cpp",
+			"csetjmp": "cpp",
+			"barrier": "cpp",
+			"charconv": "cpp",
+			"coroutine": "cpp",
+			"cuchar": "cpp",
+			"expected": "cpp",
+			"latch": "cpp",
+			"scoped_allocator": "cpp",
+			"spanstream": "cpp",
+			"stacktrace": "cpp",
+			"syncstream": "cpp",
+			"hash_set": "cpp"
 		},
 		"cmake.buildDirectory": "${workspaceRoot}/build",
 		"glsllint.glslangValidatorPath": "../glslang-master-windows-x64-Release/bin/glslangValidator.exe"

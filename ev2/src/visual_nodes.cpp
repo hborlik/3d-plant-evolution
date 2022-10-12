@@ -9,7 +9,7 @@ void VisualInstance::on_init() {
 }
 
 void VisualInstance::on_ready() {
-    renderer::Renderer::get_singleton().set_instance_transform(iid, get_transform());
+    iid->transform = get_transform();
 }
 
 void VisualInstance::on_process(float delta) {
@@ -17,11 +17,11 @@ void VisualInstance::on_process(float delta) {
 }
 
 void VisualInstance::on_destroy() {
-    renderer::Renderer::get_singleton().destroy_instance(iid);
+    renderer::Renderer::get_singleton().destroy_model_instance(iid);
 }
 
 void VisualInstance::pre_render() {
-    renderer::Renderer::get_singleton().set_instance_transform(iid, get_transform());
+    iid->transform = get_transform();
 }
 
 void VisualInstance::set_model(renderer::Drawable* model) {
@@ -33,13 +33,13 @@ void VisualInstance::set_material_override(renderer::Material* material_override
 }
 
 void InstancedGeometry::on_init() {
-    VertexLayout quad_layout;
-    quad_layout .add_attribute(VertexAttributeType::Vertex)
-                .add_attribute(VertexAttributeType::Normal)
-                .add_attribute(VertexAttributeType::Texcoord)
+    renderer::VertexLayout quad_layout;
+    quad_layout .add_attribute(renderer::VertexAttributeType::Vertex)
+                .add_attribute(renderer::VertexAttributeType::Normal)
+                .add_attribute(renderer::VertexAttributeType::Texcoord)
                 .finalize();
     geometry = renderer::Renderer::get_singleton().create_model(
-        Mesh::vbInitVertexDataInstanced(
+        VertexBuffer::vbInitVertexDataInstanced(
             {
                 // positions         normals         texcoords
                 -0.05f,  0.05f, .0f, .0f, .0f, -1.f, 1.f, 1.f,

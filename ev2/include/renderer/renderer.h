@@ -14,7 +14,7 @@
 #include <queue>
 
 #include <singleton.h>
-#include <renderer/mesh.h>
+#include <renderer/model.h>
 #include <renderer/shader.h>
 #include <renderer/texture.h>
 #include <renderer/camera.h>
@@ -84,102 +84,39 @@ struct MaterialData {
     GLint sheenTint_offset      = 0;
 
     bool changed = false;
-};
 
-struct Material {
-    std::string name = "default";
-
-    glm::vec3 diffuse   = {1.00f,0.10f,0.85f};
-    glm::vec3 emissive  = {};
-    float metallic       = 0;
-    float subsurface     = 0;
-    float specular       = .5f;
-    float roughness      = .5f;
-    float specularTint   = 0;
-    float clearcoat      = 0;
-    float clearcoatGloss = 1.f;
-    float anisotropic    = 0;
-    float sheen          = 0;
-    float sheenTint      = .5f;
-
-    std::shared_ptr<Texture> ambient_tex;             // map_Ka
-    std::shared_ptr<Texture> diffuse_tex;             // map_Kd
-    std::shared_ptr<Texture> specular_tex;            // map_Ks
-    std::shared_ptr<Texture> specular_highlight_tex;  // map_Ns
-    std::shared_ptr<Texture> bump_tex;                // map_bump, map_Bump, bump
-    std::shared_ptr<Texture> displacement_tex;        // disp
-    std::shared_ptr<Texture> alpha_tex;               // map_d
-    std::shared_ptr<Texture> reflection_tex;          // refl
-
-    Material() = default;
-    Material(std::string name) : name{std::move(name)} {}
-
-    Material(const Material&) = default;
-    Material(Material&&) = default;
-    Material& operator=(const Material&) = default;
-    Material& operator=(Material&&) noexcept = default;
-
-private:
-    friend class Renderer;
-
-    void update_internal() {
-        if (internal_material) {
+    void update_from(Material* material) noexcept {
+        if (material) {
             if (
-                internal_material->diffuse          != diffuse ||
-                internal_material->emissive         != emissive ||
-                internal_material->metallic         != metallic ||
-                internal_material->subsurface       != subsurface ||
-                internal_material->specular         != specular ||
-                internal_material->roughness        != roughness ||
-                internal_material->specularTint     != specularTint ||
-                internal_material->clearcoat        != clearcoat ||
-                internal_material->clearcoatGloss   != clearcoatGloss ||
-                internal_material->anisotropic      != anisotropic ||
-                internal_material->sheen            != sheen ||
-                internal_material->sheenTint        != sheenTint
+                material->diffuse          != diffuse ||
+                material->emissive         != emissive ||
+                material->metallic         != metallic ||
+                material->subsurface       != subsurface ||
+                material->specular         != specular ||
+                material->roughness        != roughness ||
+                material->specularTint     != specularTint ||
+                material->clearcoat        != clearcoat ||
+                material->clearcoatGloss   != clearcoatGloss ||
+                material->anisotropic      != anisotropic ||
+                material->sheen            != sheen ||
+                material->sheenTint        != sheenTint
             ) {
-                internal_material->changed = true;
-                internal_material->diffuse          = diffuse;
-                internal_material->emissive         = emissive;
-                internal_material->metallic         = metallic;
-                internal_material->subsurface       = subsurface;
-                internal_material->specular         = specular;
-                internal_material->roughness        = roughness;
-                internal_material->specularTint     = specularTint;
-                internal_material->clearcoat        = clearcoat;
-                internal_material->clearcoatGloss   = clearcoatGloss;
-                internal_material->anisotropic      = anisotropic;
-                internal_material->sheen            = sheen;
-                internal_material->sheenTint        = sheenTint;
+                changed = true;
+                diffuse          = material->diffuse;
+                emissive         = material->emissive;
+                metallic         = material->metallic;
+                subsurface       = material->subsurface;
+                specular         = material->specular;
+                roughness        = material->roughness;
+                specularTint     = material->specularTint;
+                clearcoat        = material->clearcoat;
+                clearcoatGloss   = material->clearcoatGloss;
+                anisotropic      = material->anisotropic;
+                sheen            = material->sheen;
+                sheenTint        = material->sheenTint;
             }
         }
     }
-
-    int32_t material_id = -1;
-    mat_id_t slot = 0;
-    MaterialData* internal_material = nullptr;
-};
-
-/**
- * @brief instance id
- * 
- */
-struct IID {
-    int32_t v = -1;
-
-    bool is_valid() const noexcept {return v != -1;}
-};
-
-struct VBID { // vertex buffer id
-    int32_t v = -1;
-
-    bool is_valid() const noexcept {return v != -1;}
-};
-
-struct MSID { // mesh id
-    int32_t v = -1;
-
-    bool is_valid() const noexcept {return v != -1;}
 };
 
 struct MSIID { // mesh instance id
@@ -190,26 +127,36 @@ struct MSIID { // mesh instance id
 
 struct MeshPrimitive {
     MeshPrimitive() noexcept = default;
-    MeshPrimitive(VBID vbid, int32_t material_id, int32_t indices = -1)
-        : vbid{vbid}, indices{indices}, material_id{material_id} {}
-
+    MeshPrimitive(VertexBuffer* vb, int32_t material_id, int32_t indices = -1)
+        : vb{vb}, indices{indices}, material_id{material_id} {}
+    
     ~MeshPrimitive() {
         if (gl_vao != 0)
             glDeleteVertexArrays(1, &gl_vao);
     }
 
     std::map<int, int>      attributes;         // map of attribute location (engine value like VERTEX_BINDING_LOCATION to a buffer in vb)
-    VBID                    vbid{};             // id of used vertex buffer
+    VertexBuffer*           vb{};               // id of used vertex buffer
     int32_t                 indices = -1;       // ind of index buffer in vb
     int32_t                 material_id = 0;
 
-    GLuint gl_vao = 0;                          // vao for primitive (internal use)
+private:
+    friend class Renderer;
+    friend class RenderObj;
+    GLuint gl_vao = 0;
 };
 
 struct RenderObj {
-    std::vector<MeshPrimitive>      primitives{};
     gl::CullMode                    cull_mode = gl::CullMode::NONE;
     gl::FrontFacing                 front_facing = gl::FrontFacing::CCW;
+
+    void set_mesh_primitives(const std::vector<MeshPrimitive>& primitives);
+
+private:
+    friend class Renderer;
+    int32_t id = -1;
+
+    std::vector<MeshPrimitive>      primitives{};
 };
 
 struct MeshInstance {
@@ -222,52 +169,87 @@ struct MeshInstance {
 struct Primitive {
     size_t      start_index = 0;
     size_t      num_elements = 0;
-    int32_t     material_ind = 0; // material index in drawables material list
+    int32_t     material_ind = 0; // material index in model material list
 };
 
+/**
+ * @brief Renderer Drawable structure
+ * 
+ */
 struct Drawable {
-    Drawable(Mesh &&vb,
-             std::vector<Primitive> primitives,
-             std::vector<Material *> materials,
-             glm::vec3 bmin,
-             glm::vec3 bmax,
-             gl::CullMode cull,
-             gl::FrontFacing ff,
-             uint32_t model_id) :
-                                   vertex_buffer{std::move(vb)},
-                                   primitives{std::move(primitives)},
-                                   materials{std::move(materials)},
-                                   bmin{bmin},
-                                   bmax{bmax},
-                                   cull_mode{cull},
-                                   front_facing{ff},
-                                   model_id{model_id}
-    {
-    }
-
-    Mesh vertex_buffer;
-    std::vector<Primitive> primitives;
-    std::vector<Material*> materials;
+    VertexBuffer            vertex_buffer;
+    std::vector<Primitive>  primitives;
+    std::vector<Material*>  materials;
 
     glm::vec3 bmin, bmax;
 
-    gl::CullMode cull_mode = gl::CullMode::BACK;
+    gl::CullMode    cull_mode = gl::CullMode::BACK;
     gl::FrontFacing front_facing = gl::FrontFacing::CCW;
 
     float vertex_color_weight = 0.f;
 
-    glm::mat4 instance_world_transform = glm::identity<glm::mat4>();
-
 private:
     friend class Renderer;
 
-    uint32_t model_id{};
+    Drawable(VertexBuffer &&vb,
+                 std::vector<Primitive> primitives,
+                 std::vector<Material *> materials,
+                 glm::vec3 bmin,
+                 glm::vec3 bmax,
+                 gl::CullMode cull,
+                 gl::FrontFacing ff,
+                 uint32_t id) : vertex_buffer{std::move(vb)},
+                                primitives{std::move(primitives)},
+                                materials{std::move(materials)},
+                                bmin{bmin},
+                                bmax{bmax},
+                                cull_mode{cull},
+                                front_facing{ff},
+                                id{id}
+    {
+    }
+
+    uint32_t id = 0;
 };
 
 struct ModelInstance {
     glm::mat4   transform = glm::identity<glm::mat4>();
-    Drawable*   drawable = nullptr;
     int32_t     material_id_override = -1;
+
+    void set_material_override(Material* material);
+
+    void set_drawable(Drawable* drawable);
+
+private:
+    friend class Renderer;
+
+    ~ModelInstance() {
+        if (gl_vao != 0)
+            glDeleteVertexArrays(1, &gl_vao);
+    }
+
+    int32_t     id = -1;
+    Drawable*   drawable = nullptr;
+    GLuint      gl_vao = 0;
+};
+
+struct InstancedDrawable {
+    glm::mat4               instance_world_transform = glm::identity<glm::mat4>();
+    std::unique_ptr<Buffer> instance_transforms{};
+
+    void set_drawable(Drawable* drawable);
+
+private:
+    friend class Renderer;
+
+    ~InstancedDrawable() {
+        if (gl_vao != 0)
+            glDeleteVertexArrays(1, &gl_vao);
+    }
+
+    int32_t     id = -1;
+    Drawable*   drawable = nullptr;
+    GLuint      gl_vao = 0;
 };
 
 class Renderer : public Singleton<Renderer> {
@@ -287,7 +269,7 @@ public:
     void set_light_ambient(LID lid, const glm::vec3& color);
     void destroy_light(LID lid);
 
-    Drawable *create_model(Mesh &&vb,
+    Drawable* create_model(VertexBuffer &&vb,
                            std::vector<Primitive> primitives,
                            std::vector<Material *> materials,
                            glm::vec3 bmin,
@@ -296,35 +278,17 @@ public:
                            gl::FrontFacing ff);
     void destroy_model(Drawable* d);
 
-    IID create_model_instance();
-    void set_instance_model(IID iid, Drawable* mid);
-    void set_instance_transform(IID iid, const glm::mat4& transform);
+    ModelInstance* create_model_instance();
+    void destroy_model_instance(ModelInstance* model);
 
-
-    VBID create_vertex_buffer();
-    Mesh* get_vertex_buffer(VBID vbid);
-    void destroy_vertex_buffer(VBID vbid);
-
-    MSID create_mesh();
-    void set_mesh_primitives(MSID mesh_id, const std::vector<MeshPrimitive>& primitives);
-    void set_mesh_cull_mode(MSID mesh_id, gl::CullMode cull_mode);
-    void set_mesh_front_facing(MSID mesh_id, gl::FrontFacing front_facing);
-    void destroy_mesh(MSID mesh_id);
+    RenderObj* create_render_obj();
+    void destroy_render_obj(RenderObj* render_obj);
 
     MSIID create_mesh_instance();
-    void set_mesh_instance_mesh(MSIID msiid, MSID msid);
+    void set_mesh_instance_mesh(MSIID msiid, RenderObj* render_object);
     void set_mesh_instance_transform(MSIID msiid, const glm::mat4& transform);
     void destroy_mesh_instance(MSIID msiid);
-
-    /**
-     * @brief Set the instance material override id. Note: this will set materials for all shapes in model
-     * 
-     * @param iid 
-     * @param material 
-     */
-    void set_instance_material_override(IID iid, Material* material);
     
-    void destroy_instance(IID iid);
 
     void render(const Camera &camera);
 
@@ -356,13 +320,12 @@ public:
 
 private:
 
-    void draw(Drawable* dr, const Program& prog, bool use_materials, int32_t material_override = -1);
+    void draw(Drawable* dr, const Program& prog, bool use_materials, GLuint gl_vao, int32_t material_override = -1, const Buffer* instance_buffer = nullptr, int32_t n_instances = -1);
 
     void update_material(mat_id_t material_slot, const MaterialData& material);
 
     // model, instance vertex data
     std::unordered_map<uint32_t, Drawable> models;
-    std::unordered_map<uint32_t, Drawable> instanced_models;
     uint32_t next_model_id = 1;
 
     // material management
@@ -371,12 +334,13 @@ private:
     std::array<MaterialData, MAX_N_MATERIALS> material_data_buffer;
     std::queue<mat_id_t> free_material_slots;
 
+    // single instance of a drawable
     std::unordered_map<int32_t, ModelInstance> model_instances;
-    uint32_t next_instance_id = 100;
+    uint32_t next_model_instance_id = 100;
 
-    // Mesh, vb vertex data
-    std::unordered_map<int32_t, Mesh> vertex_buffers;
-    uint32_t next_vb_id = 1;
+    // instances of a drawable with instanced draw calls
+    std::unordered_map<int32_t, InstancedDrawable> instanced_drawables;
+    uint32_t next_instanced_drawable_id = 100;
 
     std::unordered_map<int32_t, RenderObj> meshes;
     uint32_t next_mesh_id = 1;
@@ -430,7 +394,7 @@ private:
     FBO bloom_thresh_combine;
     std::array<FBO, 2> bloom_blur_swap_fbo;
     
-    Mesh sst_vb;
+    std::pair<VertexBuffer, GLuint> sst_vb;
 
     std::shared_ptr<Texture> shadow_depth_tex;
 
@@ -465,6 +429,7 @@ private:
 
     glm::mat4 point_light_geom_tr;
     Drawable* point_light_drawable;
+    GLuint point_light_gl_vao = 0;
 
     int32_t default_material_id = 0;
 };

@@ -84,12 +84,12 @@ public:
     /**
      * @brief Bind this buffer to its target
      */
-    void Bind() { glBindBuffer((GLenum)target, gl_reference); }
+    void Bind() const { glBindBuffer((GLenum)target, gl_reference); }
 
     /**
      * @brief Unbind this buffer from its target
      */
-    void Unbind() {glBindBuffer((GLenum)target, 0);}
+    void Unbind() const {glBindBuffer((GLenum)target, 0);}
 
     GLuint handle() const noexcept { return gl_reference; }
 

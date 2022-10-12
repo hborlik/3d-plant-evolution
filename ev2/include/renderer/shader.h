@@ -28,16 +28,27 @@ namespace mat_spec
 /**
  * @brief standard shader inputs
  */
-const std::string VertexAttributeName = "VertPos";
-constexpr gl::DataType VertexAttributeType = gl::DataType::VEC3F;
-const std::string TextureAttributeName = "TexPos";
-constexpr gl::DataType TextureAttributeType = gl::DataType::VEC2F;
-const std::string NormalAttributeName = "Normal";
-constexpr gl::DataType NormalAttributeType = gl::DataType::VEC3F;
-const std::string BiTangentAttributeName = "BiTangent";
-constexpr gl::DataType BiNormalAttributeType = gl::DataType::VEC3F;
-const std::string TangentAttributeName = "Tangent";
-constexpr gl::DataType TangentAttributeType = gl::DataType::VEC3F;
+const std::string       VertexAttributeName     = "VertPos";
+constexpr gl::DataType  VertexAttributeType     = gl::DataType::VEC3F;
+const std::string       TextureAttributeName    = "TexPos";
+constexpr gl::DataType  TextureAttributeType    = gl::DataType::VEC2F;
+const std::string       NormalAttributeName     = "Normal";
+constexpr gl::DataType  NormalAttributeType     = gl::DataType::VEC3F;
+const std::string       VertexColorAttributeName= "VertCol";
+constexpr gl::DataType  VertexColorAttributeType= gl::DataType::VEC3F;
+const std::string       BiTangentAttributeName  = "BiTangent";
+constexpr gl::DataType  BiTangentAttributeType  = gl::DataType::VEC3F;
+const std::string       TangentAttributeName    = "Tangent";
+constexpr gl::DataType  TangentAttributeType    = gl::DataType::VEC3F;
+
+const std::unordered_map<std::string, std::tuple<uint32_t, gl::DataType>> ShaderVertexAttributes {
+    std::make_pair(VertexAttributeName,     std::make_tuple(gl::VERTEX_BINDING_LOCATION,    VertexAttributeType)),
+    std::make_pair(NormalAttributeName,     std::make_tuple(gl::NORMAL_BINDING_LOCATION,    NormalAttributeType)),
+    std::make_pair(VertexColorAttributeName,std::make_tuple(gl::COLOR_BINDING_LOCATION,     VertexColorAttributeType)),
+    std::make_pair(TextureAttributeName,    std::make_tuple(gl::TEXCOORD_BINDING_LOCATION,  TextureAttributeType)),
+    std::make_pair(TangentAttributeName,    std::make_tuple(gl::TANGENT_BINDING_LOCATION,   TangentAttributeType)),
+    std::make_pair(BiTangentAttributeName,  std::make_tuple(gl::BITANGENT_BINDING_LOCATION, BiTangentAttributeType))
+};
 
 const std::string ModelMatrixUniformName = "M";
 const std::string NormalMatrixUniformName = "G";
@@ -303,14 +314,30 @@ public:
      * @brief Get the Input description for given name
      *
      * @param inputName
-     * @return ProgramInputDescription zero initialized if it does not exist
+     * @return ProgramInputDescription default initialized if it does not exist
      */
     ProgramInputDescription getInputInfo(const std::string &inputName) const
     {
         auto itr = inputs.find(inputName);
         if (itr != inputs.end())
             return itr->second;
-        return {-1, 0};
+        return {};
+    }
+
+    /**
+     * @brief Get the Attribute Map. Mapping attribute index to binding location in the shader.
+     * 
+     * @return std::unordered_map<int, int> mapping attribute identifier to binding location.
+     */
+    std::unordered_map<int, int> getAttributeMap() const {
+        std::unordered_map<int, int> map;
+        for (auto& mapping : inputs) {
+            auto default_binding = mat_spec::ShaderVertexAttributes.find(mapping.first);
+            if (default_binding != mat_spec::ShaderVertexAttributes.end()) {
+                map.insert({std::get<0>(default_binding->second), mapping.second.Location});
+            }
+        }
+        return map;
     }
 
     /**

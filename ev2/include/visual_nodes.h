@@ -8,7 +8,7 @@
 #define EV2_VISUAL_INSTANCE_H
 
 #include <node.h>
-#include <renderer/mesh.h>
+#include <renderer/model.h>
 #include <renderer/renderer.h>
 
 namespace ev2 {
@@ -28,7 +28,7 @@ public:
     void set_material_override(renderer::Material* material_override);
 
 private:
-    renderer::IID iid{};
+    renderer::ModelInstance* iid{};
 };
 
 class InstancedGeometry : public Node {

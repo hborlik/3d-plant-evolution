@@ -8,7 +8,11 @@
 
 namespace ev2::renderer {
 
-void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32_t material_override) {
+void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, GLuint gl_vao, int32_t material_override, const Buffer* instance_buffer, int32_t n_instances) {
+    if (instance_buffer != nullptr) {
+        assert(n_instances > 0);
+    }
+    
     if (dr->cull_mode == gl::CullMode::NONE) {
         glDisable(GL_CULL_FACE);
     } else {
@@ -20,10 +24,8 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
     const int vert_col_w_loc = prog.getUniformInfo("vertex_color_weight").Location;
     const int diffuse_sampler_loc = prog.getUniformInfo("diffuse_tex").Location;
     const bool indexed = dr->vertex_buffer.get_indexed() != -1;
-    const int instanced_buffer_id = dr->vertex_buffer.get_instanced();
-    const bool instanced = instanced_buffer_id != -1;
 
-    dr->vertex_buffer.bind();
+    glBindVertexArray(gl_vao);
     for (auto& m : dr->primitives) {
         Material* material_ptr = nullptr;
         if (use_materials) {
@@ -35,7 +37,7 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
             } else { // use default if no material is set
                 material_ptr = &materials.at(default_material_id);
             }
-            material_slot = material_ptr->slot;
+            material_slot = material_ptr->material_slot;
 
             // TODO does this go here?
             if (mat_loc >= 0) {
@@ -63,16 +65,15 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
         if (indexed) {
             Buffer& el_buf = dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed());
             el_buf.Bind(); // bind index buffer (again, @Windows)
-            if (instanced) {
-                // Buffer& inst_buf = dr->vertex_buffer.get_buffer(instanced_buffer_id);
-                glDrawElementsInstanced(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0, dr->vertex_buffer.get_n_instances());
+            if (instance_buffer) {
+                glDrawElementsInstanced(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0, n_instances);
             } else {
                 glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
             }
             el_buf.Unbind();
         } else {
-            if (instanced) {
-                glDrawArraysInstanced(GL_TRIANGLES, m.start_index, m.num_elements, dr->vertex_buffer.get_n_instances());
+            if (instance_buffer) {
+                glDrawArraysInstanced(GL_TRIANGLES, m.start_index, m.num_elements, n_instances);
             } else {
                 glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
             }
@@ -80,7 +81,7 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, int32
 
         // glBindTexture(GL_TEXTURE_2D, 0);
     }
-    dr->vertex_buffer.unbind();
+    glBindVertexArray(0);
 }
 
 Renderer::Renderer(uint32_t width, uint32_t height) : 
@@ -94,7 +95,7 @@ Renderer::Renderer(uint32_t width, uint32_t height) :
     depth_buffer{gl::FBOTarget::RW},
     bloom_thresh_combine{gl::FBOTarget::RW},
     bloom_blur_swap_fbo{FBO{gl::FBOTarget::RW}, FBO{gl::FBOTarget::RW}},
-    sst_vb{Mesh::vbInitSST()},
+    sst_vb{VertexBuffer::vbInitSST()},
     shader_globals{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     lighting_materials{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
     ssao_kernel_buffer{gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW},
@@ -402,10 +403,12 @@ void Renderer::init() {
     }
 
     // light geometry
-    point_light_drawable = ResourceManager::get_singleton().get_model(std::filesystem::path("models") / "sphere.obj", false);;
+    point_light_drawable = ResourceManager::get_singleton().get_model(std::filesystem::path("models") / "sphere.obj", false);
     point_light_drawable->front_facing = gl::FrontFacing::CW; // render back facing only
     glm::vec3 scaling = glm::vec3{2} / (point_light_drawable->bmax - point_light_drawable->bmin);
     point_light_geom_tr = glm::scale(glm::identity<glm::mat4>(), scaling);
+
+    point_light_gl_vao = point_light_drawable->vertex_buffer.gen_vao_for_attributes(point_lighting_program.getAttributeMap());
 }
 
 void Renderer::update_material(mat_id_t material_slot, const MaterialData& material) {
@@ -431,8 +434,7 @@ Material* Renderer::create_material() {
         free_material_slots.pop();
         Material* new_material = &materials[id];
         new_material->material_id = id;
-        new_material->internal_material = &material_data_buffer[slot];
-        new_material->slot = slot;
+        new_material->material_slot = slot;
         return new_material;
     }
     return nullptr;
@@ -440,10 +442,9 @@ Material* Renderer::create_material() {
 
 void Renderer::destroy_material(Material* material) {
     assert(material);
-    material_data_buffer[material->slot] = {};
-    free_material_slots.push(material->slot);
-    material->internal_material = nullptr;
-    material->slot = 0;
+    material_data_buffer[material->material_slot] = {};
+    free_material_slots.push(material->material_slot);
+    material->material_slot = 0;
     material->material_id = -1;
     materials.erase(material->material_id);
 }
@@ -535,177 +536,86 @@ void Renderer::destroy_light(LID lid) {
     point_lights.erase(lid._v);
 }
 
-Drawable *Renderer::create_model(Mesh &&vb,
+Drawable* Renderer::create_model(VertexBuffer &&vb,
                                  std::vector<Primitive> primitives,
-                                 std::vector<Material *> materials,
+                                 std::vector<Material*> materials,
                                  glm::vec3 bmin,
                                  glm::vec3 bmax,
                                  gl::CullMode cull,
                                  gl::FrontFacing ff)
 {
     uint32_t nmid = {next_model_id++};
-    if (vb.get_instanced() != -1) {
-        auto ins = instanced_models.emplace(
-            std::make_pair(
-                nmid,
-                Drawable{
-                    std::move(vb),
-                    std::move(primitives),
-                    std::move(materials),
-                    std::move(bmin),
-                    std::move(bmax),
-                    std::move(cull),
-                    std::move(ff),
-                    nmid
-                }
-            )
-        );
-        if (ins.second)
-            return &(ins.first->second);
-    } else {
-        auto ins = models.emplace(
-            std::make_pair(
-                nmid,
-                Drawable{
-                    std::move(vb),
-                    std::move(primitives),
-                    std::move(materials),
-                    std::move(bmin),
-                    std::move(bmax),
-                    std::move(cull),
-                    std::move(ff),
-                    nmid
-                }
-            )
-        );
-        if (ins.second)
-            return &(ins.first->second);
-    }
-    
+    auto ins = models.emplace(
+        std::make_pair(
+            nmid,
+            Drawable{
+                std::move(vb),
+                std::move(primitives),
+                std::move(materials),
+                std::move(bmin),
+                std::move(bmax),
+                std::move(cull),
+                std::move(ff),
+                nmid
+            }
+        )
+    );
+    if (ins.second)
+        return &(ins.first->second);
     return nullptr;
 }
 
 void Renderer::destroy_model(Drawable* d) {
     assert(d);
-    auto mitr = models.find(d->model_id);
+    auto mitr = models.find(d->id);
     if (mitr != models.end()) {
         models.erase(mitr);
     }
 }
 
 
-IID Renderer::create_model_instance() {
-    int32_t id = next_instance_id++;
-    ModelInstance mi{};
-    model_instances.emplace(id, mi);
+ModelInstance* Renderer::create_model_instance() {
+    int32_t id = next_model_instance_id++;
+    ModelInstance model{};
+    model.id = id;
+    auto mi = model_instances.emplace(id, std::move(model));
+    ModelInstance* new_model = nullptr;
+    if (mi.second)
+        new_model = &((mi.first)->second);
 
-    return {id};
+    return new_model;
 }
 
-void Renderer::set_instance_model(IID iid, Drawable* mid) {
-    assert(mid);
-    if (!iid.is_valid())
+void Renderer::destroy_model_instance(ModelInstance* model) {
+    if (!model)
         return;
-    auto model = models.find(mid->model_id);
-    if (model != models.end()) {
-        model_instances[iid.v].drawable = mid;
-    }
+    model_instances.erase(model->id);
 }
 
-void Renderer::set_instance_material_override(IID iid, Material* material) {
-    if (!iid.is_valid() || !material)
-        return;
-    
-    auto mi = model_instances.find(iid.v);
-    if (mi != model_instances.end()) {
-        mi->second.material_id_override = material->material_id;
-    }
-}
-
-void Renderer::destroy_instance(IID iid) {
-    if (!iid.is_valid())
-        return;
-    model_instances.erase(iid.v);
-}
-
-void Renderer::set_instance_transform(IID iid, const glm::mat4& transform) {
-    if (!iid.is_valid())
-        return;
-    
-    auto mi = model_instances.find(iid.v);
-    if (mi != model_instances.end()) {
-        mi->second.transform = transform;
-    }
-}
-
-VBID Renderer::create_vertex_buffer() {
-    int32_t id = next_vb_id++;
-    vertex_buffers.emplace(id, Mesh{});
-    return {id};
-}
-
-Mesh* Renderer::get_vertex_buffer(VBID vbid) {
-    if (vbid.is_valid()) {
-        auto itr = vertex_buffers.find(vbid.v);
-        if (itr != vertex_buffers.end()) {
-            return &(itr->second);
-        }
-    }
-    return nullptr;
-}
-
-void Renderer::destroy_vertex_buffer(VBID vbid) {
-    if (vbid.is_valid())
-        vertex_buffers.erase(vbid.v);
-}
-
-MSID Renderer::create_mesh() {
+RenderObj* Renderer::create_render_obj() {
     int32_t id = next_mesh_id++;
-    Mesh mesh{};
-    meshes.emplace(id, mesh);
-    return {id};
+    VertexBuffer mesh{};
+    auto ro = meshes.emplace(id, mesh);
+    RenderObj* out = nullptr;
+    if (ro.second)
+        out = &(ro.first->second);
+    return out;
 }
 
-void Renderer::set_mesh_primitives(MSID mesh_id, const std::vector<MeshPrimitive>& primitives) {
-    if (!mesh_id.is_valid())
-        return;
-    
-    auto mi = meshes.find(mesh_id.v);
-    if (mi != meshes.end()) {
-        mi->second.primitives = primitives;
+// void RenderObj::set_mesh_primitives(const std::vector<MeshPrimitive>& primitives) {
+//     this->primitives = primitives;
 
-        for (auto& m_pri : mi->second.primitives) {
-            Mesh* vb = get_vertex_buffer(m_pri.vbid);
-            if (vb) {
-                m_pri.gl_vao = vb->gen_vao_for_attributes(m_pri.attributes);
-            }
-        }
+//     // generate the VAOs for all primitives in mesh 
+//     for (auto& m_pri : this->primitives) {
+//         assert(m_pri.vb);
+//         m_pri.gl_vao = m_pri.vb->gen_vao_for_attributes(m_pri.attributes);
+//     }
+// }
+
+void Renderer::destroy_render_obj(RenderObj* render_object) {
+    if (render_object) {
+        meshes.erase(render_object->id);
     }
-}
-
-void Renderer::set_mesh_cull_mode(MSID mesh_id, gl::CullMode cull_mode) {
-    if (!mesh_id.is_valid())
-        return;
-    
-    auto mi = meshes.find(mesh_id.v);
-    if (mi != meshes.end()) {
-        mi->second.cull_mode = cull_mode;
-    }
-}
-
-void Renderer::set_mesh_front_facing(MSID mesh_id, gl::FrontFacing front_facing) {
-    if (!mesh_id.is_valid())
-        return;
-    
-    auto mi = meshes.find(mesh_id.v);
-    if (mi != meshes.end()) {
-        mi->second.front_facing = front_facing;
-    }
-}
-
-void Renderer::destroy_mesh(MSID mesh_id) {
-    if (mesh_id.is_valid())
-        meshes.erase(mesh_id.v);
 }
 
 MSIID Renderer::create_mesh_instance() {
@@ -714,14 +624,13 @@ MSIID Renderer::create_mesh_instance() {
     return {id};
 }
 
-void Renderer::set_mesh_instance_mesh(MSIID msiid, MSID msid) {
-    if (!msiid.is_valid())
+void Renderer::set_mesh_instance_mesh(MSIID msiid, RenderObj* render_object) {
+    if (!(msiid.is_valid() || render_object))
         return;
-    auto msi = meshes.find(msid.v);
-    auto mi = mesh_instances.find(msiid.v);
-    if (mi != mesh_instances.end() && msi != meshes.end()) {
-        mi->second.mesh = &(msi->second);
-    }
+    auto msi = render_object;
+    auto mesh_instance = mesh_instances.find(msiid.v);
+    if (mesh_instance != mesh_instances.end())
+        mesh_instance->second.mesh = render_object;
 }
 
 void Renderer::set_mesh_instance_transform(MSIID msiid, const glm::mat4& transform) {
@@ -747,7 +656,7 @@ void Renderer::render(const Camera &camera) {
     // pre render data updates
     for (auto& m : materials) {
         Material& material = m.second;
-        material.update_internal();
+        material_data_buffer[material.material_slot].update_from(&material);
     }
 
     for(mat_id_t i = 0; i < MAX_N_MATERIALS; i++) {
@@ -822,7 +731,7 @@ void Renderer::render(const Camera &camera) {
             if (m.drawable) {
                 ev2::gl::glUniform(m.transform, sdp_m_location);
 
-                draw(m.drawable, depth_program, false);
+                draw(m.drawable, depth_program, false, m.gl_vao);
             }
         }
 
@@ -868,12 +777,12 @@ void Renderer::render(const Camera &camera) {
     // bind global shader UBO to shader
     globals_desc.bind_buffer(shader_globals);
     lighting_materials_desc.bind_buffer(lighting_materials);
-    for (auto &mPair : instanced_models) {
+    for (auto &mPair : instanced_drawables) {
         auto& m = mPair.second;
 
         ev2::gl::glUniform(m.instance_world_transform, gpi_m_location);
 
-        draw(&m, geometry_program_instanced, true);
+        draw(m.drawable, geometry_program_instanced, true, m.gl_vao);
     }
     geometry_program_instanced.unbind();
 
@@ -1062,7 +971,7 @@ void Renderer::render(const Camera &camera) {
         gl::glUniformf(quadratic, plp_k_q_loc);
         gl::glUniformf(radius, plp_k_radius_loc);
 
-        draw(point_light_drawable, point_lighting_program, false);
+        draw(point_light_drawable, point_lighting_program, false, point_light_gl_vao);
     }
 
     normals->unbind();
@@ -1204,9 +1113,9 @@ void Renderer::set_resolution(uint32_t width, uint32_t height) {
 }
 
 void Renderer::draw_screen_space_triangle() {
-    sst_vb.bind();
+    glBindVertexArray(sst_vb.second);
     GL_CHECKED_CALL(glDrawArrays(GL_TRIANGLES, 0, 3));
-    sst_vb.unbind();
+    glBindVertexArray(0);
 }
 
 }

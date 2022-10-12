@@ -630,7 +630,7 @@ namespace ev2 {
 ResourceManager::~ResourceManager() {
     // TODO destroy models
     // for (auto v : model_lookup) {
-    //     renderer::Renderer::get_singleton().destroy_mesh()
+    //     renderer::Renderer::get_singleton().destroy_render_obj()
     // }
 }
 
@@ -668,8 +668,8 @@ renderer::Drawable* ResourceManager::get_model(const std::filesystem::path& file
             ev_mat[i++] = mat->get_material();
         }
 
-        renderer::Drawable* id = ev2::renderer::Renderer::get_singleton().create_model(
-            renderer::Mesh::vbInitArrayVertexData(loaded_model->buffer),
+        renderer::Drawable* drawable = ev2::renderer::Renderer::get_singleton().create_model(
+            renderer::VertexBuffer::vbInitArrayVertexData(loaded_model->buffer),
             std::move(ev_prim),
             std::move(ev_mat),
             loaded_model->bmin,
@@ -678,8 +678,8 @@ renderer::Drawable* ResourceManager::get_model(const std::filesystem::path& file
             gl::FrontFacing::CCW
         );
         if (cache)
-            model_lookup.insert(std::make_pair(filename.generic_string(), id));
-        return id;
+            model_lookup.insert(std::make_pair(filename.generic_string(), drawable));
+        return drawable;
     } else {
         std::cerr << "Failed to load model " + filename.generic_string() << std::endl;
         return {};

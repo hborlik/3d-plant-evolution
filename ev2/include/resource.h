@@ -11,7 +11,7 @@
 
 #include <glm/glm.hpp>
 
-#include <renderer/mesh.h>
+#include <renderer/model.h>
 #include <renderer/renderer.h>
 #include <scene.h>
 #include <renderer/texture.h>
@@ -97,7 +97,7 @@ public:
 
     std::shared_ptr<Texture> get_texture(const std::filesystem::path& filename, bool ignore_asset_path = false);
 
-    Ref<GLTFScene> loadGLTF(const std::filesystem::path& filename, bool normalize = false);
+    // Ref<GLTFScene> loadGLTF(const std::filesystem::path& filename, bool normalize = false);
 
     Ref<MaterialResource> get_material(const std::string& name);
     int32_t get_material_id(const std::string& name);
