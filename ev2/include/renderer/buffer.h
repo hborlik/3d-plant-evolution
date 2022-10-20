@@ -14,7 +14,7 @@
 
 #include <renderer/ev_gl.h>
 
-namespace ev2 {
+namespace ev2::renderer {
 
 class Buffer {
 public:

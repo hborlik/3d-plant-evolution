@@ -1,6 +1,7 @@
 #include <visual_nodes.h>
 
 #include <scene.h>
+#include <renderer/shader.h>
 
 namespace ev2 {
 
@@ -25,21 +26,21 @@ void VisualInstance::pre_render() {
 }
 
 void VisualInstance::set_model(renderer::Drawable* model) {
-    renderer::Renderer::get_singleton().set_instance_model(iid, model);
+    iid->set_drawable(model);
 }
 
 void VisualInstance::set_material_override(renderer::Material* material_override) {
-    renderer::Renderer::get_singleton().set_instance_material_override(iid, material_override);
+    iid->set_material_override(material_override);
 }
 
 void InstancedGeometry::on_init() {
-    renderer::VertexLayout quad_layout;
-    quad_layout .add_attribute(renderer::VertexAttributeType::Vertex)
-                .add_attribute(renderer::VertexAttributeType::Normal)
-                .add_attribute(renderer::VertexAttributeType::Texcoord)
+    renderer::VertexBufferLayout quad_layout;
+    quad_layout .add_attribute(renderer::VertexAttributeLabel::Vertex)
+                .add_attribute(renderer::VertexAttributeLabel::Normal)
+                .add_attribute(renderer::VertexAttributeLabel::Texcoord)
                 .finalize();
     geometry = renderer::Renderer::get_singleton().create_model(
-        VertexBuffer::vbInitVertexDataInstanced(
+        renderer::VertexBuffer::vbInitArrayVertexSpec(
             {
                 // positions         normals         texcoords
                 -0.05f,  0.05f, .0f, .0f, .0f, -1.f, 1.f, 1.f,
@@ -75,10 +76,10 @@ void InstancedGeometry::on_destroy() {
 }
 
 void InstancedGeometry::pre_render() {
-    if (geometry) {
-        geometry->instance_world_transform = get_transform();
-        geometry->vertex_buffer.get_buffer(geometry->vertex_buffer.get_instanced()).CopyData(instance_transforms);
-        geometry->vertex_buffer.set_n_instances(instance_transforms.size());
+    if (instance) {
+        instance->instance_world_transform = get_transform();
+        instance->instance_transform_buffer->CopyData(instance_transforms);
+        instance->n_instances = instance_transforms.size();
     }
 }
 

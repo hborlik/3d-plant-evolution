@@ -19,7 +19,7 @@
 
 using namespace ev2;
 
-namespace ev2 {
+namespace ev2::renderer {
 
 // overload stream operator
 std::ostream& operator<<(std::ostream& os, const Program& input) {
@@ -46,8 +46,6 @@ std::ostream& operator<<(std::ostream& os, const Program& input) {
     os << "=== ShaderProgram ===" << std::endl;
     return os;
 }
-
-} // ev2
 
 std::string ShaderPreprocessor::preprocess(const std::string& input_source) const {
     using namespace std;
@@ -422,3 +420,5 @@ void Program::updateProgramUniformBlockInfo() {
 
     }
 }
+
+} // namespace ev2::renderer

@@ -8,6 +8,20 @@
 
 namespace ev2::renderer {
 
+void ModelInstance::set_material_override(Material* material) {
+    if (material == nullptr) 
+        material_id_override = -1;
+}
+
+void ModelInstance::set_drawable(Drawable* drawable) {
+    this->drawable = drawable;
+
+    if (gl_vao != 0)
+        glDeleteVertexArrays(1, &gl_vao);
+    
+    gl_vao = drawable->vertex_buffer.gen_vao_for_attributes(mat_spec::DefaultBindings);
+}
+
 void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, GLuint gl_vao, int32_t material_override, const Buffer* instance_buffer, int32_t n_instances) {
     if (instance_buffer != nullptr) {
         assert(n_instances > 0);
@@ -243,7 +257,7 @@ void Renderer::init() {
 
     // set up programs
 
-    ev2::ShaderPreprocessor prep{ResourceManager::get_singleton().asset_path / "shader"};
+    ShaderPreprocessor prep{ResourceManager::get_singleton().asset_path / "shader"};
     prep.load_includes();
 
 
@@ -594,8 +608,7 @@ void Renderer::destroy_model_instance(ModelInstance* model) {
 
 RenderObj* Renderer::create_render_obj() {
     int32_t id = next_mesh_id++;
-    VertexBuffer mesh{};
-    auto ro = meshes.emplace(id, mesh);
+    auto ro = meshes.emplace(id, RenderObj{});
     RenderObj* out = nullptr;
     if (ro.second)
         out = &(ro.first->second);

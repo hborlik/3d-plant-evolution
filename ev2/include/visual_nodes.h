@@ -9,6 +9,7 @@
 
 #include <node.h>
 #include <renderer/model.h>
+#include <renderer/buffer.h>
 #include <renderer/renderer.h>
 
 namespace ev2 {
@@ -45,6 +46,7 @@ public:
 
 protected:
     renderer::Drawable* geometry = nullptr;
+    renderer::InstancedDrawable* instance = nullptr;
 };
 
 class CameraNode : public Node {

@@ -152,11 +152,13 @@ struct RenderObj {
 
     void set_mesh_primitives(const std::vector<MeshPrimitive>& primitives);
 
+    RenderObj() = default;
+
 private:
     friend class Renderer;
     int32_t id = -1;
 
-    std::vector<MeshPrimitive>      primitives{};
+    std::vector<MeshPrimitive> primitives{};
 };
 
 struct MeshInstance {
@@ -214,20 +216,22 @@ private:
 
 struct ModelInstance {
     glm::mat4   transform = glm::identity<glm::mat4>();
-    int32_t     material_id_override = -1;
 
     void set_material_override(Material* material);
 
     void set_drawable(Drawable* drawable);
 
-private:
-    friend class Renderer;
+    ModelInstance() = default;
 
     ~ModelInstance() {
         if (gl_vao != 0)
             glDeleteVertexArrays(1, &gl_vao);
     }
 
+private:
+    friend class Renderer;
+
+    int32_t     material_id_override = -1;
     int32_t     id = -1;
     Drawable*   drawable = nullptr;
     GLuint      gl_vao = 0;
@@ -235,17 +239,18 @@ private:
 
 struct InstancedDrawable {
     glm::mat4               instance_world_transform = glm::identity<glm::mat4>();
-    std::unique_ptr<Buffer> instance_transforms{};
+    std::unique_ptr<Buffer> instance_transform_buffer{};
+    uint32_t                n_instances;
 
     void set_drawable(Drawable* drawable);
-
-private:
-    friend class Renderer;
 
     ~InstancedDrawable() {
         if (gl_vao != 0)
             glDeleteVertexArrays(1, &gl_vao);
     }
+
+private:
+    friend class Renderer;
 
     int32_t     id = -1;
     Drawable*   drawable = nullptr;

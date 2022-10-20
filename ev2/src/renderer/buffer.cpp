@@ -10,6 +10,8 @@
 
 #include <renderer/buffer.h>
 
+namespace ev2::renderer {
+
 using namespace ev2;
 using namespace ev2::gl;
 
@@ -34,3 +36,5 @@ void Buffer::CopyData(std::size_t size, const void* data) {
     glBindBuffer((GLenum)target, 0);
     buf_size = size;
 }
+
+} // namespace ev2::renderer

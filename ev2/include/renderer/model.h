@@ -1,11 +1,11 @@
 /**
- * @file mesh.h
+ * @file model.h
  * @brief 
  * @date 2022-04-18
  * 
  */
-#ifndef EV2_MESH_H
-#define EV2_MESH_H
+#ifndef EV2_MODEL_H
+#define EV2_MODEL_H
 
 #include <memory>
 
@@ -58,34 +58,34 @@ private:
     int32_t material_slot = -1;
 };
 
-enum class VertexAttributeType {
-    Vertex = 0,
-    Normal,
-    Color,
-    Texcoord
+struct VertexBufferAccessor {
+    int         buffer_id   = -1;     // buffer in VertexBuffer
+    size_t      byte_offset = 0;
+    bool        normalized  = false;
+    gl::DataType type       = gl::DataType::FLOAT;
+    size_t      count       = 0;       // required
+    size_t      stride      = 0;
 };
 
-struct VertexLayout {
+struct VertexBufferLayout {
     struct Attribute {
-        uint32_t location = 0;
-        gl::DataType type = gl::DataType::FLOAT;
-        uint16_t count = 0;
-        uint16_t element_size = 0;
+        VertexAttributeLabel attribute   = VertexAttributeLabel::Vertex;
+        gl::DataType        type        = gl::DataType::FLOAT;
+        uint16_t            count       = 0;
+        uint16_t            element_size= 0;
     };
 
-    VertexLayout& add_attribute(VertexAttributeType type) {
+    VertexBufferLayout& add_attribute(VertexAttributeLabel type) {
+        // Layout should not be finalized
+        assert(!finalized());
         switch(type) {
-            case VertexAttributeType::Vertex:
-                attributes.push_back(Attribute{gl::VERTEX_BINDING_LOCATION, gl::DataType::FLOAT, 3, sizeof(float)});
+            case VertexAttributeLabel::Vertex:
+            case VertexAttributeLabel::Normal:
+            case VertexAttributeLabel::Color:
+                attributes.push_back(Attribute{type, gl::DataType::FLOAT, 3, sizeof(float)});
                 break;
-            case VertexAttributeType::Normal:
-                attributes.push_back(Attribute{gl::NORMAL_BINDING_LOCATION, gl::DataType::FLOAT, 3, sizeof(float)});
-                break;
-            case VertexAttributeType::Color:
-                attributes.push_back(Attribute{gl::COLOR_BINDING_LOCATION, gl::DataType::FLOAT, 3, sizeof(float)});
-                break;
-            case VertexAttributeType::Texcoord:
-                attributes.push_back(Attribute{gl::TEXCOORD_BINDING_LOCATION, gl::DataType::FLOAT, 2, sizeof(float)});
+            case VertexAttributeLabel::Texcoord:
+                attributes.push_back(Attribute{type, gl::DataType::FLOAT, 2, sizeof(float)});
                 break;
             default:
                 break;
@@ -93,29 +93,18 @@ struct VertexLayout {
         return *this;
     }
 
-    VertexLayout& add_attribute(VertexAttributeType type, gl::DataType data_type, uint16_t count, uint16_t size) {
-        uint32_t location = 0;
-        switch(type) {
-            case VertexAttributeType::Vertex:
-                location = gl::VERTEX_BINDING_LOCATION;
-                break;
-            case VertexAttributeType::Normal:
-                location = gl::NORMAL_BINDING_LOCATION;
-                break;
-            case VertexAttributeType::Color:
-                location = gl::COLOR_BINDING_LOCATION;
-                break;
-            case VertexAttributeType::Texcoord:
-                location = gl::TEXCOORD_BINDING_LOCATION;
-                break;
-            default:
-                assert(0);
-        }
-        attributes.push_back(Attribute{location, data_type, count, size});
+    VertexBufferLayout& add_attribute(VertexAttributeLabel type, gl::DataType data_type, uint16_t count, uint16_t size) {
+        // Layout should not be finalized
+        assert(!finalized());
+        attributes.push_back(Attribute{type, data_type, count, size});
         return *this;
     }
 
-    VertexLayout& finalize() {
+    void set_attribute_divisor(uint16_t divisor) {
+        this->divisor = divisor;
+    }
+
+    VertexBufferLayout& finalize() {
         uint32_t total_size = 0;
         for (auto& l : attributes) {
             total_size += l.element_size * l.count;
@@ -124,17 +113,13 @@ struct VertexLayout {
         return *this;
     }
 
+    bool finalized() const noexcept {
+        return stride != 0;
+    }
+
     std::vector<Attribute> attributes;
     uint32_t stride = 0;
-};
-
-struct VertexBufferAccessor {
-    int buffer_id = -1;     // buffer in VertexBuffer
-    size_t byte_offset = 0;
-    bool normalized = false;
-    gl::DataType type = gl::DataType::FLOAT;
-    size_t count = 0;       // required
-    size_t stride = 0;
+    uint16_t divisor = 0;
 };
 
 class VertexBuffer {
@@ -161,15 +146,15 @@ public:
         return buffers.at(buffer_id);
     }
 
-    void add_accessor(uint32_t accessor_id, uint32_t buffer_id, size_t byte_offset, bool normalized, gl::DataType type, size_t count, size_t stride) {
+    void add_accessor(VertexAttributeLabel accessor, uint32_t buffer_id, size_t byte_offset, bool normalized, gl::DataType type, size_t count, size_t stride) {
         accessors.insert_or_assign(
-            accessor_id,
+            accessor,
             VertexBufferAccessor{(int)buffer_id, byte_offset, normalized, type, count, stride}
         );
     }
 
-    VertexBufferAccessor& get_accessor(uint32_t id) {
-        return accessors.at(id);
+    VertexBufferAccessor& get_accessor(VertexAttributeLabel accessor) {
+        return accessors.at(accessor);
     }
 
     /**
@@ -179,7 +164,7 @@ public:
      *  vertex_buffer
      * @return GLuint 
      */
-    GLuint gen_vao_for_attributes(const std::unordered_map<int, int>& attributes);
+    GLuint gen_vao_for_attributes(const std::unordered_map<VertexAttributeLabel, uint32_t>& attributes, const Buffer* instance_buffer=nullptr);
 
     static std::pair<VertexBuffer, int32_t> vbInitArrayVertexData(const std::vector<float>& vertices, const std::vector<float>& normals, const std::vector<float>& vertex_colors);
     
@@ -189,7 +174,7 @@ public:
      * @param buffer 
      * @return VertexBuffer 
      */
-    static std::pair<VertexBuffer, int32_t> vbInitArrayVertexData(const std::vector<float>& buffer, bool instanced = false);
+    static VertexBuffer vbInitArrayVertexData(const std::vector<float>& buffer);
     static std::pair<VertexBuffer, int32_t> vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, bool instanced = false);
 
     /**
@@ -207,16 +192,18 @@ public:
      * @param instance_buffer instance buffer to be used with the returned VAO
      * @return VertexBuffer 
      */
-    static std::pair<VertexBuffer, int32_t> vbInitVertexDataInstanced(const std::vector<float>& buffer, const Buffer& instance_buffer, const VertexLayout& layout);
+    static std::pair<VertexBuffer, int32_t> vbInitVertexDataInstanced(const std::vector<float>& buffer, const Buffer& instance_buffer, const VertexBufferLayout& layout);
 
-    static std::pair<VertexBuffer, int32_t> vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexLayout& layout);
-    static std::pair<VertexBuffer, int32_t> vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexLayout& layout);
+    static VertexBuffer vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexBufferLayout& layout);
+    static std::pair<VertexBuffer, int32_t> vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexBufferLayout& layout);
 
     static std::pair<VertexBuffer, int32_t> vbInitDefault();
 
+    // buffer accessors
+    std::map<VertexAttributeLabel, VertexBufferAccessor> accessors;
+
 private:
     std::unordered_map<uint32_t, Buffer> buffers;
-    std::unordered_map<uint32_t, VertexBufferAccessor> accessors;
 
     int indexed = -1;
 };

@@ -8,7 +8,7 @@
 #define PLANT_GAME_TREE_H
 
 #include <visual_nodes.h>
-#include <renderer/vertex_buffer.h>
+#include <renderer/model.h>
 
 #include <Sphere.h>
 
@@ -103,7 +103,7 @@ public:
     ptree::Skeleton tree_skeleton;
     ptree::Tree tree;
     std::map<std::string, float> params;
-    ev2::VertexLayout buffer_layout;
+    ev2::renderer::VertexBufferLayout buffer_layout;
     ev2::renderer::Drawable* tree_geometry;
 
     PlantInfo plantInfo{};

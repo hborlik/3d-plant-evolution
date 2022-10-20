@@ -19,8 +19,17 @@
 #include <renderer/ev_gl.h>
 #include <renderer/buffer.h>
 
-namespace ev2
+namespace ev2::renderer
 {
+
+enum class VertexAttributeLabel : int {
+    Vertex = 0,
+    Normal,
+    Color,
+    Texcoord,
+    Tangent,
+    Bitangent
+};
 
 namespace mat_spec
 {
@@ -41,13 +50,41 @@ constexpr gl::DataType  BiTangentAttributeType  = gl::DataType::VEC3F;
 const std::string       TangentAttributeName    = "Tangent";
 constexpr gl::DataType  TangentAttributeType    = gl::DataType::VEC3F;
 
-const std::unordered_map<std::string, std::tuple<uint32_t, gl::DataType>> ShaderVertexAttributes {
-    std::make_pair(VertexAttributeName,     std::make_tuple(gl::VERTEX_BINDING_LOCATION,    VertexAttributeType)),
-    std::make_pair(NormalAttributeName,     std::make_tuple(gl::NORMAL_BINDING_LOCATION,    NormalAttributeType)),
-    std::make_pair(VertexColorAttributeName,std::make_tuple(gl::COLOR_BINDING_LOCATION,     VertexColorAttributeType)),
-    std::make_pair(TextureAttributeName,    std::make_tuple(gl::TEXCOORD_BINDING_LOCATION,  TextureAttributeType)),
-    std::make_pair(TangentAttributeName,    std::make_tuple(gl::TANGENT_BINDING_LOCATION,   TangentAttributeType)),
-    std::make_pair(BiTangentAttributeName,  std::make_tuple(gl::BITANGENT_BINDING_LOCATION, BiTangentAttributeType))
+constexpr uint32_t VERTEX_BINDING_LOCATION      = 0;
+constexpr uint32_t NORMAL_BINDING_LOCATION      = 1;
+constexpr uint32_t COLOR_BINDING_LOCATION       = 2;
+constexpr uint32_t TEXCOORD_BINDING_LOCATION    = 3;
+constexpr uint32_t TANGENT_BINDING_LOCATION     = 5;
+constexpr uint32_t BITANGENT_BINDING_LOCATION   = 6;
+constexpr uint32_t INSTANCE_BINDING_LOCATION    = 7;
+
+const std::unordered_map<std::string, uint32_t> AttributeBindings {
+    std::make_pair("POSITION",  VERTEX_BINDING_LOCATION),
+    std::make_pair("NORMAL",    NORMAL_BINDING_LOCATION),
+    std::make_pair("COLOR",     COLOR_BINDING_LOCATION),
+    std::make_pair("TEXCOORD_0",TEXCOORD_BINDING_LOCATION),
+    std::make_pair("TANGENT",   TANGENT_BINDING_LOCATION),
+    std::make_pair("BITANGENT", BITANGENT_BINDING_LOCATION)
+};
+
+inline uint32_t glBindingLocation(const std::string& attribute_name) {return AttributeBindings.at(attribute_name);}
+
+const std::unordered_map<VertexAttributeLabel, uint32_t> DefaultBindings {
+    std::make_pair(VertexAttributeLabel::Vertex,    VERTEX_BINDING_LOCATION),
+    std::make_pair(VertexAttributeLabel::Normal,    NORMAL_BINDING_LOCATION),
+    std::make_pair(VertexAttributeLabel::Color,     COLOR_BINDING_LOCATION),
+    std::make_pair(VertexAttributeLabel::Texcoord,  TEXCOORD_BINDING_LOCATION),
+    std::make_pair(VertexAttributeLabel::Tangent,   TANGENT_BINDING_LOCATION),
+    std::make_pair(VertexAttributeLabel::Bitangent, BITANGENT_BINDING_LOCATION)
+};
+
+const std::unordered_map<std::string, std::tuple<uint32_t, gl::DataType, VertexAttributeLabel>> ShaderVertexAttributes {
+    std::make_pair(VertexAttributeName,     std::make_tuple(VERTEX_BINDING_LOCATION,    VertexAttributeType,        VertexAttributeLabel::Vertex)),
+    std::make_pair(NormalAttributeName,     std::make_tuple(NORMAL_BINDING_LOCATION,    NormalAttributeType,        VertexAttributeLabel::Normal)),
+    std::make_pair(VertexColorAttributeName,std::make_tuple(COLOR_BINDING_LOCATION,     VertexColorAttributeType,   VertexAttributeLabel::Color)),
+    std::make_pair(TextureAttributeName,    std::make_tuple(TEXCOORD_BINDING_LOCATION,  TextureAttributeType,       VertexAttributeLabel::Texcoord)),
+    std::make_pair(TangentAttributeName,    std::make_tuple(TANGENT_BINDING_LOCATION,   TangentAttributeType,       VertexAttributeLabel::Tangent)),
+    std::make_pair(BiTangentAttributeName,  std::make_tuple(BITANGENT_BINDING_LOCATION, BiTangentAttributeType,     VertexAttributeLabel::Bitangent))
 };
 
 const std::string ModelMatrixUniformName = "M";
@@ -327,14 +364,15 @@ public:
     /**
      * @brief Get the Attribute Map. Mapping attribute index to binding location in the shader.
      * 
-     * @return std::unordered_map<int, int> mapping attribute identifier to binding location.
+     * @return std::unordered_map<VertexAttributeType, int> mapping attribute identifier to binding location.
      */
-    std::unordered_map<int, int> getAttributeMap() const {
-        std::unordered_map<int, int> map;
+    std::unordered_map<VertexAttributeLabel, uint32_t> getAttributeMap() const {
+        std::unordered_map<VertexAttributeLabel, uint32_t> map;
         for (auto& mapping : inputs) {
             auto default_binding = mat_spec::ShaderVertexAttributes.find(mapping.first);
             if (default_binding != mat_spec::ShaderVertexAttributes.end()) {
-                map.insert({std::get<0>(default_binding->second), mapping.second.Location});
+                auto label = std::get<2>(default_binding->second);
+                map.insert(std::make_pair(label, mapping.second.Location));
             }
         }
         return map;

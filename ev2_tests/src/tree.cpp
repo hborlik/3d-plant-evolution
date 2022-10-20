@@ -165,9 +165,9 @@ TreeNode::TreeNode(GameState* game, const std::string& name, bool has_leafs, int
     fruit_material{fruit_material}, 
     leaf_material{leaf_material} {
 
-    buffer_layout.add_attribute(ev2::VertexAttributeType::Vertex)
-        .add_attribute(ev2::VertexAttributeType::Normal)
-        .add_attribute(ev2::VertexAttributeType::Color)
+    buffer_layout.add_attribute(ev2::VertexAttributeLabel::Vertex)
+        .add_attribute(ev2::VertexAttributeLabel::Normal)
+        .add_attribute(ev2::VertexAttributeLabel::Color)
         .finalize();
     this->plantInfo.ID = u_id;
 
