@@ -9,8 +9,12 @@
 namespace ev2::renderer {
 
 void ModelInstance::set_material_override(Material* material) {
-    if (material == nullptr) 
+    if (material == nullptr) {
         material_id_override = -1;
+        return;
+    }
+    assert (material->is_registered());
+    material_id_override = material->get_material_id();
 }
 
 void ModelInstance::set_drawable(Drawable* drawable) {

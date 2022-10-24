@@ -408,32 +408,6 @@ void SuperSphere::buildInterleavedVertices()
     }
 }
 
-std::unique_ptr<ev2::Model> SuperSphere::getModel() {
-    glm::vec3 bmin, bmax;
-    std::vector<DrawObject> drawObjects;
-    bool success = true;
-    if (success) {
-        std::vector<ev2::renderer::Material> ev_materials;
-        std::vector<ev2::renderer::Primitive> ev_meshs(drawObjects.size());
-        auto mat = ev2::renderer::Material{};
-        mat.diffuse = {0, 0.9, 0.05};
-        ev_materials.push_back(mat);
-
-        ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
-
-
-        // return std::make_unique<ev2::Model>(
-        //     std::move(ev_meshs),
-        //     std::move(ev_materials),
-        //     bmin,
-        //     bmax,
-        //     ev2::VertexBuffer::vbInitSphereArrayVertexData(interleavedVertices, indices)
-        // );
-
-    }
-    return {};
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // add single vertex to array
 ///////////////////////////////////////////////////////////////////////////////

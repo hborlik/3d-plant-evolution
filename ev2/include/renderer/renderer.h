@@ -336,7 +336,7 @@ private:
     // material management
     int32_t next_material_id = 1234;
     std::unordered_map<int32_t, Material> materials;
-    std::array<MaterialData, MAX_N_MATERIALS> material_data_buffer;
+    std::array<MaterialData, MAX_N_MATERIALS> material_data_buffer; // cpu side material data array
     std::queue<mat_id_t> free_material_slots;
 
     // single instance of a drawable

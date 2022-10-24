@@ -41,18 +41,21 @@ struct Material {
     std::shared_ptr<Texture> alpha_tex;               // map_d
     std::shared_ptr<Texture> reflection_tex;          // refl
 
+    Material& operator=(const Material&) = default;
+    Material& operator=(Material&&) noexcept = default;
+
+    bool is_registered() noexcept {return material_id != -1 && material_slot != -1;}
+
+    int32_t get_material_id() const noexcept {return material_id;}
+
     Material() = default;
     Material(std::string name) : name{std::move(name)} {}
 
     Material(const Material&) = default;
     Material(Material&&) = default;
-    Material& operator=(const Material&) = default;
-    Material& operator=(Material&&) noexcept = default;
 
 private:
     friend class Renderer;
-
-    bool is_registered() noexcept {return material_id != -1 && material_slot != -1;}
 
     int32_t material_id = -1;
     int32_t material_slot = -1;

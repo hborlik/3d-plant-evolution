@@ -76,8 +76,6 @@ public:
     // debug
     void printSelf() const;
 
-    std::unique_ptr<ev2::Model> getModel();
-
     // genes
     void setGenes(float a, float b, float m, float n1, float n2, float n3, 
                   float c, float d, float k, float q1, float q2, float q3){
