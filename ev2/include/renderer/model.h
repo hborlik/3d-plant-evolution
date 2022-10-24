@@ -130,6 +130,7 @@ public:
 
     VertexBuffer(VertexBuffer&& o) : buffers{std::move(o.buffers)} {
         std::swap(indexed, o.indexed);
+        std::swap(accessors, o.accessors);
     }
     VertexBuffer& operator=(VertexBuffer&& o) = delete;
     
@@ -146,16 +147,24 @@ public:
         return buffers.at(buffer_id);
     }
 
-    void add_accessor(VertexAttributeLabel accessor, uint32_t buffer_id, size_t byte_offset, bool normalized, gl::DataType type, size_t count, size_t stride) {
+    inline void add_accessor(VertexAttributeLabel accessor, uint32_t buffer_id, size_t byte_offset, bool normalized, gl::DataType type, size_t count, size_t stride) {
         accessors.insert_or_assign(
             accessor,
             VertexBufferAccessor{(int)buffer_id, byte_offset, normalized, type, count, stride}
         );
     }
 
-    VertexBufferAccessor& get_accessor(VertexAttributeLabel accessor) {
+    inline VertexBufferAccessor& get_accessor(VertexAttributeLabel accessor) {
         return accessors.at(accessor);
     }
+
+    /**
+     * @brief Set the accessors from layout for a specific buffer in Vertex buffer set
+     * 
+     * @param buffer_id buffer that is the target of the layout. Buffer should be in buffers map
+     * @param layout vertex buffer layout
+     */
+    void add_accessors_from_layout(int buffer_id, const VertexBufferLayout& layout);
 
     /**
      * @brief create a vertex array object using stored accessors and locations specified in map
@@ -175,7 +184,7 @@ public:
      * @return VertexBuffer 
      */
     static VertexBuffer vbInitArrayVertexData(const std::vector<float>& buffer);
-    static std::pair<VertexBuffer, int32_t> vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, bool instanced = false);
+    static VertexBuffer vbInitSphereArrayVertexData(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer);
 
     /**
      * @brief init vertex buffer for a screen space triangle (vertices only)
@@ -195,7 +204,7 @@ public:
     static std::pair<VertexBuffer, int32_t> vbInitVertexDataInstanced(const std::vector<float>& buffer, const Buffer& instance_buffer, const VertexBufferLayout& layout);
 
     static VertexBuffer vbInitArrayVertexSpec(const std::vector<float>& buffer, const VertexBufferLayout& layout);
-    static std::pair<VertexBuffer, int32_t> vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexBufferLayout& layout);
+    static VertexBuffer vbInitArrayVertexSpecIndexed(const std::vector<float>& buffer, const std::vector<unsigned int>& indexBuffer, const VertexBufferLayout& layout);
 
     static std::pair<VertexBuffer, int32_t> vbInitDefault();
 
@@ -203,7 +212,7 @@ public:
     std::map<VertexAttributeLabel, VertexBufferAccessor> accessors;
 
 private:
-    std::unordered_map<uint32_t, Buffer> buffers;
+    std::unordered_map<int, Buffer> buffers;
 
     int indexed = -1;
 };

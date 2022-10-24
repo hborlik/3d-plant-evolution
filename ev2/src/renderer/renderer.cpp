@@ -780,7 +780,7 @@ void Renderer::render(const Camera &camera) {
             ev2::gl::glUniform(m.transform, gp_m_location);
             ev2::gl::glUniform(G, gp_g_location);
 
-            draw(m.drawable, geometry_program, true, m.material_id_override);
+            draw(m.drawable, geometry_program, true, m.gl_vao, m.material_id_override);
         }
     }
     geometry_program.unbind();

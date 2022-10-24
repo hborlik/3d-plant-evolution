@@ -20,7 +20,7 @@
 #include <application.h>
 #include <renderer/camera.h>
 #include <window.h>
-#include <renderer/vertex_buffer.h>
+#include <renderer/model.h>
 #include <resource.h>
 #include <Sphere.h>
 #include <physics.h>
@@ -102,7 +102,7 @@ public:
 
         cam_orbital_root->add_child(cam_orbital);
 
-        ev2::ResourceManager::get_singleton().loadGLTF(fs::path("models") / "Box.gltf");
+        // ev2::ResourceManager::get_singleton().loadGLTF(fs::path("models") / "Box.gltf");
        
     }
 

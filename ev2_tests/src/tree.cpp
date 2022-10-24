@@ -165,9 +165,9 @@ TreeNode::TreeNode(GameState* game, const std::string& name, bool has_leafs, int
     fruit_material{fruit_material}, 
     leaf_material{leaf_material} {
 
-    buffer_layout.add_attribute(ev2::VertexAttributeLabel::Vertex)
-        .add_attribute(ev2::VertexAttributeLabel::Normal)
-        .add_attribute(ev2::VertexAttributeLabel::Color)
+    buffer_layout.add_attribute(ev2::renderer::VertexAttributeLabel::Vertex)
+        .add_attribute(ev2::renderer::VertexAttributeLabel::Normal)
+        .add_attribute(ev2::renderer::VertexAttributeLabel::Color)
         .finalize();
     this->plantInfo.ID = u_id;
 
@@ -215,7 +215,7 @@ void TreeNode::on_init() {
     }
 
     tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(
-        ev2::Mesh::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
+        ev2::renderer::VertexBuffer::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
         std::vector<ev2::renderer::Primitive>{},
         std::vector<ev2::renderer::Material*>{},
         glm::vec3{}, // TODO
@@ -392,7 +392,7 @@ void Fruit::on_init() {
     ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
 
     geometry = ev2::renderer::Renderer::get_singleton().create_model(
-        ev2::Mesh::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices, true),
+        ev2::renderer::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices),
         std::move(ev_meshs),
         std::vector<ev2::renderer::Material*>{},
         glm::vec3{}, // TODO
