@@ -244,6 +244,16 @@ struct InstancedDrawable {
 
     void set_drawable(Drawable* drawable);
 
+    InstancedDrawable() = default;
+    InstancedDrawable(InstancedDrawable &&o) : instance_world_transform{std::move(o.instance_world_transform)},
+                                               instance_transform_buffer{std::move(o.instance_transform_buffer)}
+    {
+        std::swap(n_instances, o.n_instances);
+        std::swap(id, o.id);
+        std::swap(drawable, o.drawable);
+        std::swap(gl_vao, o.gl_vao);
+    }
+
     ~InstancedDrawable() {
         if (gl_vao != 0)
             glDeleteVertexArrays(1, &gl_vao);
@@ -285,6 +295,9 @@ public:
 
     ModelInstance* create_model_instance();
     void destroy_model_instance(ModelInstance* model);
+
+    InstancedDrawable* create_instanced_drawable();
+    void destroy_instanced_drawable(InstancedDrawable* drawable);
 
     RenderObj* create_render_obj();
     void destroy_render_obj(RenderObj* render_obj);

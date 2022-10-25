@@ -26,6 +26,15 @@ void ModelInstance::set_drawable(Drawable* drawable) {
     gl_vao = drawable->vertex_buffer.gen_vao_for_attributes(mat_spec::DefaultBindings);
 }
 
+void InstancedDrawable::set_drawable(Drawable* drawable) {
+    this->drawable = drawable;
+
+    if (gl_vao != 0)
+        glDeleteVertexArrays(1, &gl_vao);
+
+    gl_vao = drawable->vertex_buffer.gen_vao_for_attributes(mat_spec::DefaultBindings, instance_transform_buffer.get());
+}
+
 void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, GLuint gl_vao, int32_t material_override, const Buffer* instance_buffer, int32_t n_instances) {
     if (instance_buffer != nullptr) {
         assert(n_instances > 0);
@@ -605,9 +614,27 @@ ModelInstance* Renderer::create_model_instance() {
 }
 
 void Renderer::destroy_model_instance(ModelInstance* model) {
-    if (!model)
-        return;
+    assert(model);
     model_instances.erase(model->id);
+}
+
+InstancedDrawable* Renderer::create_instanced_drawable() {
+    int32_t id = next_instanced_drawable_id++;
+    InstancedDrawable model{};
+    model.id = id;
+    auto mi = instanced_drawables.emplace(id, std::move(model));
+    InstancedDrawable* new_instanced = nullptr;
+    if (mi.second) {
+        new_instanced = &((mi.first)->second);
+        new_instanced->instance_transform_buffer = std::make_unique<Buffer>(gl::BindingTarget::ARRAY, gl::Usage::DYNAMIC_DRAW);
+    }
+
+    return new_instanced;
+}
+
+void Renderer::destroy_instanced_drawable(InstancedDrawable* drawable) {
+    assert(drawable);
+    instanced_drawables.erase(drawable->id);
 }
 
 RenderObj* Renderer::create_render_obj() {
@@ -796,10 +823,11 @@ void Renderer::render(const Camera &camera) {
     lighting_materials_desc.bind_buffer(lighting_materials);
     for (auto &mPair : instanced_drawables) {
         auto& m = mPair.second;
+        if (m.drawable) {
+            ev2::gl::glUniform(m.instance_world_transform, gpi_m_location);
 
-        ev2::gl::glUniform(m.instance_world_transform, gpi_m_location);
-
-        draw(m.drawable, geometry_program_instanced, true, m.gl_vao);
+            draw(m.drawable, geometry_program_instanced, true, m.gl_vao, -1, m.instance_transform_buffer.get(), m.n_instances);
+        }
     }
     geometry_program_instanced.unbind();
 

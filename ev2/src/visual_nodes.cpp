@@ -68,7 +68,8 @@ void InstancedGeometry::on_init() {
         gl::CullMode::BACK,
         gl::FrontFacing::CCW
     );
-
+    instance = ev2::renderer::Renderer::get_singleton().create_instanced_drawable();
+    instance->set_drawable(geometry);
 }
 
 void InstancedGeometry::on_destroy() {

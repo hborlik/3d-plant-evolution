@@ -76,6 +76,7 @@ struct VertexBufferLayout {
         gl::DataType        type        = gl::DataType::FLOAT;
         uint16_t            count       = 0;
         uint16_t            element_size= 0;
+        uint16_t            offset = 0;    // calculated offset. This is populated by finalize()
     };
 
     VertexBufferLayout& add_attribute(VertexAttributeLabel type) {
@@ -85,10 +86,10 @@ struct VertexBufferLayout {
             case VertexAttributeLabel::Vertex:
             case VertexAttributeLabel::Normal:
             case VertexAttributeLabel::Color:
-                attributes.push_back(Attribute{type, gl::DataType::FLOAT, 3, sizeof(float)});
+                attributes.push_back(Attribute{type, gl::DataType::FLOAT, 3, sizeof(float), 0});
                 break;
             case VertexAttributeLabel::Texcoord:
-                attributes.push_back(Attribute{type, gl::DataType::FLOAT, 2, sizeof(float)});
+                attributes.push_back(Attribute{type, gl::DataType::FLOAT, 2, sizeof(float), 0});
                 break;
             default:
                 break;
@@ -99,7 +100,7 @@ struct VertexBufferLayout {
     VertexBufferLayout& add_attribute(VertexAttributeLabel type, gl::DataType data_type, uint16_t count, uint16_t size) {
         // Layout should not be finalized
         assert(!finalized());
-        attributes.push_back(Attribute{type, data_type, count, size});
+        attributes.push_back(Attribute{type, data_type, count, size, 0});
         return *this;
     }
 
@@ -110,6 +111,7 @@ struct VertexBufferLayout {
     VertexBufferLayout& finalize() {
         uint32_t total_size = 0;
         for (auto& l : attributes) {
+            l.offset = total_size;
             total_size += l.element_size * l.count;
         }
         stride = total_size;

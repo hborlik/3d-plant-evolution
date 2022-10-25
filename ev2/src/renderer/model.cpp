@@ -8,7 +8,7 @@ void VertexBuffer::add_accessors_from_layout(int buffer_id, const VertexBufferLa
     for (auto& attr : layout.attributes) {
         accessors.emplace(std::make_pair(attr.attribute, VertexBufferAccessor{
             buffer_id, // id of the target buffer
-            0,
+            attr.offset, // offset in the target buffer
             false,
             attr.type,
             attr.count,
