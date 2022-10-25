@@ -711,10 +711,12 @@ void Renderer::render(const Camera &camera) {
     // update globals buffer with frame info
     glm::mat4 P = camera.get_projection();
     glm::mat4 V = camera.get_view();
+    glm::mat4 VP = P * V;
     globals_desc.setShaderParameter("P", P, shader_globals);
     globals_desc.setShaderParameter("PInv", glm::inverse(P), shader_globals);
     globals_desc.setShaderParameter("View", V, shader_globals);
     globals_desc.setShaderParameter("VInv", glm::inverse(V), shader_globals);
+    globals_desc.setShaderParameter("VP", VP, shader_globals);
     globals_desc.setShaderParameter("CameraPos", camera.get_position(), shader_globals);
     globals_desc.setShaderParameter("CameraDir", camera.get_forward(), shader_globals);
 

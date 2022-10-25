@@ -368,6 +368,7 @@ private:
 
     // lights
     std::unordered_map<uint32_t, Light> point_lights;
+    std::unique_ptr<Buffer> point_light_instance_buffer;
     std::unordered_map<uint32_t, DirectionalLight> directional_lights;
     uint32_t next_light_id = 1000;
     int32_t shadow_directional_light_id = -1;
