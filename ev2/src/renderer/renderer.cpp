@@ -332,14 +332,6 @@ void Renderer::init() {
 
     plp_ssbo_light_data_location = point_lighting_program.getProgramResourceLocation(GL_SHADER_STORAGE_BLOCK, "lights_in");
 
-    // plp_m_location       = point_lighting_program.getUniformInfo("M").Location;
-    // plp_light_p_location = point_lighting_program.getUniformInfo("lightPos").Location;
-    // plp_light_c_location = point_lighting_program.getUniformInfo("lightColor").Location;
-    // plp_k_c_loc          = point_lighting_program.getUniformInfo("k_c").Location;
-    // plp_k_l_loc          = point_lighting_program.getUniformInfo("k_l").Location;
-    // plp_k_q_loc          = point_lighting_program.getUniformInfo("k_q").Location;
-    // plp_k_radius_loc     = point_lighting_program.getUniformInfo("radius").Location;
-
     point_light_data_buffer = std::make_unique<Buffer>(gl::BindingTarget::SHADER_STORAGE, gl::Usage::DYNAMIC_DRAW);
 
 
@@ -1026,16 +1018,6 @@ void Renderer::render(const Camera &camera) {
         float radius    = 
         (-linear +  sqrtf(linear * linear - 4 * quadratic * (constant - (256.0 / 5.0) * lightMax))) 
         / (2 * quadratic);
-
-        // glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), l.position) * glm::scale(point_light_geom_tr, 2.f * glm::vec3{radius});
-
-        // gl::glUniform(tr, plp_m_location);
-        // gl::glUniform(l.color, plp_light_c_location);
-        // gl::glUniform(l.position, plp_light_p_location);
-        // gl::glUniformf(constant, plp_k_c_loc);
-        // gl::glUniformf(linear, plp_k_l_loc);
-        // gl::glUniformf(quadratic, plp_k_q_loc);
-        // gl::glUniformf(radius, plp_k_radius_loc);
 
         PointLight light_data;
         light_data.position = l.position;

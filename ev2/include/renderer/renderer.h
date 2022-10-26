@@ -388,7 +388,7 @@ private:
     int lp_p_location, lp_n_location, lp_as_location, lp_mt_location, lp_gao_location, lp_ls_location, lp_sdt_location;
 
     Program point_lighting_program;
-    int plp_p_location, plp_n_location, plp_as_location, plp_mt_location, plp_m_location, plp_light_p_location, plp_light_c_location, plp_k_c_loc, plp_k_l_loc, plp_k_q_loc, plp_k_radius_loc;
+    int plp_p_location, plp_n_location, plp_as_location, plp_mt_location;
     int plp_ssbo_light_data_location;
 
     Program ssao_program;
