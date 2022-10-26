@@ -8,6 +8,18 @@
 
 namespace ev2::renderer {
 
+// data structure matching GPU point light data definition
+struct PointLight {
+    glm::vec3 position;
+    float pad;
+    glm::vec3 lightColor;
+    float scale;
+    float k_c;
+    float k_l;
+    float k_q;
+    float radius;
+};
+
 void ModelInstance::set_material_override(Material* material) {
     if (material == nullptr) {
         material_id_override = -1;
@@ -92,14 +104,14 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, GLuin
         if (indexed) {
             Buffer& el_buf = dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed());
             el_buf.Bind(); // bind index buffer (again, @Windows)
-            if (instance_buffer) {
+            if (instance_buffer || n_instances > 0) {
                 glDrawElementsInstanced(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0, n_instances);
             } else {
                 glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
             }
             el_buf.Unbind();
         } else {
-            if (instance_buffer) {
+            if (instance_buffer || n_instances > 0) {
                 glDrawArraysInstanced(GL_TRIANGLES, m.start_index, m.num_elements, n_instances);
             } else {
                 glDrawArrays(GL_TRIANGLES, m.start_index, m.num_elements);
@@ -317,13 +329,18 @@ void Renderer::init() {
     plp_n_location       = point_lighting_program.getUniformInfo("gNormal").Location;
     plp_as_location      = point_lighting_program.getUniformInfo("gAlbedoSpec").Location;
     plp_mt_location      = point_lighting_program.getUniformInfo("gMaterialTex").Location;
-    plp_m_location       = point_lighting_program.getUniformInfo("M").Location;
-    plp_light_p_location = point_lighting_program.getUniformInfo("lightPos").Location;
-    plp_light_c_location = point_lighting_program.getUniformInfo("lightColor").Location;
-    plp_k_c_loc          = point_lighting_program.getUniformInfo("k_c").Location;
-    plp_k_l_loc          = point_lighting_program.getUniformInfo("k_l").Location;
-    plp_k_q_loc          = point_lighting_program.getUniformInfo("k_q").Location;
-    plp_k_radius_loc     = point_lighting_program.getUniformInfo("radius").Location;
+
+    plp_ssbo_light_data_location = point_lighting_program.getProgramResourceLocation(GL_SHADER_STORAGE_BLOCK, "lights_in");
+
+    // plp_m_location       = point_lighting_program.getUniformInfo("M").Location;
+    // plp_light_p_location = point_lighting_program.getUniformInfo("lightPos").Location;
+    // plp_light_c_location = point_lighting_program.getUniformInfo("lightColor").Location;
+    // plp_k_c_loc          = point_lighting_program.getUniformInfo("k_c").Location;
+    // plp_k_l_loc          = point_lighting_program.getUniformInfo("k_l").Location;
+    // plp_k_q_loc          = point_lighting_program.getUniformInfo("k_q").Location;
+    // plp_k_radius_loc     = point_lighting_program.getUniformInfo("radius").Location;
+
+    point_light_data_buffer = std::make_unique<Buffer>(gl::BindingTarget::SHADER_STORAGE, gl::Usage::DYNAMIC_DRAW);
 
 
     ssao_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
@@ -430,10 +447,10 @@ void Renderer::init() {
     }
 
     // light geometry
-    point_light_drawable = ResourceManager::get_singleton().get_model(std::filesystem::path("models") / "sphere.obj", false);
+    point_light_drawable = ResourceManager::get_singleton().get_model( std::filesystem::path("models") / "cube.obj", false);
     point_light_drawable->front_facing = gl::FrontFacing::CW; // render back facing only
     glm::vec3 scaling = glm::vec3{2} / (point_light_drawable->bmax - point_light_drawable->bmin);
-    point_light_geom_tr = glm::scale(glm::identity<glm::mat4>(), scaling);
+    point_light_geom_base_scale = scaling.x;
 
     point_light_gl_vao = point_light_drawable->vertex_buffer.gen_vao_for_attributes(point_lighting_program.getAttributeMap());
 }
@@ -996,11 +1013,13 @@ void Renderer::render(const Camera &camera) {
         gl::glUniformSampler(3, plp_mt_location);
     }
 
+    int index = 0;
+    std::vector<PointLight> point_light_data(point_lights.size());
     for (auto& litr : point_lights) {
         auto& l = litr.second;
 
         // from https://learnopengl.com/Advanced-Lighting/Deferred-Shading
-        float constant  = l.k.x; 
+        float constant  = l.k.x;
         float linear    = l.k.y;
         float quadratic = l.k.z;
         float lightMax  = std::fmaxf(std::fmaxf(l.color.r, l.color.g), l.color.b);
@@ -1008,18 +1027,36 @@ void Renderer::render(const Camera &camera) {
         (-linear +  sqrtf(linear * linear - 4 * quadratic * (constant - (256.0 / 5.0) * lightMax))) 
         / (2 * quadratic);
 
-        glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), l.position) * glm::scale(point_light_geom_tr, 2.f * glm::vec3{radius});
+        // glm::mat4 tr = glm::translate(glm::identity<glm::mat4>(), l.position) * glm::scale(point_light_geom_tr, 2.f * glm::vec3{radius});
 
-        gl::glUniform(tr, plp_m_location);
-        gl::glUniform(l.color, plp_light_c_location);
-        gl::glUniform(l.position, plp_light_p_location);
-        gl::glUniformf(constant, plp_k_c_loc);
-        gl::glUniformf(linear, plp_k_l_loc);
-        gl::glUniformf(quadratic, plp_k_q_loc);
-        gl::glUniformf(radius, plp_k_radius_loc);
+        // gl::glUniform(tr, plp_m_location);
+        // gl::glUniform(l.color, plp_light_c_location);
+        // gl::glUniform(l.position, plp_light_p_location);
+        // gl::glUniformf(constant, plp_k_c_loc);
+        // gl::glUniformf(linear, plp_k_l_loc);
+        // gl::glUniformf(quadratic, plp_k_q_loc);
+        // gl::glUniformf(radius, plp_k_radius_loc);
 
-        draw(point_light_drawable, point_lighting_program, false, point_light_gl_vao);
+        PointLight light_data;
+        light_data.position = l.position;
+        light_data.radius = radius;
+        light_data.lightColor = l.color;
+        light_data.scale = point_light_geom_base_scale * 2.f * radius;
+        light_data.k_c = constant;
+        light_data.k_l = linear;
+        light_data.k_q = quadratic;
+
+        point_light_data[index] = light_data;
+        index++;
     }
+    point_light_data_buffer->CopyData(point_light_data);
+
+    // bind the point light data buffer to SSBO
+    point_light_data_buffer->Bind(plp_ssbo_light_data_location);
+
+    draw(point_light_drawable, point_lighting_program, false, point_light_gl_vao, -1, nullptr, point_lights.size());
+
+    point_light_data_buffer->Unbind();
 
     normals->unbind();
     albedo_spec->unbind();

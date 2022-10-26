@@ -368,7 +368,7 @@ private:
 
     // lights
     std::unordered_map<uint32_t, Light> point_lights;
-    std::unique_ptr<Buffer> point_light_instance_buffer;
+    std::unique_ptr<Buffer> point_light_data_buffer;
     std::unordered_map<uint32_t, DirectionalLight> directional_lights;
     uint32_t next_light_id = 1000;
     int32_t shadow_directional_light_id = -1;
@@ -389,6 +389,7 @@ private:
 
     Program point_lighting_program;
     int plp_p_location, plp_n_location, plp_as_location, plp_mt_location, plp_m_location, plp_light_p_location, plp_light_c_location, plp_k_c_loc, plp_k_l_loc, plp_k_q_loc, plp_k_radius_loc;
+    int plp_ssbo_light_data_location;
 
     Program ssao_program;
     int ssao_p_loc, ssao_n_loc, ssao_tex_noise_loc, ssao_radius_loc, ssao_bias_loc, ssao_nSamples_loc;
@@ -446,7 +447,7 @@ private:
     uint32_t width, height;
     bool wireframe = false;
 
-    glm::mat4 point_light_geom_tr;
+    float point_light_geom_base_scale;
     Drawable* point_light_drawable;
     GLuint point_light_gl_vao = 0;
 

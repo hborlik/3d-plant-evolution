@@ -1,0 +1,9 @@
+struct PointLight {
+    vec3 position;
+    vec3 lightColor;
+    float scale;
+    float k_c;
+    float k_l;
+    float k_q;
+    float radius;
+};

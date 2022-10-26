@@ -1,20 +1,19 @@
 #include "globals.glslinc"
 #include "disney.glslinc"
+#include "point_lighting.glslinc"
 
 out vec4 frag_color;
+
+flat in uint instance_id;
 
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform usampler2D gMaterialTex;
 
-uniform vec3 lightPos;
-uniform vec3 lightColor;
-
-uniform float k_c;
-uniform float k_l;
-uniform float k_q;
-uniform float radius;
+layout(std140, binding = 3) buffer lights_in {
+    PointLight lights[];
+};
 
 // BRDF shader interface
 
@@ -23,9 +22,9 @@ void main() {
     vec3 FragPos = texture(gPosition, tex_coord).rgb;
     if (FragPos == vec3(0, 0, 0)) // no rendered geometry
         discard;
-    const vec3 vLightPos = vec3(View * vec4(lightPos, 1.0f)); 
+    const vec3 vLightPos = vec3(View * vec4(lights[instance_id].position, 1.0f));
     float lD = length(vLightPos - FragPos);
-    if (lD > radius)
+    if (lD > lights[instance_id].radius)
         discard;
 
 
@@ -40,11 +39,11 @@ void main() {
     X = normalize(cross(Y, Normal));
 
     vec3 lightDir = normalize(vLightPos - FragPos);
-    float attenuation = 1.0 / (k_c + k_l * lD + k_q * lD*lD);
+    float attenuation = 1.0 / (lights[instance_id].k_c + lights[instance_id].k_l * lD + lights[instance_id].k_q * lD*lD);
 
     vec3 viewDir = normalize(-FragPos);
 
-    vec3 color = attenuation * lightColor * BRDF(lightDir, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
+    vec3 color = attenuation * lights[instance_id].lightColor * BRDF(lightDir, viewDir, Normal, X, Y, Albedo, materials[MaterialId]);
     // fake hdr
     // color = color / (color + vec3(1.0)); // function asymptote y = 1 (maps to LDR range of [0, 1])
     // gamma

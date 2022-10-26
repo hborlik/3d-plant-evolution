@@ -410,6 +410,15 @@ public:
      */
     bool setUniformBlockBinding(const std::string &uniformName, uint32_t location);
 
+    /**
+     * @brief Query the Program Resource Index for a resource of type 
+     * 
+     * @param resource resource type
+     * @param name resource name
+     * @return GLuint 
+     */
+    GLuint getProgramResourceLocation(GLenum resource, const std::string& name);
+
 protected:
 
 

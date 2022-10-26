@@ -87,6 +87,12 @@ public:
     void Bind() const { glBindBuffer((GLenum)target, gl_reference); }
 
     /**
+     * @brief Bind this buffer to its target at given index. 
+     * Buffer target must be one of GL_ATOMIC_COUNTER_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_UNIFORM_BUFFER or GL_SHADER_STORAGE_BUFFER.
+     */
+    void Bind(GLuint index) {glBindBufferBase((GLenum)target, index, gl_reference);}
+
+    /**
      * @brief Unbind this buffer from its target
      */
     void Unbind() const {glBindBuffer((GLenum)target, 0);}

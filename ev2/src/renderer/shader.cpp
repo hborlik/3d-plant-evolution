@@ -286,6 +286,16 @@ bool Program::setUniformBlockBinding(const std::string& uniformName, uint32_t lo
     return false;
 }
 
+GLuint Program::getProgramResourceLocation(GLenum resource, const std::string& name) {
+    GLuint resource_index = glGetProgramResourceIndex(gl_reference, resource, name.c_str());
+    const GLenum properties[] = {GL_BUFFER_BINDING};
+
+    GLint values[1];
+    GL_CHECKED_CALL(glGetProgramResourceiv(gl_reference, resource, resource_index, 1, properties, 1, NULL, values));
+
+    return values[0];
+}
+
 void Program::updateProgramInputInfo() {
     GLint numAttribs = 0;
     glGetProgramInterfaceiv(gl_reference, GL_PROGRAM_INPUT, GL_ACTIVE_RESOURCES, &numAttribs);
