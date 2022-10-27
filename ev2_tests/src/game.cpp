@@ -142,16 +142,16 @@ GameState::GameState() {
         spawn_random_tree(glm::vec3{}, 40, 9, 1.0f);
     }
 
-    for (int x = -50; x < 50; x+=10)
-    {
-        spawn_mountain_tree(glm::vec3{x, 0, 50}, 40, 8);
-        spawn_mountain_tree(glm::vec3{x, 0, -50}, 40, 8);
-    }
-    for (int z = -50; z < 50; z+=10)
-    {
-        spawn_mountain_tree(glm::vec3{50, 0, z}, 40, 8);
-        spawn_mountain_tree(glm::vec3{-50, 0, z}, 40, 8);
-    }    
+    // for (int x = -50; x < 50; x+=10)
+    // {
+    //     spawn_mountain_tree(glm::vec3{x, 0, 50}, 40, 8);
+    //     spawn_mountain_tree(glm::vec3{x, 0, -50}, 40, 8);
+    // }
+    // for (int z = -50; z < 50; z+=10)
+    // {
+    //     spawn_mountain_tree(glm::vec3{50, 0, z}, 40, 8);
+    //     spawn_mountain_tree(glm::vec3{-50, 0, z}, 40, 8);
+    // }    
     spawn_player({0, 20, 0});
     cam_first_person = player->cam_first_person;
 }

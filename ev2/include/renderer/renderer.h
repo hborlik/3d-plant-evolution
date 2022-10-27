@@ -18,6 +18,7 @@
 #include <renderer/shader.h>
 #include <renderer/texture.h>
 #include <renderer/camera.h>
+#include <renderer/material.h>
 
 
 namespace ev2::renderer {
@@ -147,8 +148,8 @@ private:
 };
 
 struct RenderObj {
-    gl::CullMode                    cull_mode = gl::CullMode::NONE;
-    gl::FrontFacing                 front_facing = gl::FrontFacing::CCW;
+    gl::CullMode    cull_mode = gl::CullMode::NONE;
+    gl::FrontFacing front_facing = gl::FrontFacing::CCW;
 
     void set_mesh_primitives(const std::vector<MeshPrimitive>& primitives);
 
@@ -194,20 +195,20 @@ private:
     friend class Renderer;
 
     Drawable(VertexBuffer &&vb,
-                 std::vector<Primitive> primitives,
-                 std::vector<Material *> materials,
-                 glm::vec3 bmin,
-                 glm::vec3 bmax,
-                 gl::CullMode cull,
-                 gl::FrontFacing ff,
-                 uint32_t id) : vertex_buffer{std::move(vb)},
-                                primitives{std::move(primitives)},
-                                materials{std::move(materials)},
-                                bmin{bmin},
-                                bmax{bmax},
-                                cull_mode{cull},
-                                front_facing{ff},
-                                id{id}
+             std::vector<Primitive> primitives,
+             std::vector<Material *> materials,
+             glm::vec3 bmin,
+             glm::vec3 bmax,
+             gl::CullMode cull,
+             gl::FrontFacing ff,
+             uint32_t id) : vertex_buffer{std::move(vb)},
+                            primitives{std::move(primitives)},
+                            materials{std::move(materials)},
+                            bmin{bmin},
+                            bmax{bmax},
+                            cull_mode{cull},
+                            front_facing{ff},
+                            id{id}
     {
     }
 
@@ -347,8 +348,9 @@ private:
     uint32_t next_model_id = 1;
 
     // material management
-    int32_t next_material_id = 1234;
     std::unordered_map<int32_t, Material> materials;
+    int32_t next_material_id = 1234;
+
     std::array<MaterialData, MAX_N_MATERIALS> material_data_buffer; // cpu side material data array
     std::queue<mat_id_t> free_material_slots;
 

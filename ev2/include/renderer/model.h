@@ -16,51 +16,6 @@
 
 namespace ev2::renderer {
 
-struct Material {
-    std::string name = "default";
-
-    glm::vec3 diffuse   = {1.00f,0.10f,0.85f};
-    glm::vec3 emissive  = {};
-    float metallic       = 0;
-    float subsurface     = 0;
-    float specular       = .5f;
-    float roughness      = .5f;
-    float specularTint   = 0;
-    float clearcoat      = 0;
-    float clearcoatGloss = 1.f;
-    float anisotropic    = 0;
-    float sheen          = 0;
-    float sheenTint      = .5f;
-
-    std::shared_ptr<Texture> ambient_tex;             // map_Ka
-    std::shared_ptr<Texture> diffuse_tex;             // map_Kd
-    std::shared_ptr<Texture> specular_tex;            // map_Ks
-    std::shared_ptr<Texture> specular_highlight_tex;  // map_Ns
-    std::shared_ptr<Texture> bump_tex;                // map_bump, map_Bump, bump
-    std::shared_ptr<Texture> displacement_tex;        // disp
-    std::shared_ptr<Texture> alpha_tex;               // map_d
-    std::shared_ptr<Texture> reflection_tex;          // refl
-
-    Material& operator=(const Material&) = default;
-    Material& operator=(Material&&) noexcept = default;
-
-    bool is_registered() noexcept {return material_id != -1 && material_slot != -1;}
-
-    int32_t get_material_id() const noexcept {return material_id;}
-
-    Material() = default;
-    Material(std::string name) : name{std::move(name)} {}
-
-    Material(const Material&) = default;
-    Material(Material&&) = default;
-
-private:
-    friend class Renderer;
-
-    int32_t material_id = -1;
-    int32_t material_slot = -1;
-};
-
 struct VertexBufferAccessor {
     int         buffer_id   = -1;     // buffer in VertexBuffer
     size_t      byte_offset = 0;
@@ -133,11 +88,14 @@ public:
     VertexBuffer(const VertexBuffer&) = delete;
     VertexBuffer& operator=(const VertexBuffer&) = delete;
 
-    VertexBuffer(VertexBuffer&& o) : buffers{std::move(o.buffers)} {
+    VertexBuffer(VertexBuffer&& o) noexcept { *this = std::move(o); }
+    
+    VertexBuffer& operator=(VertexBuffer&& o) noexcept {
+        std::swap(buffers, o.buffers);
         std::swap(indexed, o.indexed);
         std::swap(accessors, o.accessors);
+        return *this;
     }
-    VertexBuffer& operator=(VertexBuffer&& o) = delete;
     
     int get_indexed() const {return indexed;}
 
