@@ -1,3 +1,5 @@
+#version 460 core
+#extension GL_GOOGLE_include_directive : enable
 #include "globals.glslinc"
 #include "point_lighting.glslinc"
 
@@ -5,7 +7,7 @@ in vec3 VertPos;
 
 flat out uint instance_id;
 
-layout(std430, binding = 3) buffer lights_in {
+layout(std140, binding = 3) buffer lights_in {
     PointLight lights[];
 };
 

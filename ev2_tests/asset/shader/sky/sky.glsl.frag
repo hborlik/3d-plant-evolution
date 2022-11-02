@@ -1,4 +1,7 @@
-#include "globals.glslinc"
+#version 460 core
+#extension GL_GOOGLE_include_directive : enable
+
+#include "../globals.glslinc"
 // https://github.com/shff/opengl_sky
 in vec3 pos;
 in vec3 fsun;

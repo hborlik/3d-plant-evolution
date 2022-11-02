@@ -74,7 +74,8 @@ std::string ShaderPreprocessor::preprocess(const std::string& input_source) cons
                 throw shader_error{"Preprocessor", std::to_string(line_num)};
             }
             string filename = line.substr(s, e - s);
-            auto inc = shader_includes.find(filename);
+            std::filesystem::path path{filename};
+            auto inc = shader_includes.find(path.filename());
             if (inc != shader_includes.end()) {
                 result << (*inc).second;
                 result << "\n";

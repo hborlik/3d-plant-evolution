@@ -1,4 +1,5 @@
 #version 460 core
+
 in vec3 VertPos;
 in vec2 TexPos;
 

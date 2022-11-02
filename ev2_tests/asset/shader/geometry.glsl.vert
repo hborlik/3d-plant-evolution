@@ -1,3 +1,6 @@
+#version 460 core
+#extension GL_GOOGLE_include_directive : enable
+
 #include "globals.glslinc"
 
 in layout(location = 0) vec3 VertPos;
