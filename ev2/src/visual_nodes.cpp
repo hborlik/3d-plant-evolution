@@ -25,7 +25,7 @@ void VisualInstance::pre_render() {
     iid->transform = get_transform();
 }
 
-void VisualInstance::set_model(renderer::Drawable* model) {
+void VisualInstance::set_model(std::shared_ptr<renderer::Drawable> model) {
     iid->set_drawable(model);
 }
 
@@ -39,7 +39,7 @@ void InstancedGeometry::on_init() {
                 .add_attribute(renderer::VertexAttributeLabel::Normal)
                 .add_attribute(renderer::VertexAttributeLabel::Texcoord)
                 .finalize();
-    geometry = renderer::Renderer::get_singleton().create_model(
+    geometry = std::make_shared<renderer::Drawable>(
         renderer::VertexBuffer::vbInitArrayVertexSpec(
             {
                 // positions         normals         texcoords
@@ -73,7 +73,7 @@ void InstancedGeometry::on_init() {
 }
 
 void InstancedGeometry::on_destroy() {
-    ev2::renderer::Renderer::get_singleton().destroy_model(geometry);
+    
 }
 
 void InstancedGeometry::pre_render() {

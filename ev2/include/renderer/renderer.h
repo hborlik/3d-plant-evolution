@@ -137,7 +137,7 @@ struct MeshPrimitive {
     }
 
     std::map<int, int>      attributes;         // map of attribute location (engine value like VERTEX_BINDING_LOCATION to a buffer in vb)
-    VertexBuffer*           vb{};               // id of used vertex buffer
+    VertexBuffer*           vb{};
     int32_t                 indices = -1;       // ind of index buffer in vb
     int32_t                 material_id = 0;
 
@@ -180,6 +180,23 @@ struct Primitive {
  * 
  */
 struct Drawable {
+
+    Drawable(VertexBuffer &&vb,
+             std::vector<Primitive> primitives,
+             std::vector<Material *> materials,
+             glm::vec3 bmin,
+             glm::vec3 bmax,
+             gl::CullMode cull,
+             gl::FrontFacing ff) : vertex_buffer{std::move(vb)},
+                                   primitives{std::move(primitives)},
+                                   materials{std::move(materials)},
+                                   bmin{bmin},
+                                   bmax{bmax},
+                                   cull_mode{cull},
+                                   front_facing{ff}
+    {
+    }
+
     VertexBuffer            vertex_buffer;
     std::vector<Primitive>  primitives;
     std::vector<Material*>  materials;
@@ -190,29 +207,6 @@ struct Drawable {
     gl::FrontFacing front_facing = gl::FrontFacing::CCW;
 
     float vertex_color_weight = 0.f;
-
-private:
-    friend class Renderer;
-
-    Drawable(VertexBuffer &&vb,
-             std::vector<Primitive> primitives,
-             std::vector<Material *> materials,
-             glm::vec3 bmin,
-             glm::vec3 bmax,
-             gl::CullMode cull,
-             gl::FrontFacing ff,
-             uint32_t id) : vertex_buffer{std::move(vb)},
-                            primitives{std::move(primitives)},
-                            materials{std::move(materials)},
-                            bmin{bmin},
-                            bmax{bmax},
-                            cull_mode{cull},
-                            front_facing{ff},
-                            id{id}
-    {
-    }
-
-    uint32_t id = 0;
 };
 
 struct ModelInstance {
@@ -220,7 +214,7 @@ struct ModelInstance {
 
     void set_material_override(Material* material);
 
-    void set_drawable(Drawable* drawable);
+    void set_drawable(std::shared_ptr<Drawable> drawable);
 
     ModelInstance() = default;
 
@@ -232,10 +226,10 @@ struct ModelInstance {
 private:
     friend class Renderer;
 
-    int32_t     material_id_override = -1;
-    int32_t     id = -1;
-    Drawable*   drawable = nullptr;
-    GLuint      gl_vao = 0;
+    int32_t                     material_id_override = -1;
+    int32_t                     id = -1;
+    std::shared_ptr<Drawable>   drawable = nullptr;
+    GLuint                      gl_vao = 0;
 };
 
 struct InstancedDrawable {
@@ -243,7 +237,7 @@ struct InstancedDrawable {
     std::unique_ptr<Buffer> instance_transform_buffer{};
     uint32_t                n_instances;
 
-    void set_drawable(Drawable* drawable);
+    void set_drawable(std::shared_ptr<Drawable> drawable);
 
     InstancedDrawable() = default;
     InstancedDrawable(InstancedDrawable &&o) : instance_world_transform{std::move(o.instance_world_transform)},
@@ -263,9 +257,9 @@ struct InstancedDrawable {
 private:
     friend class Renderer;
 
-    int32_t     id = -1;
-    Drawable*   drawable = nullptr;
-    GLuint      gl_vao = 0;
+    int32_t                     id = -1;
+    std::shared_ptr<Drawable>   drawable = nullptr;
+    GLuint                      gl_vao = 0;
 };
 
 class Renderer : public Singleton<Renderer> {
@@ -284,15 +278,6 @@ public:
     void set_light_color(LID lid, const glm::vec3& color);
     void set_light_ambient(LID lid, const glm::vec3& color);
     void destroy_light(LID lid);
-
-    Drawable* create_model(VertexBuffer &&vb,
-                           std::vector<Primitive> primitives,
-                           std::vector<Material *> materials,
-                           glm::vec3 bmin,
-                           glm::vec3 bmax,
-                           gl::CullMode cull,
-                           gl::FrontFacing ff);
-    void destroy_model(Drawable* d);
 
     ModelInstance* create_model_instance();
     void destroy_model_instance(ModelInstance* model);
@@ -342,10 +327,6 @@ private:
     void draw(Drawable* dr, const Program& prog, bool use_materials, GLuint gl_vao, int32_t material_override = -1, const Buffer* instance_buffer = nullptr, int32_t n_instances = -1);
 
     void update_material(mat_id_t material_slot, const MaterialData& material);
-
-    // model, instance vertex data
-    std::unordered_map<uint32_t, Drawable> models;
-    uint32_t next_model_id = 1;
 
     // material management
     std::unordered_map<int32_t, Material> materials;
@@ -450,7 +431,7 @@ private:
     bool wireframe = false;
 
     float point_light_geom_base_scale;
-    Drawable* point_light_drawable;
+    std::shared_ptr<Drawable> point_light_drawable;
     GLuint point_light_gl_vao = 0;
 
     int32_t default_material_id = 0;

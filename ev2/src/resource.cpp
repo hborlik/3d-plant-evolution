@@ -638,10 +638,11 @@ void ResourceManager::pre_render() {
 
 }
 
-renderer::Drawable* ResourceManager::get_model(const std::filesystem::path& filename, bool cache) {
+std::shared_ptr<renderer::Drawable> ResourceManager::get_model(const std::filesystem::path& filename, bool cache) {
     auto itr = model_lookup.find(filename.generic_string());
-    if (itr != model_lookup.end() && !cache) { // already loaded
-        return itr->second;
+    // check that the cached pointer is still good if it has been deleted
+    if (itr != model_lookup.end() && !cache && !itr->second.expired()) {
+        return itr->second.lock();
     }
     auto base_dir = filename;
     base_dir.remove_filename();
@@ -649,6 +650,7 @@ renderer::Drawable* ResourceManager::get_model(const std::filesystem::path& file
     if (loaded_model) {
         std::vector<renderer::Primitive> ev_prim(loaded_model->draw_objects.size());
         size_t i = 0;
+        // convert the loaded object to the model format
         for (auto& dObj : loaded_model->draw_objects) {
             int mat_id = dObj.material_id;
             if (mat_id == -1)
@@ -668,7 +670,7 @@ renderer::Drawable* ResourceManager::get_model(const std::filesystem::path& file
             ev_mat[i++] = mat->get_material();
         }
 
-        renderer::Drawable* drawable = ev2::renderer::Renderer::get_singleton().create_model(
+        std::shared_ptr<renderer::Drawable> drawable = std::make_shared<renderer::Drawable>(
             renderer::VertexBuffer::vbInitArrayVertexData(loaded_model->buffer),
             std::move(ev_prim),
             std::move(ev_mat),

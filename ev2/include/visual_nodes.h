@@ -25,7 +25,7 @@ public:
 
     void pre_render() override;
 
-    void set_model(renderer::Drawable* model);
+    void set_model(std::shared_ptr<renderer::Drawable> model);
     void set_material_override(renderer::Material* material_override);
 
 private:
@@ -45,7 +45,7 @@ public:
     std::vector<glm::mat4> instance_transforms{};
 
 protected:
-    renderer::Drawable* geometry = nullptr;
+    std::shared_ptr<renderer::Drawable> geometry = {};
     renderer::InstancedDrawable* instance = nullptr;
 };
 

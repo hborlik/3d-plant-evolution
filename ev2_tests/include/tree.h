@@ -104,7 +104,7 @@ public:
     ptree::Tree tree;
     std::map<std::string, float> params;
     ev2::renderer::VertexBufferLayout buffer_layout;
-    ev2::renderer::Drawable* tree_geometry;
+    std::shared_ptr<ev2::renderer::Drawable> tree_geometry;
 
     PlantInfo plantInfo{};
     SuperShapeParams fruit_params{};

@@ -214,7 +214,7 @@ void TreeNode::on_init() {
         leafs->set_material_override(leaf_material->get_material());
     }
 
-    tree_geometry = ev2::renderer::Renderer::get_singleton().create_model(
+    tree_geometry = std::make_shared<ev2::renderer::Drawable>(
         ev2::renderer::VertexBuffer::vbInitArrayVertexSpecIndexed({}, {}, buffer_layout),
         std::vector<ev2::renderer::Primitive>{},
         std::vector<ev2::renderer::Material*>{},
@@ -230,8 +230,6 @@ void TreeNode::on_init() {
 
 void TreeNode::on_destroy() {
     VisualInstance::on_destroy();
-
-    ev2::renderer::Renderer::get_singleton().destroy_model(tree_geometry);
 }
 
 void TreeNode::setParams(const std::map<std::string, float>& paramsNew, int iterations, float growth) {
@@ -391,7 +389,7 @@ void Fruit::on_init() {
     std::vector<ev2::renderer::Primitive> ev_meshs;
     ev_meshs.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
 
-    geometry = ev2::renderer::Renderer::get_singleton().create_model(
+    geometry = std::make_shared<ev2::renderer::Drawable>(
         ev2::renderer::VertexBuffer::vbInitSphereArrayVertexData(supershape.getInterleavedVerticesv(), indices),
         std::move(ev_meshs),
         std::vector<ev2::renderer::Material*>{},

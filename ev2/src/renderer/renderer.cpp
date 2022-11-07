@@ -29,7 +29,7 @@ void ModelInstance::set_material_override(Material* material) {
     material_id_override = material->get_material_id();
 }
 
-void ModelInstance::set_drawable(Drawable* drawable) {
+void ModelInstance::set_drawable(std::shared_ptr<Drawable> drawable) {
     this->drawable = drawable;
 
     if (gl_vao != 0)
@@ -38,7 +38,7 @@ void ModelInstance::set_drawable(Drawable* drawable) {
     gl_vao = drawable->vertex_buffer.gen_vao_for_attributes(mat_spec::DefaultBindings);
 }
 
-void InstancedDrawable::set_drawable(Drawable* drawable) {
+void InstancedDrawable::set_drawable(std::shared_ptr<Drawable> drawable) {
     this->drawable = drawable;
 
     if (gl_vao != 0)
@@ -124,7 +124,6 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, GLuin
 }
 
 Renderer::Renderer(uint32_t width, uint32_t height) : 
-    models{},
     model_instances{},
     geometry_program{"Geometry Program"},
     directional_lighting_program{"Lighting Program"},
@@ -572,44 +571,6 @@ void Renderer::destroy_light(LID lid) {
     point_lights.erase(lid._v);
 }
 
-Drawable* Renderer::create_model(VertexBuffer &&vb,
-                                 std::vector<Primitive> primitives,
-                                 std::vector<Material*> materials,
-                                 glm::vec3 bmin,
-                                 glm::vec3 bmax,
-                                 gl::CullMode cull,
-                                 gl::FrontFacing ff)
-{
-    uint32_t nmid = {next_model_id++};
-    auto ins = models.emplace(
-        std::make_pair(
-            nmid,
-            Drawable{
-                std::move(vb),
-                std::move(primitives),
-                std::move(materials),
-                std::move(bmin),
-                std::move(bmax),
-                std::move(cull),
-                std::move(ff),
-                nmid
-            }
-        )
-    );
-    if (ins.second)
-        return &(ins.first->second);
-    return nullptr;
-}
-
-void Renderer::destroy_model(Drawable* d) {
-    assert(d);
-    auto mitr = models.find(d->id);
-    if (mitr != models.end()) {
-        models.erase(mitr);
-    }
-}
-
-
 ModelInstance* Renderer::create_model_instance() {
     int32_t id = next_model_instance_id++;
     ModelInstance model{};
@@ -786,7 +747,7 @@ void Renderer::render(const Camera &camera) {
             if (m.drawable) {
                 ev2::gl::glUniform(m.transform, sdp_m_location);
 
-                draw(m.drawable, depth_program, false, m.gl_vao);
+                draw(m.drawable.get(), depth_program, false, m.gl_vao);
             }
         }
 
@@ -822,7 +783,7 @@ void Renderer::render(const Camera &camera) {
             ev2::gl::glUniform(m.transform, gp_m_location);
             ev2::gl::glUniform(G, gp_g_location);
 
-            draw(m.drawable, geometry_program, true, m.gl_vao, m.material_id_override);
+            draw(m.drawable.get(), geometry_program, true, m.gl_vao, m.material_id_override);
         }
     }
     geometry_program.unbind();
@@ -837,7 +798,7 @@ void Renderer::render(const Camera &camera) {
         if (m.drawable) {
             ev2::gl::glUniform(m.instance_world_transform, gpi_m_location);
 
-            draw(m.drawable, geometry_program_instanced, true, m.gl_vao, -1, m.instance_transform_buffer.get(), m.n_instances);
+            draw(m.drawable.get(), geometry_program_instanced, true, m.gl_vao, -1, m.instance_transform_buffer.get(), m.n_instances);
         }
     }
     geometry_program_instanced.unbind();
@@ -1036,7 +997,7 @@ void Renderer::render(const Camera &camera) {
     // bind the point light data buffer to SSBO
     point_light_data_buffer->Bind(plp_ssbo_light_data_location);
 
-    draw(point_light_drawable, point_lighting_program, false, point_light_gl_vao, -1, nullptr, point_lights.size());
+    draw(point_light_drawable.get(), point_lighting_program, false, point_light_gl_vao, -1, nullptr, point_lights.size());
 
     point_light_data_buffer->Unbind();
 

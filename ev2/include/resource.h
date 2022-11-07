@@ -91,9 +91,9 @@ public:
      * @param filename 
      * @return renderer::MID 
      */
-    renderer::Drawable* get_model(const std::filesystem::path& filename, bool cache = true);
+    std::shared_ptr<renderer::Drawable> get_model(const std::filesystem::path& filename, bool cache = true);
 
-    renderer::Drawable* create_model(std::shared_ptr<Model> model);
+    std::shared_ptr<renderer::Drawable> create_model(std::shared_ptr<Model> model);
 
     std::shared_ptr<Texture> get_texture(const std::filesystem::path& filename, bool ignore_asset_path = false);
 
@@ -108,7 +108,7 @@ public:
     std::filesystem::path asset_path;
 
 private:
-    std::unordered_map<std::string, renderer::Drawable*> model_lookup;
+    std::unordered_map<std::string, std::weak_ptr<renderer::Drawable>> model_lookup;
 
     std::unordered_map<std::string, Ref<MaterialResource>> materials;
 
