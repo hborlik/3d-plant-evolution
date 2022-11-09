@@ -6,6 +6,6 @@ include(cmake/get_cpm.cmake)
 
 add_subdirectory(third-party)
 add_subdirectory(ev2)
-add_subdirectory(ev2_tests)
+add_subdirectory(3d_tree_ex)
 add_subdirectory(tests)
 add_subdirectory(p-tree)

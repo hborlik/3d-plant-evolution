@@ -11,7 +11,7 @@ namespace ev2::renderer {
 
 class Terrain {
 public:
-    
+    Terrain();
 };
 
 }

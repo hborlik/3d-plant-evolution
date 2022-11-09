@@ -12,7 +12,7 @@
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/ev2_tests",
+            "cwd": "${workspaceFolder}/build/3d_tree_ex",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
