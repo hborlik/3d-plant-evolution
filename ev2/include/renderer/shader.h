@@ -118,35 +118,41 @@ private:
 class Shader
 {
 public:
-    Shader(gl::GLSLShaderType type);
+    explicit Shader(gl::GLSLShaderType type);
     ~Shader();
 
     Shader(const Shader &) = delete;
     Shader &operator=(const Shader &) = delete;
 
-    Shader(Shader &&o)
-    {
+    Shader(Shader &&o) {
         *this = std::move(o);
     }
 
-    Shader &operator=(Shader &&o)
-    {
-        gl_reference = o.gl_reference;
-        o.gl_reference = 0;
-
-        type = o.type;
-        compiled = o.compiled;
-        path = o.path;
+    Shader& operator=(Shader &&o) {
+        std::swap(gl_reference, o.gl_reference);
+        std::swap(source, o.source);
+        std::swap(type, o.type);
+        std::swap(compiled, o.compiled);
+        std::swap(path, o.path);
         return *this;
     }
 
     /**
-     * @brief Read compile and load a shader. Will throw ssre_exception if shader cannot be found, or cannot be compiled.
+     * @brief Read shader source and append it to the source content.
      *
      * @param path path to shader code file
      * @param pre  shader preprocessor 
      */
-    void load_from(const std::filesystem::path &path, const ShaderPreprocessor& pre);
+    void add_source(const std::filesystem::path &path, const ShaderPreprocessor& pre);
+
+    /**
+     * @brief Compile or recompile all current source and return true on success
+     * 
+     * @param delete_source 
+     * @return true     after successful compilation, delete the source string
+     * @return false    do not delete the source
+     */
+    bool compile(bool delete_source = true);
 
     /**
      * @brief Get the shader type
@@ -167,6 +173,7 @@ public:
     GLuint getHandle() const noexcept { return gl_reference; }
 
 private:
+    std::string source;
     GLuint gl_reference;
     gl::GLSLShaderType type;
     bool compiled = false;
@@ -245,6 +252,16 @@ struct ProgramUniformBlockDescription
         return false;
     }
 
+    /**
+     * @brief Set the Shader Parameter in a buffer using this ProgramUniformBlockDescription
+     * 
+     * @tparam T 
+     * @param paramName 
+     * @param data 
+     * @param shaderBuffer 
+     * @return true 
+     * @return false 
+     */
     template <typename T>
     bool setShaderParameter(const std::string &paramName, const std::vector<T> &data, Buffer &shaderBuffer)
     {
@@ -281,12 +298,20 @@ class Program
 public:
     Program();
     explicit Program(std::string name);
-    ~Program();
+    virtual ~Program();
 
     Program(Program &&) = delete;
     Program(const Program &) = delete;
 
     Program &operator=(const Program &) = delete;
+
+    /**
+     * @brief Set the shader attached to a specific stage. The shader should already be built
+     * 
+     * @param type 
+     * @param shader 
+     */
+    void setShader(gl::GLSLShaderType type, std::shared_ptr<Shader> shader);
 
     /**
      * @brief Set path for shader stage in this program
@@ -443,7 +468,7 @@ public:
     std::string ProgramName;
 
 protected:
-    std::unordered_map<gl::GLSLShaderType, Shader> attachedShaders;
+    std::unordered_map<gl::GLSLShaderType, std::shared_ptr<Shader>> attachedShaders;
     std::unordered_map<std::string, ProgramUniformDescription> uniforms;
     std::unordered_map<std::string, ProgramInputDescription> inputs;
     std::unordered_map<std::string, ProgramUniformBlockDescription> uniformBlocks;

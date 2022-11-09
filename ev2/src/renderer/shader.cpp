@@ -25,7 +25,7 @@ namespace ev2::renderer {
 std::ostream& operator<<(std::ostream& os, const Program& input) {
     os << "=== ShaderProgram: " << input.ProgramName << " ===" << std::endl;
     for(auto& v : input.attachedShaders) {
-        os << v.second.shaderPath() << std::endl;
+        os << v.second->shaderPath() << std::endl;
     }
     os << "Program inputs: (name, location)" << std::endl;
     for(auto& v : input.inputs) {
@@ -129,7 +129,7 @@ Shader::~Shader() {
         glDeleteShader(gl_reference);
 }
 
-void Shader::load_from(const std::filesystem::path& path, const ShaderPreprocessor& pre) {
+void Shader::add_source(const std::filesystem::path& path, const ShaderPreprocessor& pre) {
     std::ifstream in{pre.get_shader_dir() / path};
     // make sure the file exists
     EV2_CHECK_THROW(in.is_open(), "Shader File not found at " + path.generic_string());
@@ -137,18 +137,24 @@ void Shader::load_from(const std::filesystem::path& path, const ShaderPreprocess
     std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
     in.close();
 
-    content = pre.preprocess(content);
+    this->path = path;
 
-    const GLchar* codeArray = content.c_str();
+    source += pre.preprocess(content);
+}
+
+bool Shader::compile(bool delete_source) {
+    const GLchar* codeArray = source.c_str();
     glShaderSource(gl_reference, 1, &codeArray, nullptr);
     glCompileShader(gl_reference);
 
     // get shader compile results
     GLint result;
     glGetShaderiv(gl_reference, GL_COMPILE_STATUS, &result);
+    compiled = result == GL_TRUE;
     if(result == GL_TRUE) {
-        compiled = true;
-        this->path = path;
+        if (delete_source) {
+            source = {};
+        }
     } else { // ask for more info on failure
         std::cout << "Failed to compile shader " << path << std::endl;
 
@@ -165,6 +171,7 @@ void Shader::load_from(const std::filesystem::path& path, const ShaderPreprocess
         }
         throw shader_error{path.generic_string(), "Failed to compile shader"};
     }
+    return compiled;
 }
 
 // ShaderProgram
@@ -191,27 +198,35 @@ Program::~Program() {
         glDeleteProgram(gl_reference);
 }
 
+void Program::setShader(gl::GLSLShaderType type, std::shared_ptr<Shader> shader) {
+    if (!(shader && shader->IsCompiled()))
+        throw shader_error{ProgramName, "Attempted to set invalid shader, the shader should be compiled"};
+
+    attachedShaders.insert_or_assign(type, shader);
+}
+
 void Program::loadShader(gl::GLSLShaderType type, const std::filesystem::path& path, const ShaderPreprocessor& preprocessor) {
-    Shader s{type};
+    std::shared_ptr<Shader> s = std::make_shared<Shader>(type);
     try {
-        s.load_from(path, preprocessor);
+        s->add_source(path, preprocessor);
+        s->compile();
     } catch (shader_error se) {
         throw shader_error{ProgramName, se.what()};
     }
-    auto suc = attachedShaders.emplace(std::pair(type, std::move(s)));
+    auto suc = attachedShaders.insert_or_assign(type, std::move(s));
     if (!suc.second)
-        throw shader_error{ProgramName, "Failed to load shader " + path.generic_string()};
+        throw shader_error{ProgramName, "Failed to add shader from path " + path.generic_string()};
 }
 
 void Program::link() {
     modifiedCount++;
     built = false;
     for(auto& stage : attachedShaders) {
-        if(stage.second.IsCompiled()) {
+        if(stage.second->IsCompiled()) {
             bool error = false;
-            GL_ERROR_CHECK(glAttachShader(gl_reference, stage.second.getHandle()), error);
+            GL_ERROR_CHECK(glAttachShader(gl_reference, stage.second->getHandle()), error);
             if(error) {
-                std::cerr << "Failed to attach shader " << stage.second.shaderPath() << " to " << ProgramName << std::endl;
+                std::cerr << "Failed to attach shader " << stage.second->shaderPath() << " to " << ProgramName << std::endl;
                 throw shader_error{ProgramName, "Failed to attach shader"};
             }
         }
