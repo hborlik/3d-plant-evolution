@@ -21,6 +21,9 @@ set_target_properties(3d_tree_ex PROPERTIES
     CXX_EXTENSIONS NO
 )
 
+# still need to install assets!
+
+# copy assets to build directory
 add_custom_command(
     TARGET 3d_tree_ex PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

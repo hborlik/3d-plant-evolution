@@ -31,70 +31,12 @@
             "program": "${command:cmake.launchTargetPath}",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}\\ev2_tests",
+            "cwd": "${workspaceFolder}\\build\\3d_tree_ex",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
             "console": "internalConsole", 
             "outputCapture": "std",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) Launch VFC",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/vfc_base2022v2/resources",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "(gdb) Launch workshop",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/2022CuteKitty/resources",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "build and debug active file",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${command:cmake.launchTargetPath}",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/testapp/",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "miDebuggerPath": "C:\\mingw-64\\mingw64\\bin\\gdb.exe",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
