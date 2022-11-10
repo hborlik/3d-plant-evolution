@@ -35,6 +35,7 @@ void show_material_editor_window() {
 void show_settings_editor_window() {
     ImGui::Begin("Settings");
     ImGui::Text("Application %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::Text("N Lights %i", ev2::renderer::Renderer::get_singleton().get_n_pointlights());
     ImGui::DragFloat("SSAO radius", &(ev2::renderer::Renderer::get_singleton().ssao_radius), 0.01f, 0.0f, 3.0f, "%.3f", 1.0f);
     ImGui::DragInt("SSAO samples", (int32_t*)&(ev2::renderer::Renderer::get_singleton().ssao_kernel_samples), 1, 1, 64);
     ImGui::DragFloat("Exposure", &(ev2::renderer::Renderer::get_singleton().exposure), 0.01f, 0.05f, 1.0f, "%.3f", 1.0f);

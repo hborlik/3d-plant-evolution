@@ -303,6 +303,14 @@ public:
 
     void draw_screen_space_triangle();
 
+    // ======================
+    //  Diag functions
+    // ======================
+
+    int get_n_pointlights() const {return point_lights.size();}
+
+    // ======================
+
     float ssao_radius = 0.5f;
     float ssao_bias = 0.025f;
     uint32_t ssao_kernel_samples = 32;

@@ -46,6 +46,7 @@ void Node::destroy() {
 }
 
 void Node::_update(float dt) {
+    transform_cache_valid = false;
     on_process(dt);
 
     for (auto& c : children) {

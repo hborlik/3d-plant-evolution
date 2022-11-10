@@ -138,8 +138,8 @@ void Physics::enable_debug_renderer(bool enable) {
 // Collider
 
 reactphysics3d::Transform PhysicsNode::get_physics_transform() const {
-    const glm::vec3 w_pos = glm::vec3(transform.position);
-    const glm::quat w_o = transform.rotation;
+    const glm::vec3 w_pos = glm::vec3(transform.get_position());
+    const glm::quat w_o = transform.get_rotation();
     const reactphysics3d::Vector3 position{w_pos.x, w_pos.y, w_pos.z};
     const reactphysics3d::Quaternion orientation{w_o.x, w_o.y, w_o.z, w_o.w};
     return reactphysics3d::Transform{position, orientation};
@@ -156,8 +156,8 @@ void PhysicsNode::set_cur_transform(const reactphysics3d::Transform& curr_tranfo
 
     const reactphysics3d::Vector3 pos = interpolatedTransform.getPosition();
     const reactphysics3d::Quaternion qua = interpolatedTransform.getOrientation();
-    transform.position = glm::vec3{pos.x, pos.y, pos.z};
-    transform.rotation = glm::quat{qua.w, qua.x, qua.y, qua.z};
+    transform.set_position(glm::vec3{pos.x, pos.y, pos.z});
+    transform.set_rotation(glm::quat{qua.w, qua.x, qua.y, qua.z});
 }
 
 ColliderBody::ColliderBody(const std::string &name) : PhysicsNode{name} {

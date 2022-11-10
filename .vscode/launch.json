@@ -25,6 +25,25 @@
             ]
         },
         {
+            "name": "(gdb) Launch and record",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "perf record -F max -g -- ${command:cmake.launchTargetPath}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build/3d_tree_ex",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "(gdb) Launch Windows",
             "type": "cppdbg",
             "request": "launch",

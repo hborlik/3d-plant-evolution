@@ -116,9 +116,16 @@ public:
     }
 
     virtual glm::mat4 get_transform() const {
+        if (transform_cache_valid)
+            return transform_cache;
+        
         glm::mat4 tr = transform.get_transform();
         if (parent)
             tr = parent->get_transform() * tr;
+
+        transform_cache = tr;
+        transform_cache_valid = true;
+        
         return tr;
     }
 
@@ -137,6 +144,9 @@ private:
     std::list<Ref<Node>> children;
     Node* parent = nullptr;
     class Scene* scene = nullptr;
+
+    mutable glm::mat4   transform_cache;
+    mutable bool        transform_cache_valid = false;
 };
 
 }

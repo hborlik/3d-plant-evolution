@@ -182,18 +182,19 @@ public:
 
         boom = cam_t * glm::vec4(boom, 1.0f);
 
-        cam_orbital->transform.position = boom;
-        cam_orbital->transform.rotation = glm::quatLookAt(-glm::normalize(boom), glm::vec3{0, 1, 0});
+        cam_orbital->transform.set_position(boom);
+        cam_orbital->transform.set_rotation(glm::quatLookAt(-glm::normalize(boom), glm::vec3{0, 1, 0}));
 
         
         if (show_debug && glm::length(move_input) > 0.0f) {
             glm::vec2 input = glm::normalize(move_input);
             glm::vec3 cam_forward = glm::normalize(cam_orbital->get_camera().get_forward() * glm::vec3{1, 0, 1});
             glm::vec3 cam_right = glm::normalize(cam_orbital->get_camera().get_right() * glm::vec3{1, 0, 1});
-            cam_orbital_root->transform.position +=
-                cam_forward * 1.0f * cam_boom_length * dt * input.y + 
-                cam_right * 1.0f * cam_boom_length * dt * input.x
-            ; // camera movement on y plane
+            cam_orbital_root->transform.set_position(
+                cam_orbital_root->transform.get_position() + 
+                (cam_forward * 1.0f * cam_boom_length * dt * input.y + 
+                cam_right * 1.0f * cam_boom_length * dt * input.x)
+            ); // camera movement on y plane
         }
     }
 

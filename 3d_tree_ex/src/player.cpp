@@ -27,7 +27,7 @@ void Player::on_process(float dt) {
     cam_x -= mouse_delta.x;
     cam_y = glm::clamp<float>(cam_y - mouse_delta.y, glm::radians(-85.0f), glm::radians(85.0f));
     last_mouse_position = s_pos;
-    cam_first_person->transform.rotation = glm::rotate(glm::rotate(glm::identity<glm::quat>(), (float)cam_x, glm::vec3{0, 1, 0}), (float)cam_y, glm::vec3{1, 0, 0});
+    cam_first_person->transform.set_rotation(glm::rotate(glm::rotate(glm::identity<glm::quat>(), (float)cam_x, glm::vec3{0, 1, 0}), (float)cam_y, glm::vec3{1, 0, 0}));
 
     auto& material = get_collider(0)->getMaterial();
     if (glm::length(move_input) > 0.0f) {
@@ -77,7 +77,7 @@ void Player::on_process(float dt) {
             if (ev2::input::GetKeyDown(ev2::input::Key::KeyX))
                 game->spawn_cross(si->point, 0, 9);
         }
-        game->marker->transform.position = si->point;
+        game->marker->transform.set_position(si->point);
     }
 
 }

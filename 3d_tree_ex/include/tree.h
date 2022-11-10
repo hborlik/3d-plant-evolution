@@ -58,7 +58,7 @@ public:
 
     void add_fruit(const glm::vec3& pos) {
         ev2::Transform ft{};
-        ft.position = pos;
+        ft.set_position(pos);
         fruit_transforms.push_back(ft);
     }
 

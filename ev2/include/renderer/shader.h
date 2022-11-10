@@ -336,7 +336,7 @@ public:
     }
 
     /**
-     * @brief get linking status from openGL
+     * @brief get linking status from OpenGL
      *
      * @return true
      * @return false

@@ -359,11 +359,11 @@ void TreeNode::spawn_fruit(const glm::vec3& position) {
 
     ev2::Ref<ev2::RigidBody> fruit_hit_sphere = get_scene()->create_node<ev2::RigidBody>("fruit");
     fruit_hit_sphere->add_shape(ev2::make_referenced<ev2::SphereShape>(.5f), glm::vec3{0, 0, 0});
-    auto light = create_node<ev2::PointLightNode>("point_light");
-    light->set_color(fruit_material->get_material()->diffuse * 0.5f);
+    // auto light = create_node<ev2::PointLightNode>("point_light");
+    // light->set_color(fruit_material->get_material()->diffuse * 0.5f);
+    // fruit_hit_sphere->add_child(light);
 
-    fruit_hit_sphere->add_child(light);
-    fruit_hit_sphere->transform.position = wpos;
+    fruit_hit_sphere->transform.set_position(wpos);
     // fruit_hit_sphere->add_child(fruit);
 
     fruits->add_fruit(position);
@@ -405,7 +405,7 @@ void Fruit::on_process(float dt) {
 
         instance_transforms.clear();
         for (auto& f: fruit_transforms) {
-            f.scale = glm::vec3{growth};
+            f.set_scale(glm::vec3{growth});
             instance_transforms.push_back(f.get_transform());
         }
     }
