@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.24)
 
 project(gl_testapp C CXX)
 
@@ -8,4 +8,4 @@ add_subdirectory(third-party)
 add_subdirectory(ev2)
 add_subdirectory(3d_tree_ex)
 add_subdirectory(tests)
-add_subdirectory(submodules/p-tree)
+add_subdirectory(submodules)

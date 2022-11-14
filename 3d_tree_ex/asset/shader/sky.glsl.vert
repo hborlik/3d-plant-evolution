@@ -1,24 +1,23 @@
 #version 460 core
+#extension GL_GOOGLE_include_directive : enable
 
-in vec3 VertPos;
-in vec2 TexPos;
+#include "globals.glslinc"
+// https://github.com/shff/opengl_sky
+out vec3 pos;
+out vec3 fsun;
 
-out vec2 tex_pos;
+uniform float sun_position = 0.0;
 
-layout (std140) uniform Globals {
-    mat4 V;
-    mat4 P;
-    vec3 CameraPos;
-    uint NumLights;
-    vec3 LightPositions[10];
-    vec3 LightColors[10];
-};
+const vec2 data[4] = vec2[](
+    vec2(-1.0,  1.0), vec2(-1.0, -1.0),
+    vec2( 1.0,  1.0), vec2( 1.0, -1.0)
+);
 
-uniform mat4 M;
-
-void main() {
-    tex_pos = TexPos;
-    mat4 v_t = V;
-    v_t[3] = vec4(0, 0, 0, 1);
-    gl_Position = P * v_t * M * vec4(VertPos, 1);
+void main()
+{
+    float x = -1.0 + float((gl_VertexID & 1) << 2);
+    float y = -1.0 + float((gl_VertexID & 2) << 1);
+    gl_Position = vec4(x, y, 0, 1);
+    pos = transpose(mat3(View)) * (PInv * gl_Position).xyz;
+    fsun = vec3(0.0, sin(sun_position), cos(sun_position));
 }

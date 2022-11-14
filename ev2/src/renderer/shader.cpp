@@ -74,14 +74,9 @@ std::string ShaderPreprocessor::preprocess(const std::string& input_source) cons
                 throw shader_error{"Preprocessor", std::to_string(line_num)};
             }
             string filename = line.substr(s, e - s);
-            std::filesystem::path path{filename};
-            auto inc = shader_includes.find(path.filename());
-            if (inc != shader_includes.end()) {
-                result << (*inc).second;
-                result << "\n";
-            } else {
-                throw shader_error{"Preprocessor", filename + " include not found"};
-            }
+
+            // do not process any includes in the header files
+            result << load_shader(filename, true);
         } else {
             result << line << std::endl;
         }
@@ -90,29 +85,47 @@ std::string ShaderPreprocessor::preprocess(const std::string& input_source) cons
     return result.str();
 }
 
-void ShaderPreprocessor::load_includes() {
-    namespace fs = std::filesystem;
-    for (const auto& entry : fs::directory_iterator(shader_include_dir)) {
-        const auto filenameStr = entry.path().filename().string();
-        if (entry.is_directory()) {
-            continue;
-        }
-        else if (entry.is_regular_file()) {
-            if (entry.path().extension() == ".glslinc") {
-                auto path = entry.path();
-                std::ifstream in{path};
-                // make sure the file exists
-                EV2_CHECK_THROW(in.is_open(), "Shader Include File failed to open at " + path.generic_string());
-                // copy out file contents
-                std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
-                in.close();
+// void ShaderPreprocessor::load_includes() {
+    // namespace fs = std::filesystem;
+    // for (const auto& entry : fs::directory_iterator(shader_include_dir)) {
+    //     const auto filenameStr = entry.path().filename().string();
+    //     if (entry.is_directory()) {
+    //         continue;
+    //     }
+    //     else if (entry.is_regular_file()) {
+    //         if (entry.path().extension() == ".glslinc") {
+    //             auto path = entry.path();
+    //             std::ifstream in{path};
+    //             // make sure the file exists
+    //             EV2_CHECK_THROW(in.is_open(), "Shader Include File failed to open at " + path.generic_string());
+    //             // copy out file contents
+    //             std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
+    //             in.close();
 
-                shader_includes.insert_or_assign(entry.path().filename().generic_string(), content);
-            }
-        }
-        else
-            continue;
+    //             shader_includes.insert_or_assign(entry.path().filename().generic_string(), content);
+    //         }
+    //     }
+    //     else
+    //         continue;
+    // }
+// }
+
+std::string ShaderPreprocessor::load_shader(const std::filesystem::path& source_path, bool source_only) const {
+    auto input_path = get_shader_dir() / source_path;
+    std::ifstream in{input_path};
+
+    if (!in.is_open()) {
+        throw shader_error{"Preprocessor", "Shader File not found at " + input_path.generic_string()};
     }
+    // copy out file contents
+    std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
+    in.close();
+    content += '\n';
+
+    if (!source_only)
+        content = preprocess(content);
+
+    return content;
 }
 
 
@@ -130,16 +143,9 @@ Shader::~Shader() {
 }
 
 void Shader::add_source(const std::filesystem::path& path, const ShaderPreprocessor& pre) {
-    std::ifstream in{pre.get_shader_dir() / path};
-    // make sure the file exists
-    EV2_CHECK_THROW(in.is_open(), "Shader File not found at " + path.generic_string());
-    // copy out file contents
-    std::string content{std::istreambuf_iterator<char>{in}, std::istreambuf_iterator<char>{}};
-    in.close();
-
     this->path = path;
 
-    source += pre.preprocess(content);
+    source += pre.load_shader(path);
 }
 
 bool Shader::compile(bool delete_source) {
@@ -168,6 +174,7 @@ bool Shader::compile(bool delete_source) {
             glGetShaderInfoLog(gl_reference, logLen, &written, log.data());
 
             std::cout << "Shader Log for " << path << ":\n" << std::string{log.begin(), log.end()} << std::endl;
+            std::cout << source << std::endl;
         }
         throw shader_error{path.generic_string(), "Failed to compile shader"};
     }

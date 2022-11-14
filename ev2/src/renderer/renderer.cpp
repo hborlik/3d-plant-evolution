@@ -282,7 +282,6 @@ void Renderer::init() {
     // set up programs
 
     ShaderPreprocessor prep{ResourceManager::get_singleton().asset_path / "shader"};
-    prep.load_includes();
 
 
     geometry_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "geometry.glsl.vert", prep);
@@ -346,8 +345,8 @@ void Renderer::init() {
     ssao_nSamples_loc  = ssao_program.getUniformInfo("nSamples").Location;
 
 
-    sky_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, std::filesystem::path("sky") / "sky.glsl.vert", prep);
-    sky_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, std::filesystem::path("sky") / "sky.glsl.frag", prep);
+    sky_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sky.glsl.vert", prep);
+    sky_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "sky.glsl.frag", prep);
     sky_program.link();
     sky_time_loc = sky_program.getUniformInfo("time").Location;
     sky_cirrus_loc = sky_program.getUniformInfo("cirrus").Location;
@@ -692,7 +691,6 @@ void Renderer::render(const Camera &camera) {
 
     glm::mat4 light_vp;
 
-    // render all geometry to g buffer
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
     glDisable(GL_DITHER);
@@ -756,6 +754,8 @@ void Renderer::render(const Camera &camera) {
     }
 
     glPopDebugGroup();
+
+    // render all geometry to g buffer
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, __LINE__, -1, "Geometry Pass");
 
     g_buffer.bind();
@@ -1017,14 +1017,14 @@ void Renderer::render(const Camera &camera) {
     glDisable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
 
-    sky_program.use();
-    globals_desc.bind_buffer(shader_globals);
 
     float time = (float)glfwGetTime() - 0.0f;
-    gl::glUniformf(time * cloud_speed, sky_time_loc);
-    gl::glUniformf(sun_position, sky_sun_position_loc);
-    gl::glUniformf(sky_brightness, sky_output_mul_loc);
+    glProgramUniform1f(sky_program.getHandle(), sky_time_loc, time*cloud_speed);
+    glProgramUniform1f(sky_program.getHandle(), sky_sun_position_loc, sun_position);
+    glProgramUniform1f(sky_program.getHandle(), sky_output_mul_loc, sky_brightness);
 
+    sky_program.use();
+    globals_desc.bind_buffer(shader_globals);
     draw_screen_space_triangle();
 
     sky_program.unbind();

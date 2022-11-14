@@ -1,3 +1,9 @@
 [submodule "submodules/p-tree"]
 	path = submodules/p-tree
 	url = git@github.com:hborlik/p-tree.git
+[submodule "submodules/libleb"]
+	path = submodules/libleb
+	url = git@github.com:jdupuy/libleb.git
+[submodule "submodules/libcbt"]
+	path = submodules/libcbt
+	url = git@github.com:jdupuy/libcbt.git

@@ -102,14 +102,27 @@ class ShaderPreprocessor {
 public:
     explicit ShaderPreprocessor(const std::filesystem::path& shader_include_dir) : shader_include_dir{shader_include_dir} {}
 
+    /**
+     * @brief Simple text replacement for loading include files. Note this will ignore all other preprocessor directives
+     * 
+     * @param input_source 
+     * @return std::string 
+     */
     std::string preprocess(const std::string& input_source) const;
-    void load_includes();
+
+    /**
+     * @brief load a shader
+     * 
+     * @param source_path 
+     * @param source_only should this be run through the include preprocessor?
+     * @return std::string 
+     */
+    std::string load_shader(const std::filesystem::path& source_path, bool source_only = false) const;
 
     std::filesystem::path get_shader_dir() const noexcept {return shader_include_dir;}
 
 private:
     std::filesystem::path shader_include_dir;
-    std::unordered_map<std::string, std::string> shader_includes; // include name to source
 };
 
 /**
@@ -418,14 +431,6 @@ public:
     }
 
     GLuint getHandle() const noexcept { return gl_reference; }
-
-    // /**
-    //  * @brief Apply a material. The program must be set active with use()
-    //  * before calling this
-    //  *
-    //  * @param material
-    //  */
-    // virtual void applyMaterial(const Material &material) const;
 
     /**
      * @brief point uniform block with name to binding location

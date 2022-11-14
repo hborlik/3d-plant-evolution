@@ -27,6 +27,8 @@ target_link_libraries(ev2 PUBLIC glm glad glfw3 tinyobjloader tinygltfloader rea
 target_include_directories(ev2 PUBLIC ${OPENGL_INCLUDE_DIRS})
 target_link_libraries(ev2 PUBLIC ${OPENGL_LIBRARY})
 
+target_link_libraries(ev2 PRIVATE leb cbt)
+
 if(WIN32)
 else()
     target_link_libraries(ev2 PUBLIC dl X11 pthread)
