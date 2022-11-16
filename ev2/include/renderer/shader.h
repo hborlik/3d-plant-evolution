@@ -367,14 +367,6 @@ public:
     uint32_t getModifiedCount() const noexcept { return modifiedCount; }
 
     /**
-     * @brief True if shaders compiled and linked
-     *
-     * @return true
-     * @return false
-     */
-    bool isBuilt() const noexcept { return built; }
-
-    /**
      * @brief Get the Uniform description for given name
      *
      * @param uniformName
@@ -485,7 +477,6 @@ protected:
 
     // counter for dependent objects. incremented when shader has been reloaded.
     uint32_t modifiedCount = 0;
-    bool built = false;
     GLuint gl_reference;
 
 private:

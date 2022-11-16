@@ -42,7 +42,7 @@ std::ostream& operator<<(std::ostream& os, const Program& input) {
             os << "       U: " << l.first << " offset " << l.second.Offset << " len " <<l.second.ArraySize << " stride " << l.second.ArrayStride << std::endl;
         }
     }
-    os << "    shader " << (input.built ? "built" : "not built") << std::endl;
+    os << "    shader " << (input.isLinked() ? "linked" : "not linked") << std::endl;
     os << "=== ShaderProgram ===" << std::endl;
     return os;
 }
@@ -218,7 +218,6 @@ void Program::loadShader(gl::GLSLShaderType type, const std::filesystem::path& p
 
 void Program::link() {
     modifiedCount++;
-    built = false;
 
     glLinkProgram(gl_reference);
     // get status
@@ -227,7 +226,6 @@ void Program::link() {
         updateProgramInputInfo();
         updateProgramUniformBlockInfo();
         updateProgramUniformInfo();
-        built = true;
 
         // additional configuration
         onBuilt();
