@@ -202,23 +202,18 @@ Program::~Program() {
 }
 
 void Program::setShader(gl::GLSLShaderType type, std::shared_ptr<Shader> shader) {
-    if (!(shader && shader->IsCompiled()))
-        throw shader_error{ProgramName, "Attempted to attach invalid shader, the shader should be compiled"};
-
-    attach_shader(shader->getHandle());
+    if (!(shader && shader->IsCompiled() && attach_shader(shader->getHandle())))
+        throw shader_error{ProgramName, "Shader could not be attached"};
 }
 
 void Program::loadShader(gl::GLSLShaderType type, const std::filesystem::path& path, const ShaderPreprocessor& preprocessor) {
     std::shared_ptr<Shader> s = std::make_shared<Shader>(type);
-    try {
-        s->add_source(path, preprocessor);
-        s->compile();
-    } catch (shader_error se) {
-        throw shader_error{ProgramName, se.what()};
-    }
+
+    s->add_source(path, preprocessor);
+    s->compile();
     auto suc = attach_shader(s->getHandle());
     if (!suc)
-        throw shader_error{ProgramName, "Failed to load shader from path " + path.generic_string()};
+        throw shader_error{ProgramName, "Loaded shader could not be attached " + path.generic_string()};
 }
 
 void Program::link() {
