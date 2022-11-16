@@ -145,7 +145,6 @@ public:
         std::swap(gl_reference, o.gl_reference);
         std::swap(source, o.source);
         std::swap(type, o.type);
-        std::swap(compiled, o.compiled);
         std::swap(path, o.path);
         return *this;
     }
@@ -174,7 +173,12 @@ public:
      */
     gl::GLSLShaderType Type() const noexcept { return type; }
 
-    bool IsCompiled() const noexcept { return compiled; }
+    bool IsCompiled() const noexcept { 
+        GLint compiled;
+        glGetShaderiv(gl_reference, GL_COMPILE_STATUS, &compiled);
+
+        return compiled == GL_TRUE;
+    }
 
     std::filesystem::path shaderPath() const noexcept { return path; }
 
@@ -189,7 +193,6 @@ private:
     std::string source;
     GLuint gl_reference;
     gl::GLSLShaderType type;
-    bool compiled = false;
     std::filesystem::path path;
 };
 
@@ -257,7 +260,7 @@ struct ProgramUniformBlockDescription
             GLint uoff = getOffset(paramName);
             if (uoff != -1)
             {
-                shaderBuffer.SubData(data, (uint32_t)uoff);
+                shaderBuffer.sub_data(data, (uint32_t)uoff);
                 return true;
             }
         }
@@ -285,7 +288,7 @@ struct ProgramUniformBlockDescription
             GLint stride = layout.ArrayStride;
             if (uoff != -1 && layout.ArraySize >= data.size())
             {
-                shaderBuffer.SubData(data, uoff, stride);
+                shaderBuffer.sub_data(data, uoff, stride);
                 return true;
             }
         }
@@ -300,7 +303,7 @@ struct ProgramUniformBlockDescription
      */
     void bind_buffer(const Buffer &buffer) {
         GL_CHECKED_CALL(
-            glBindBufferRange(GL_UNIFORM_BUFFER, location, buffer.handle(), 0, buffer.size())
+            glBindBufferRange(GL_UNIFORM_BUFFER, location, buffer.handle(), 0, buffer.get_capacity())
         );
     }
 };
@@ -466,6 +469,9 @@ protected:
      */
     virtual void onBuilt(){};
 
+private:
+    bool attach_shader(GLuint shader_name);
+
 public:
     /**
      * @brief Program name
@@ -473,7 +479,6 @@ public:
     std::string ProgramName;
 
 protected:
-    std::unordered_map<gl::GLSLShaderType, std::shared_ptr<Shader>> attachedShaders;
     std::unordered_map<std::string, ProgramUniformDescription> uniforms;
     std::unordered_map<std::string, ProgramInputDescription> inputs;
     std::unordered_map<std::string, ProgramUniformBlockDescription> uniformBlocks;
@@ -482,7 +487,6 @@ protected:
     uint32_t modifiedCount = 0;
     bool built = false;
     GLuint gl_reference;
-
 
 private:
     // helper function to print program information

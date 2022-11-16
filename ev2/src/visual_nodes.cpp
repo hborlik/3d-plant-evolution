@@ -79,7 +79,7 @@ void InstancedGeometry::on_destroy() {
 void InstancedGeometry::pre_render() {
     if (instance) {
         instance->instance_world_transform = get_transform();
-        instance->instance_transform_buffer->CopyData(instance_transforms);
+        instance->instance_transform_buffer->copy_data(instance_transforms);
         instance->n_instances = instance_transforms.size();
     }
 }

@@ -48,6 +48,8 @@ namespace ev2 {
     void clearGLErrors();
 
     namespace gl {
+
+    constexpr char* buffer_offset(uint32_t offset) {return (char*)nullptr + offset;}
     
     enum class DataType : GLenum {
         UNKNOWN             = GL_FALSE,

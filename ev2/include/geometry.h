@@ -106,7 +106,7 @@ struct Plane {
      * @return float 
      */
     inline float distanceFromPlane(glm::vec3 point) const noexcept {
-        return p.x * point.x + p.y * point.y + p.z * point.z + p.w;
+        return glm::dot(p, glm::vec4(point, 1.0f));
     }
 
     /**
@@ -261,6 +261,12 @@ struct Frustum {
     void normalize() noexcept {
         for (int i = 0; i < 6; ++i) {
             planes[i].normalize();
+        }
+    }
+
+    void copy_to_array(glm::vec4 (&tgt)[6]) {
+        for (int i = 0; i < sizeof(tgt) / sizeof(glm::vec4); ++i) {
+            tgt[i] = planes[i].p;
         }
     }
 };

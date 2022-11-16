@@ -7,7 +7,7 @@ in vec3 VertPos;
 
 flat out uint instance_id;
 
-layout(std140, binding = 3) buffer lights_in {
+layout(std430, binding = 3) buffer lights_in {
     PointLight lights[];
 };
 

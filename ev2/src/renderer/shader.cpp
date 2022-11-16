@@ -24,9 +24,9 @@ namespace ev2::renderer {
 // overload stream operator
 std::ostream& operator<<(std::ostream& os, const Program& input) {
     os << "=== ShaderProgram: " << input.ProgramName << " ===" << std::endl;
-    for(auto& v : input.attachedShaders) {
-        os << v.second->shaderPath() << std::endl;
-    }
+    // for(auto& v : input.attachedShaders) {
+    //     os << v.second->shaderPath() << std::endl;
+    // }
     os << "Program inputs: (name, location)" << std::endl;
     for(auto& v : input.inputs) {
         os << "    - " << v.first << ", " << v.second.Location << std::endl;
@@ -156,7 +156,6 @@ bool Shader::compile(bool delete_source) {
     // get shader compile results
     GLint result;
     glGetShaderiv(gl_reference, GL_COMPILE_STATUS, &result);
-    compiled = result == GL_TRUE;
     if(result == GL_TRUE) {
         if (delete_source) {
             source = {};
@@ -176,15 +175,13 @@ bool Shader::compile(bool delete_source) {
             std::cout << "Shader Log for " << path << ":\n" << std::string{log.begin(), log.end()} << std::endl;
             std::cout << source << std::endl;
         }
-        throw shader_error{path.generic_string(), "Failed to compile shader"};
     }
-    return compiled;
+    return result == GL_TRUE;
 }
 
 // ShaderProgram
 
-Program::Program() : 
-    attachedShaders{} {
+Program::Program() {
 
     gl_reference = glCreateProgram();
     if(gl_reference == 0)
@@ -192,8 +189,7 @@ Program::Program() :
 }
 
 Program::Program(std::string name) : 
-    ProgramName{std::move(name)}, 
-    attachedShaders{} {
+    ProgramName{std::move(name)} {
 
     gl_reference = glCreateProgram();
     if(gl_reference == 0)
@@ -207,9 +203,9 @@ Program::~Program() {
 
 void Program::setShader(gl::GLSLShaderType type, std::shared_ptr<Shader> shader) {
     if (!(shader && shader->IsCompiled()))
-        throw shader_error{ProgramName, "Attempted to set invalid shader, the shader should be compiled"};
+        throw shader_error{ProgramName, "Attempted to attach invalid shader, the shader should be compiled"};
 
-    attachedShaders.insert_or_assign(type, shader);
+    attach_shader(shader->getHandle());
 }
 
 void Program::loadShader(gl::GLSLShaderType type, const std::filesystem::path& path, const ShaderPreprocessor& preprocessor) {
@@ -220,24 +216,14 @@ void Program::loadShader(gl::GLSLShaderType type, const std::filesystem::path& p
     } catch (shader_error se) {
         throw shader_error{ProgramName, se.what()};
     }
-    auto suc = attachedShaders.insert_or_assign(type, std::move(s));
-    if (!suc.second)
-        throw shader_error{ProgramName, "Failed to add shader from path " + path.generic_string()};
+    auto suc = attach_shader(s->getHandle());
+    if (!suc)
+        throw shader_error{ProgramName, "Failed to load shader from path " + path.generic_string()};
 }
 
 void Program::link() {
     modifiedCount++;
     built = false;
-    for(auto& stage : attachedShaders) {
-        if(stage.second->IsCompiled()) {
-            bool error = false;
-            GL_ERROR_CHECK(glAttachShader(gl_reference, stage.second->getHandle()), error);
-            if(error) {
-                std::cerr << "Failed to attach shader " << stage.second->shaderPath() << " to " << ProgramName << std::endl;
-                throw shader_error{ProgramName, "Failed to attach shader"};
-            }
-        }
-    }
 
     glLinkProgram(gl_reference);
     // get status
@@ -247,14 +233,6 @@ void Program::link() {
         updateProgramUniformBlockInfo();
         updateProgramUniformInfo();
         built = true;
-
-        // // if we have a global shader parameter ubo, save it
-        // // TODO separate global shader information UBO from shader data UBO
-        // shaderGlobalDataDescription = getUniformBlockInfo(mat_spec::GUBName);
-        // if (shaderGlobalDataDescription.isValid()) {
-        //     shaderParameters = std::make_unique<Buffer>(gl::BindingTarget::UNIFORM, gl::Usage::DYNAMIC_DRAW);
-        //     shaderParameters->Allocate(shaderGlobalDataDescription.block_size);
-        // }
 
         // additional configuration
         onBuilt();
@@ -452,6 +430,12 @@ void Program::updateProgramUniformBlockInfo() {
         }
 
     }
+}
+
+bool Program::attach_shader(GLuint shader_name) {
+    bool error = false;
+    GL_ERROR_CHECK(glAttachShader(gl_reference, shader_name), error);
+    return !error;
 }
 
 } // namespace ev2::renderer

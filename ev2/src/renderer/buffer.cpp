@@ -15,7 +15,7 @@ namespace ev2::renderer {
 using namespace ev2;
 using namespace ev2::gl;
 
-Buffer::Buffer(BindingTarget target, Usage usage) : target{target}, usage{usage}, buf_size{}, gl_reference{} {
+Buffer::Buffer(BindingTarget target, Usage usage) : target{target}, usage{usage}, capacity{}, gl_reference{} {
     glGenBuffers(1, &gl_reference);
 }
 
@@ -23,18 +23,18 @@ Buffer::~Buffer() {
     glDeleteBuffers(1, &gl_reference);
 }
 
-void Buffer::Allocate(std::size_t bytes) {
+void Buffer::allocate(std::size_t bytes) {
     glBindBuffer((GLenum)target, gl_reference);
     GL_CHECKED_CALL(glBufferData((GLenum)target, bytes, NULL, (GLenum)usage));
     glBindBuffer((GLenum)target, 0);
-    buf_size = bytes;
+    capacity = bytes;
 }
 
-void Buffer::CopyData(std::size_t size, const void* data) {
+void Buffer::copy_data(std::size_t size, const void* data) {
     glBindBuffer((GLenum)target, gl_reference);
     glBufferData((GLenum)target, size, data, (GLenum)usage);
     glBindBuffer((GLenum)target, 0);
-    buf_size = size;
+    capacity = size;
 }
 
 } // namespace ev2::renderer

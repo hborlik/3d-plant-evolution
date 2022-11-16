@@ -4,6 +4,7 @@
 #include <cmath>
 #include <chrono>
 
+#include <renderer/ev_gl.h>
 #include <resource.h>
 
 namespace ev2::renderer {
@@ -103,13 +104,13 @@ void Renderer::draw(Drawable* dr, const Program& prog, bool use_materials, GLuin
 
         if (indexed) {
             Buffer& el_buf = dr->vertex_buffer.get_buffer(dr->vertex_buffer.get_indexed());
-            el_buf.Bind(); // bind index buffer (again, @Windows)
+            el_buf.bind(); // bind index buffer (again, @Windows)
             if (instance_buffer || n_instances > 0) {
                 glDrawElementsInstanced(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0, n_instances);
             } else {
                 glDrawElements(GL_TRIANGLES, m.num_elements, GL_UNSIGNED_INT, (void*)0);
             }
-            el_buf.Unbind();
+            el_buf.unbind();
         } else {
             if (instance_buffer || n_instances > 0) {
                 glDrawArraysInstanced(GL_TRIANGLES, m.start_index, m.num_elements, n_instances);
@@ -348,11 +349,11 @@ void Renderer::init() {
     sky_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sky.glsl.vert", prep);
     sky_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "sky.glsl.frag", prep);
     sky_program.link();
-    sky_time_loc = sky_program.getUniformInfo("time").Location;
-    sky_cirrus_loc = sky_program.getUniformInfo("cirrus").Location;
-    sky_cumulus_loc = sky_program.getUniformInfo("cumulus").Location;
-    sky_sun_position_loc = sky_program.getUniformInfo("sun_position").Location;
-    sky_output_mul_loc = sky_program.getUniformInfo("output_mul").Location;
+    sky_time_loc        = sky_program.getUniformInfo("time").Location;
+    sky_cirrus_loc      = sky_program.getUniformInfo("cirrus").Location;
+    sky_cumulus_loc     = sky_program.getUniformInfo("cumulus").Location;
+    sky_sun_position_loc= sky_program.getUniformInfo("sun_position").Location;
+    sky_output_mul_loc  = sky_program.getUniformInfo("output_mul").Location;
 
     post_fx_bloom_combine_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
     post_fx_bloom_combine_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "post_fx_bloom_combine.glsl.frag", prep);
@@ -370,18 +371,18 @@ void Renderer::init() {
     post_fx_program.loadShader(gl::GLSLShaderType::VERTEX_SHADER, "sst.glsl.vert", prep);
     post_fx_program.loadShader(gl::GLSLShaderType::FRAGMENT_SHADER, "post_fx.glsl.frag", prep);
     post_fx_program.link();
-    post_fx_gamma_loc = post_fx_program.getUniformInfo("gamma").Location;
-    post_fx_exposure_loc = post_fx_program.getUniformInfo("exposure").Location;
-    post_fx_bloom_falloff_loc = post_fx_program.getUniformInfo("bloom_falloff").Location;
-    post_fx_hdrt_loc = post_fx_program.getUniformInfo("hdrBuffer").Location;
-    post_fx_bloomt_loc = post_fx_program.getUniformInfo("bloomBuffer").Location;
+    post_fx_gamma_loc           = post_fx_program.getUniformInfo("gamma").Location;
+    post_fx_exposure_loc        = post_fx_program.getUniformInfo("exposure").Location;
+    post_fx_bloom_falloff_loc   = post_fx_program.getUniformInfo("bloom_falloff").Location;
+    post_fx_hdrt_loc            = post_fx_program.getUniformInfo("hdrBuffer").Location;
+    post_fx_bloomt_loc          = post_fx_program.getUniformInfo("bloomBuffer").Location;
 
     // program block inputs
     globals_desc = geometry_program.getUniformBlockInfo("Globals");
-    shader_globals.Allocate(globals_desc.block_size);
+    shader_globals.allocate(globals_desc.block_size);
 
     lighting_materials_desc = directional_lighting_program.getUniformBlockInfo("MaterialsInfo");
-    lighting_materials.Allocate(lighting_materials_desc.block_size);
+    lighting_materials.allocate(lighting_materials_desc.block_size);
 
     // extract all offsets for material buffer
     for (const auto& layout_p : lighting_materials_desc.layouts) {
@@ -427,9 +428,9 @@ void Renderer::init() {
     }
 
     ssao_kernel_desc = ssao_program.getUniformBlockInfo("Samples");
-    ssao_kernel_buffer.Allocate(ssao_kernel_desc.block_size);
+    ssao_kernel_buffer.allocate(ssao_kernel_desc.block_size);
     auto tgt_layout = ssao_kernel_desc.getLayout("samples[0]");
-    ssao_kernel_buffer.SubData(ssaoKernel, tgt_layout.Offset, tgt_layout.ArrayStride);
+    ssao_kernel_buffer.sub_data(ssaoKernel, tgt_layout.Offset, tgt_layout.ArrayStride);
     
     int i = 0;
     for (auto& m : material_data_buffer) {
@@ -447,18 +448,18 @@ void Renderer::init() {
 
 void Renderer::update_material(mat_id_t material_slot, const MaterialData& material) {
     material_data_buffer[material_slot] = material;
-    lighting_materials.SubData(material.diffuse,        material.diffuse_offset);
-    lighting_materials.SubData(material.emissive,       material.emissive_offset);
-    lighting_materials.SubData(material.metallic,       material.metallic_offset);
-    lighting_materials.SubData(material.subsurface,     material.subsurface_offset);
-    lighting_materials.SubData(material.specular,       material.specular_offset);
-    lighting_materials.SubData(material.roughness,      material.roughness_offset);
-    lighting_materials.SubData(material.specularTint,   material.specularTint_offset);
-    lighting_materials.SubData(material.clearcoat,      material.clearcoat_offset);
-    lighting_materials.SubData(material.clearcoatGloss, material.clearcoatGloss_offset);
-    lighting_materials.SubData(material.anisotropic,    material.anisotropic_offset);
-    lighting_materials.SubData(material.sheen,          material.sheen_offset);
-    lighting_materials.SubData(material.sheenTint,      material.sheenTint_offset);
+    lighting_materials.sub_data(material.diffuse,        material.diffuse_offset);
+    lighting_materials.sub_data(material.emissive,       material.emissive_offset);
+    lighting_materials.sub_data(material.metallic,       material.metallic_offset);
+    lighting_materials.sub_data(material.subsurface,     material.subsurface_offset);
+    lighting_materials.sub_data(material.specular,       material.specular_offset);
+    lighting_materials.sub_data(material.roughness,      material.roughness_offset);
+    lighting_materials.sub_data(material.specularTint,   material.specularTint_offset);
+    lighting_materials.sub_data(material.clearcoat,      material.clearcoat_offset);
+    lighting_materials.sub_data(material.clearcoatGloss, material.clearcoatGloss_offset);
+    lighting_materials.sub_data(material.anisotropic,    material.anisotropic_offset);
+    lighting_materials.sub_data(material.sheen,          material.sheen_offset);
+    lighting_materials.sub_data(material.sheenTint,      material.sheenTint_offset);
 }
 
 Material* Renderer::create_material() {
@@ -992,14 +993,14 @@ void Renderer::render(const Camera &camera) {
         point_light_data[index] = light_data;
         index++;
     }
-    point_light_data_buffer->CopyData(point_light_data);
+    point_light_data_buffer->copy_data(point_light_data);
 
     // bind the point light data buffer to SSBO
-    point_light_data_buffer->Bind(plp_ssbo_light_data_location);
+    point_light_data_buffer->bind(plp_ssbo_light_data_location);
 
     draw(point_light_drawable.get(), point_lighting_program, false, point_light_gl_vao, -1, nullptr, point_lights.size());
 
-    point_light_data_buffer->Unbind();
+    point_light_data_buffer->unbind();
 
     normals->unbind();
     albedo_spec->unbind();

@@ -14,7 +14,7 @@ uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
 uniform usampler2D gMaterialTex;
 
-layout(std140, binding = 3) buffer lights_in {
+layout(std430, binding = 3) buffer lights_in {
     PointLight lights[];
 };
 

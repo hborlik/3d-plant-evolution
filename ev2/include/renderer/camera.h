@@ -26,48 +26,15 @@ public:
             force_update_internal();
         const mat4& comp = p_v;
         Frustum f{};
-        auto& Left = f.get_left();
-        auto& Right = f.get_right();
-        auto& Top = f.get_top();
-        auto& Bottom = f.get_bottom();
-        auto& Near = f.get_near();
-        auto& Far = f.get_far();
 
-        Left.p.x = comp[0][3] + comp[0][0]; 
-        Left.p.y = comp[1][3] + comp[1][0]; 
-        Left.p.z = comp[2][3] + comp[2][0]; 
-        Left.p.w = comp[3][3] + comp[3][0];
-        Left.normalize();
-
-        Right.p.x = comp[0][3] - comp[0][0];
-        Right.p.y = comp[1][3] - comp[1][0];
-        Right.p.z = comp[2][3] - comp[2][0];
-        Right.p.w = comp[3][3] - comp[3][0];
-        Right.normalize();
-
-        Bottom.p.x = comp[0][3] + comp[0][1];
-        Bottom.p.y = comp[1][3] + comp[1][1];
-        Bottom.p.z = comp[2][3] + comp[2][1];
-        Bottom.p.w = comp[3][3] + comp[3][1];
-        Bottom.normalize();
-
-        Top.p.x = comp[0][3] - comp[0][1];
-        Top.p.y = comp[1][3] - comp[1][1];
-        Top.p.z = comp[2][3] - comp[2][1];
-        Top.p.w = comp[3][3] - comp[3][1];
-        Top.normalize();
-
-        Near.p.x = comp[0][3] + comp[0][2];
-        Near.p.y = comp[1][3] + comp[1][2];
-        Near.p.z = comp[2][3] + comp[2][2];
-        Near.p.w = comp[3][3] + comp[3][2];
-        Near.normalize();
-
-        Far.p.x = comp[0][3] - comp[0][2];
-        Far.p.y = comp[1][3] - comp[1][2];
-        Far.p.z = comp[2][3] - comp[2][2];
-        Far.p.w = comp[3][3] - comp[3][2];
-        Far.normalize();
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 2; j++) {
+                f.planes[i * 2 + j].p.x = comp[0][3] + (j == 0 ? comp[0][j] : -comp[0][j]);
+                f.planes[i * 2 + j].p.y = comp[1][3] + (j == 0 ? comp[1][j] : -comp[1][j]);
+                f.planes[i * 2 + j].p.z = comp[2][3] + (j == 0 ? comp[2][j] : -comp[2][j]);
+                f.planes[i * 2 + j].p.w = comp[3][3] + (j == 0 ? comp[3][j] : -comp[3][j]);
+                f.planes[i * 2 + j].normalize();
+            }
 
         return f;
     }
@@ -109,9 +76,10 @@ public:
      * @brief Force internal View and Projection * View matrices to be updated.
      * 
      */
-    void force_update_internal() const {
+    void force_update_internal() const noexcept {
         using namespace glm;
-        view = inverse(translate(identity<glm::mat4>(), position) * mat4_cast(rotation));
+        viewInv = translate(identity<glm::mat4>(), position) * mat4_cast(rotation);
+        view = inverse(viewInv);
         p_v = projection * view;
         dirty = false;
     }
@@ -121,10 +89,21 @@ public:
      * 
      * @return glm::mat4 
      */
-    glm::mat4 get_view() const {
+    glm::mat4 get_view() const noexcept {
         if (dirty)
             force_update_internal();
         return view;
+    }
+
+    /**
+     * @brief Get the Inverse View Matrix for Camera
+     * 
+     * @return glm::mat4 
+     */
+    glm::mat4 get_view_inv() const noexcept {
+        if (dirty)
+            force_update_internal();
+        return viewInv;
     }
 
     /**
@@ -205,6 +184,7 @@ private:
     glm::mat4 projection = glm::identity<glm::mat4>();
 
     mutable glm::mat4 view = glm::identity<glm::mat4>();
+    mutable glm::mat4 viewInv = glm::identity<glm::mat4>();
     mutable glm::mat4 p_v = glm::identity<glm::mat4>();
     mutable bool dirty = true;
 

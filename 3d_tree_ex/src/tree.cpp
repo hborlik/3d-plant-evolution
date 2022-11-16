@@ -342,8 +342,8 @@ void TreeNode::generate(int iterations) {
             g_vertices[i].color = sv.color;
         }
 
-        tree_geometry->vertex_buffer.get_buffer(0).CopyData(g_vertices);
-        tree_geometry->vertex_buffer.get_buffer(tree_geometry->vertex_buffer.get_indexed()).CopyData(indices);
+        tree_geometry->vertex_buffer.get_buffer(0).copy_data(g_vertices);
+        tree_geometry->vertex_buffer.get_buffer(tree_geometry->vertex_buffer.get_indexed()).copy_data(indices);
 
         tree_geometry->primitives.clear();
         tree_geometry->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});
@@ -424,8 +424,8 @@ void Fruit::generate(float growth) {
     const std::vector<uint32_t>& indices = supershape.getIndicesv();
     const std::vector<float> vbuffer = supershape.getInterleavedVerticesv();
 
-    geometry->vertex_buffer.get_buffer(0).CopyData(vbuffer);
-    geometry->vertex_buffer.get_buffer(geometry->vertex_buffer.get_indexed()).CopyData(indices);
+    geometry->vertex_buffer.get_buffer(0).copy_data(vbuffer);
+    geometry->vertex_buffer.get_buffer(geometry->vertex_buffer.get_indexed()).copy_data(indices);
 
     geometry->primitives.clear();
     geometry->primitives.push_back(ev2::renderer::Primitive{0, indices.size(), -1});

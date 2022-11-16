@@ -100,7 +100,7 @@ public:
     int get_indexed() const {return indexed;}
 
     void add_buffer(uint32_t buffer_id, Buffer&& buffer) {
-        if (buffer.target == gl::BindingTarget::ELEMENT_ARRAY) {
+        if (buffer.get_binding_target() == gl::BindingTarget::ELEMENT_ARRAY) {
             indexed = buffer_id;
         }
         buffers.emplace(buffer_id, std::move(buffer));
